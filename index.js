@@ -199,7 +199,8 @@ app.get("/api/test", (req, res) => {
       console.log("1 record inserted");  
       });  
       con.end();
-      res.json({ message: "Data Received Successfully" });
+      //res.json({ message: "Data Received Successfully" });
+      res.json("Error from DB"+err);
    });
   app.post("/api/experts", (req, res) => {
    // res.json(req)
