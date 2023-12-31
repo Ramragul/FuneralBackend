@@ -278,7 +278,8 @@ app.get("/api/test", (req, res) => {
       
        var sql = "INSERT INTO Admee_Partners (FullName, MobileNumber, Email, City, State, Country, Address, Pincode, Remarks, EnrollmentDate, VehicleType, VehicleNumber, ExpectedAmount) VALUES ('"+FullName+"', '"+MobileNumber+"','"+Email+"','"+City+"','"+State+"','"+Country+"','"+Address+"','"+Pincode+"','"+Remarks+"','"+EnrollmentDate+"','"+VehicleType+"','"+VehicleNumber+"','"+ExpectedAmount+"')";  
        con.query(sql, function (err, result) {  
-       if (err) throw err;  
+      //  if (err) throw err;  
+      if (err) console.log(err);
        console.log("1 record inserted");  
        });  
        con.end();
