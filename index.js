@@ -194,11 +194,11 @@ app.get("/api/test", (req, res) => {
       
      
       var sql = "INSERT INTO GB_UserQuery (FullName, MobileNumber, Email, City, State, Country, Message, QueryDate, QueryStatus) VALUES ('"+FullName+"', '"+MobileNumber+"','"+Email+"','"+City+"','"+State+"','"+Country+"','"+Message+"','"+QueryDate+"','"+QueryStatus+"')";  
-      var error = ""
+      var result = ""
       con.query(sql, function (err, result) {  
       if (err) throw err;  
       console.log("1 record inserted");  
-      error = err;
+      result = result;
       });  
       con.end();
       //res.json({ message: "Data Received Successfully" });
