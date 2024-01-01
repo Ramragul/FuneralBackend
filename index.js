@@ -15,7 +15,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 function dbConnection () {
-  //console.log("PORT NUMBER" +process.env.DATABASE_PORT)
+  console.log("PORT NUMBER" +process.env.DATABASE_PORT)
   var connection = mysql.createConnection({
     //host     : "smartdisplay.cj0ybsa00pzb.ap-northeast-1.rds.amazonaws.com",
     host     : process.env.DATABASE_URL,
