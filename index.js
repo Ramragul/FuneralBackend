@@ -1,10 +1,11 @@
 // server/index.js
 
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 var mysql = require('mysql');
-const path = require('path')  
+const path = require('path')  ;
 
 const PORT = process.env.PORT || 3002;
 
@@ -14,12 +15,14 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 function dbConnection () {
+  //console.log("Process" +process.env.DATABASE_URL)
   var connection = mysql.createConnection({
-    host     : "smartdisplay.cj0ybsa00pzb.ap-northeast-1.rds.amazonaws.com",
-    user     : "admin",
-    password : "root1234",
-    port     : "3306",
-    database : "smartdisplay"
+    //host     : "smartdisplay.cj0ybsa00pzb.ap-northeast-1.rds.amazonaws.com",
+    host     : process.env.DATABASE_URL,
+    user     : process.env.DATABASE_USERNAME,
+    password : process.env.DATABASE_PASSWORD,
+    port     : process.env.DATABASE_PORT,
+    database : process.env.DATABASE_NAME
   });
   return connection;
 }
