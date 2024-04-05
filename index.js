@@ -52,8 +52,9 @@ app.use(function (req, res, next) {
 });
 app.options('*', cors());
 
-app.get("/api/test", (req, res) => {
-    res.json({ message: "Hello from server!" });
+app.get("/api/test1", (req, res) => {
+    res.json({ message: "Hello from server! test path" });
+    console.log("Message from api test path")
   });
 
   app.get('/db',(req,res) => {
