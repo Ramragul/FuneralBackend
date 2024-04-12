@@ -8,6 +8,9 @@
     "start": "node ./index.js",
     "deploy": "gh-pages -d dist"
   },
+  "engines": {
+    "node": ">=18.18.2"
+  },  
   "keywords": [],
   "author": "",
   "license": "ISC",
