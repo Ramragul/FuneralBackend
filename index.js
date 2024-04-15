@@ -306,7 +306,7 @@ app.get("/api/test", (req, res) => {
        
          console.log('Connected to database.' +connection);
      
-         let query = 'SELECT * FROM test';
+         let query = 'SELECT * FROM Persons';
          connection.query (query,(err,data) => {
            if(err) throw err;
            console.log(data)
