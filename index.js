@@ -52,7 +52,7 @@ app.use(function (req, res, next) {
 });
 app.options('*', cors());
 
-app.get("/api/test1", (req, res) => {
+app.get("/api/test", (req, res) => {
     res.json({ message: "Hello from server! test path" });
     console.log("Message from api test path")
   });
@@ -293,6 +293,28 @@ app.get("/api/test1", (req, res) => {
        con.end();
        res.json({ message: "Data Received Successfully" });
     });
+
+
+    //DB TEST api
+
+    app.get('/db/test',(req,res) => {
+
+      var connection = dbConnection();
+      
+       connection.connect();
+   
+       
+         console.log('Connected to database.' +connection);
+     
+         let query = 'SELECT * FROM test';
+         connection.query (query,(err,data) => {
+           if(err) throw err;
+           console.log(data)
+           res.json({data})
+         })
+         connection.end();
+         console.log("Connection Ended ")
+       });
 
 
 
