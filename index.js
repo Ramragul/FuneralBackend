@@ -173,7 +173,7 @@ app.get("/api/test", (req, res) => {
            console.log("Connection Ended ")
          });
   
-  app.post("/userQuery", (req, res) => {
+  app.post("/gb/bookings", (req, res) => {
    // res.json(req)
    console.log("Received Data")
    console.log(req.body.fullName)
@@ -199,7 +199,7 @@ app.get("/api/test", (req, res) => {
    
       
      
-      var sql = "INSERT INTO GB_UserQuery (FullName, MobileNumber, Email, City, State, Country, Message, QueryDate, QueryStatus) VALUES ('"+FullName+"', '"+MobileNumber+"','"+Email+"','"+City+"','"+State+"','"+Country+"','"+Message+"','"+QueryDate+"','"+QueryStatus+"')";  
+      var sql = "INSERT INTO GB_Bookings (FullName, MobileNumber, Email, City, State, Country, Message, QueryDate, QueryStatus) VALUES ('"+FullName+"', '"+MobileNumber+"','"+Email+"','"+City+"','"+State+"','"+Country+"','"+Message+"','"+QueryDate+"','"+QueryStatus+"')";  
       var result = ""
       con.query(sql, function (err, result) {  
       if (err) throw err;  
