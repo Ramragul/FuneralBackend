@@ -2,6 +2,8 @@
 
 require("dotenv").config();
 const express = require("express");
+const https = require('https');
+const fs = require('fs');
 const cors = require("cors");
 const bodyParser = require("body-parser");
 var mysql = require('mysql');
@@ -315,9 +317,13 @@ app.get("/api/test", (req, res) => {
          connection.end();
          console.log("Connection Ended ")
        });
+const options = {
+  key: fs.readFileSync(path.join(__dirname,'cert', 'key.pem')),
+  cert: fs.readFileSync(path.join(__dirname, 'cert', 'cert.pem'))
+};
+const server = https.createServer(options,app);
 
-
-
-app.listen(PORT, () => {
+//app.listen(PORT, () => {
+  server.listen(PORT, () => {
   console.log(`Server listening on ${PORT}`);
 });
