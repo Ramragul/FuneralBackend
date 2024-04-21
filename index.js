@@ -184,10 +184,12 @@ app.get("/api/test", (req, res) => {
       var City = req.body.city;
       var Email = req.body.email;
       var Message = req.body.message;
+      var Category = req.body.category;
       var State = "Tamil Nadu";
       var Country = "India";
       var QueryDate = new Date().toISOString().split('T')[0];
       var QueryStatus = "O"
+
 
       console.log(QueryDate);
    
@@ -199,7 +201,7 @@ app.get("/api/test", (req, res) => {
    
       
      
-      var sql = "INSERT INTO GB_Bookings (FullName, MobileNumber, Email, City, State, Country, Message, QueryDate, QueryStatus) VALUES ('"+FullName+"', '"+MobileNumber+"','"+Email+"','"+City+"','"+State+"','"+Country+"','"+Message+"','"+QueryDate+"','"+QueryStatus+"')";  
+      var sql = "INSERT INTO GB_Bookings (FullName, MobileNumber, Email, City, State, Country, Category, Message, QueryDate, QueryStatus) VALUES ('"+FullName+"', '"+MobileNumber+"','"+Email+"','"+City+"','"+State+"','"+Country+"','"+Category+"','"+Message+"','"+QueryDate+"','"+QueryStatus+"')";  
       var result = ""
       con.query(sql, function (err, result) {  
       if (err) throw err;  
