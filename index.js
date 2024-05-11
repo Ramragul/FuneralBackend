@@ -165,13 +165,16 @@ app.get("/api/test", (req, res) => {
            let query = "SELECT * FROM IC_ExpertProfile";
            connection.query (query,(err,data) => {
             if(err) throw err;
-            
             res.json({data})
            })
            
            connection.end();
            console.log("Connection Ended ")
          });
+
+  // GoodBye Api's Starts
+
+  // 1) GoodBye Service Booking Api
   
   app.post("/gb/bookings", (req, res) => {
    // res.json(req)
@@ -213,6 +216,29 @@ app.get("/api/test", (req, res) => {
       console.log("DB  Message:" +result);
       res.json("Response from DB"+result);
    });
+
+   // 2) GoodBye Funeral Ground Fetching Api
+
+   app.get('/gb/funeralground',(req,res) => {
+
+    var connection = dbConnection();
+    
+     connection.connect();
+ 
+     
+       console.log('Connected to database.' +connection);
+   
+       let query = 'SELECT * FROM GB_FuneralGround';
+       connection.query (query,(err,data) => {
+         if(err) throw err;
+         console.log(data)
+         res.json({data})
+       })
+       connection.end();
+       console.log("Connection Ended ")
+     });
+
+   //GoodBye Api Ends
   app.post("/api/experts", (req, res) => {
    // res.json(req)
    console.log("Received Data")
