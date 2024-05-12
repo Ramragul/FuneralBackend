@@ -8,6 +8,9 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 var mysql = require('mysql');
 const path = require('path')  ;
+const multer = require('multer');
+const AWS = require('aws-sdk');
+const { v4: uuidv4 } = require('uuid');
 
 const PORT = process.env.PORT || 3002;
 
@@ -28,9 +31,6 @@ function dbConnection () {
   });
   return connection;
 }
-
-
-
 
 
 
@@ -226,7 +226,7 @@ app.get("/api/test", (req, res) => {
      connection.connect();
  
      
-       console.log('Connected to database.' +connection);
+       //console.log('Connected to database.' +connection);
    
        let query = 'SELECT * FROM GB_FuneralGround';
        connection.query (query,(err,data) => {
@@ -235,7 +235,7 @@ app.get("/api/test", (req, res) => {
          res.json({data})
        })
        connection.end();
-       console.log("Connection Ended ")
+       //console.log("Connection Ended ")
      });
 
    //GoodBye Api Ends
@@ -345,6 +345,175 @@ app.get("/api/test", (req, res) => {
          connection.end();
          console.log("Connection Ended ")
        });
+
+
+// AWS S3 Image Upload Logic Begins 
+
+// Configure AWS SDK with your credentials
+// AWS.config.update({
+//   accessKeyId: 'AKIA5K7PWBWEKE3JJZLS',
+//   secretAccessKey: 'X9L8elpbxInO6mJPKDU',
+//   region: 'us-east-1'
+// });
+
+// Configure AWS S3
+const s3 = new AWS.S3({
+  accessKeyId: 'AKIA5K7PWBWEHIKIBC6U',
+  secretAccessKey: "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",
+  region: 'us-east-1'
+});
+
+// Configure multer for file uploads
+const upload = multer();
+
+app.post('/aws/upload', upload.array('photos', 10), async (req, res) => {
+  try {
+   
+    const uploadedImageURLs = [];
+    //console.log("NodeJS Print"+JSON.stringify(req.files))
+    const promises = req.files.map(async (file) => {
+      //console.log("inside map fumction ****@@@" +file)
+      const params = {
+        Bucket: 'snektoawsbucket',
+        Key: `gb_ground/${uuidv4()}_${file.originalname}`,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+        ACL: 'public-read',
+      };
+
+     // console.log("Params" +JSON.stringify(params))
+      const data = await s3.upload(params).promise();
+      //console.log("Aws Location "+data.Location)
+      uploadedImageURLs.push(data.Location);
+    });
+    await Promise.all(promises);
+
+    let concatenatedString = "";
+    for (let i = 0; i < uploadedImageURLs.length; i++) {
+      concatenatedString += uploadedImageURLs[i];
+      if (i !== uploadedImageURLs.length - 1) {
+        concatenatedString += ', ';
+      }
+    }
+
+    //console.log("Concatenated Image URLs" +concatenatedString)
+    res.status(200).json({ imageURLs: uploadedImageURLs });
+
+    //Database Update Logic
+
+    // var con = dbConnection();
+    // con.connect();
+    //console.log('Connected to database.' +con);
+
+    //Data from the req parameters
+
+  
+
+  //   var GroundName = req.groundName;
+  //   var GroundImageURL = req.groundImageURL;
+  //   var GroundPhoneNumber = req.groundPhoneNumber;
+  //   var GroundWebsiteURL = req.groundWebsiteURL;
+  //   var ContactPersonDesignation = req.contactPersonDesignation;
+  //   var ContactPersonName = req.contactPersonName;
+  //   var ContactPersonMobileNumber = req.contactPersonMobileNumber;
+  //   var Email = req.email;
+  //   var Taluk = req.taluk;
+  //   var VillageName = req.villageName;
+  //   var City = req.city;
+  //   var State = req.state;
+  //   var Address = req.address;
+  //   var Country = req.country;
+  //   var Pincode = req.pincode;
+  //   var OperationalHours = req.operationalHours;
+  //   var ReligionSupported = req.religionSupported;
+  //   var Services = req.services;
+  //   var Facilities = req.facilities;
+  //   var Fees = req.fees;
+  //   var Procedures = req.procedures;
+  //   var Requirements = req.Requirements;
+  //   var UserReview = req.userReview;
+
+
+
+  //   var sql = "INSERT INTO GB_FuneralGround (GroundName, GroundImageURL, GroundPhoneNumber, GroundWebsiteURL, ContactPersonDesignation, ContactPersonName, ContactPersonMobileNumber, Email, Taluk, VillageName, City, State, Country, Address,Pincode, OperationalHours, ReligionSupported, Services, Facilities, Fees, Procedures, Requirements,UserReview) VALUES ('"+GroundName+"', '"+GroundImageURL+"','"+GroundPhoneNumber+"','"+GroundWebsiteURL+"','"+ContactPersonDesignation+"','"+ContactPersonName+"','"+ContactPersonMobileNumber+"','"+Email+"','"+Taluk+"','"+VillageName+"','"+City+"','"+State+"','"+Address+"','"+Country+"','"+Pincode+"','"+OperationalHours+"','"+ReligionSupported+"','"+Services+"','"+Facilities+"','"+Fees+"','"+Procedures+"','"+Requirements+"','"+UserReview+"')";  
+  //   con.query(sql, function (err, result) {  
+  //  //  if (err) throw err;  
+  //  if (err) console.log(err);
+  //   console.log("1 record inserted");  
+  //   });  
+  //   con.end();
+
+  //   res.status(200).json({ imageURLs: concatenatedString });
+
+
+  } catch (error) {
+    console.error('Error uploading images to AWS S3:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
+// AWS S3 Image Upload Logic Ends
+
+app.post("/gb/funeralground", (req, res) => {
+
+      //Database Update Logic
+      try
+      {
+      var con = dbConnection();
+      con.connect();
+      //console.log('Connected to database.' +con);
+  
+      //Data from the req parameters
+  
+   
+      console.log("Received Request at Node End : "+JSON.stringify (req.body))
+      var GroundName = req.body.groundName;
+      var GroundImageURL = req.body.groundPhotos;
+      var GroundPhoneNumber = req.body.groundPhoneNumber;
+      var GroundWebsiteURL = req.body.groundWebsiteURL;
+      var ContactPersonDesignation = req.body.contactPersonDesignation;
+      var ContactPersonName = req.body.contactPersonName;
+      var ContactPersonMobileNumber = req.body.contactPersonMobileNumber;
+      var Email = req.body.email;
+      var Taluk = req.body.taluk;
+      var VillageName = req.body.villageName;
+      var City = req.body.city;
+      var State = req.body.state;
+      var Address = req.body.address;
+      var Country = req.body.country;
+      var Pincode = req.body.pincode;
+      var OperationalHours = req.body.operationalHours;
+      var ReligionSupported = req.body.religionSupported;
+      var Services = req.body.services;
+      var Facilities = req.body.facilities;
+      var Fees = req.body.fees;
+      var Procedures = req.body.procedures;
+      var Requirements = req.body.requirements;
+      var UserReview = req.body.userReview;
+  
+  
+  
+      var sql = "INSERT INTO GB_FuneralGround (GroundName, GroundImageURL, GroundPhoneNumber, GroundWebsiteURL, ContactPersonDesignation, ContactPersonName, ContactPersonMobileNumber, Email, Taluk, VillageName, City, State, Country, Address,Pincode, OperationalHours, ReligionSupported, Services, Facilities, Fees, Procedures, Requirements,UserReview) VALUES ('"+GroundName+"', '"+GroundImageURL+"','"+GroundPhoneNumber+"','"+GroundWebsiteURL+"','"+ContactPersonDesignation+"','"+ContactPersonName+"','"+ContactPersonMobileNumber+"','"+Email+"','"+Taluk+"','"+VillageName+"','"+City+"','"+State+"','"+Address+"','"+Country+"','"+Pincode+"','"+OperationalHours+"','"+ReligionSupported+"','"+Services+"','"+Facilities+"','"+Fees+"','"+Procedures+"','"+Requirements+"','"+UserReview+"')";  
+      con.query(sql, function (err, result) {  
+     //  if (err) throw err;  
+     if (err) console.log(err);
+      console.log("1 record inserted");  
+      console.log("Result"+result.data);  
+      });  
+      con.end();
+  
+      res.status(200).json({ Status: "Data Upload completed Successfully" });
+  
+  
+    } catch (error) {
+      console.error('Error uploading data to AWS DB:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+
+});
+
+
 const options = {
   key: fs.readFileSync(path.join(__dirname,'cert', 'key.pem')),
   cert: fs.readFileSync(path.join(__dirname, 'cert', 'cert.pem'))
