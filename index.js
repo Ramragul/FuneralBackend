@@ -357,11 +357,11 @@ app.get("/api/test", (req, res) => {
 // });
 
 // Configure AWS S3
-const s3 = new AWS.S3({
-  accessKeyId: process.env.S3_ACCESS_KEY_ID,
-  secretAccessKey: process.env.s3.S3_SECRET_ACCESS_KEY ,
-  region: process.env.region
-});
+// const s3 = new AWS.S3({
+//   accessKeyId: process.env.S3_ACCESS_KEY_ID,
+//   secretAccessKey: process.env.s3.S3_SECRET_ACCESS_KEY ,
+//   region: process.env.region
+// });
 
 // Configure multer for file uploads
 const upload = multer();
@@ -515,8 +515,8 @@ app.post("/gb/funeralground", (req, res) => {
 
 
 const options = {
-  key: fs.readFileSync(path.join(__dirname,'cert', 'key.pem')),
-  cert: fs.readFileSync(path.join(__dirname, 'cert', 'cert.pem'))
+  key: fs.readFileSync(path.join(__dirname,'cert', 'privkey.pem')),
+  cert: fs.readFileSync(path.join(__dirname, 'cert', 'certificate.pem'))
 };
 const server = https.createServer(options,app);
 
@@ -524,3 +524,5 @@ const server = https.createServer(options,app);
   server.listen(PORT, () => {
   console.log(`Server listening on ${PORT}`);
 });
+
+
