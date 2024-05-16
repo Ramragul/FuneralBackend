@@ -351,9 +351,9 @@ app.get("/api/test", (req, res) => {
 
 // Configure AWS SDK with your credentials
 // AWS.config.update({
-//   accessKeyId: 'AKIA5K7PWBWEKE3JJZLS',
-//   secretAccessKey: 'X9L8elpbxInO6mJPKDU',
-//   region: 'us-east-1'
+//   accessKeyId: '****',
+//   secretAccessKey: '****',
+//   region: '****'
 // });
 
 // Configure AWS S3
