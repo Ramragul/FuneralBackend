@@ -358,9 +358,9 @@ app.get("/api/test", (req, res) => {
 
 // Configure AWS S3
 const s3 = new AWS.S3({
-  accessKeyId: 'AKIA5K7PWBWEHIKIBC6U',
-  secretAccessKey: "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",
-  region: 'us-east-1'
+  accessKeyId: process.env.S3_ACCESS_KEY_ID,
+  secretAccessKey: process.env.s3.S3_SECRET_ACCESS_KEY ,
+  region: process.env.region
 });
 
 // Configure multer for file uploads
