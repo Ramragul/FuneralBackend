@@ -19,6 +19,8 @@ const app = express();
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
+
+
 function dbConnection () {
   console.log("PORT NUMBER" +process.env.DATABASE_PORT)
   var connection = mysql.createConnection({
@@ -350,9 +352,10 @@ app.get("/api/test", (req, res) => {
 // AWS S3 Image Upload Logic Begins
 
 // Configure AWS S3
+
 const s3 = new AWS.S3({
   accessKeyId: process.env.S3_ACCESS_KEY_ID,
-  secretAccessKey: process.env.s3.S3_SECRET_ACCESS_KEY ,
+  secretAccessKey: process.env.S3_SECRET_ACCESS_KEY ,
   region: process.env.S3_REGION
 });
 
