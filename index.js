@@ -312,7 +312,7 @@ app.get("/api/test", (req, res) => {
     
        var con = dbConnection();
        con.connect();
-       console.log('Connected to database.' +con);
+       console.log('Connected to the database.' +con);
     
        
       
