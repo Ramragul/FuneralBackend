@@ -347,14 +347,7 @@ app.get("/api/test", (req, res) => {
        });
 
 
-// AWS S3 Image Upload Logic Begins 
-
-// Configure AWS SDK with your credentials
-// AWS.config.update({
-//   accessKeyId: '****',
-//   secretAccessKey: '******',
-//   region: '****'
-// });
+// AWS S3 Image Upload Logic Begins
 
 // Configure AWS S3
 const s3 = new AWS.S3({
