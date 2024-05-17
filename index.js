@@ -511,8 +511,8 @@ app.post("/gb/funeralground", (req, res) => {
 
 
 const options = {
-  key: fs.readFileSync(path.join(__dirname,'cert', 'privkey.pem')),
-  cert: fs.readFileSync(path.join(__dirname, 'cert', 'fullchain.pem'))
+  key: fs.readFileSync(path.join(__dirname,'cert', 'admee.in.key')),
+  cert: fs.readFileSync(path.join(__dirname, 'cert', 'admee_in.crt'))
 };
 const server = https.createServer(options,app);
 
