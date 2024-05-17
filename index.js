@@ -12,7 +12,7 @@ const multer = require('multer');
 const AWS = require('aws-sdk');
 const { v4: uuidv4 } = require('uuid');
 
-const PORT = process.env.PORT || 3002;
+const PORT = process.env.PORT || 3003;
 
 const app = express();
 
