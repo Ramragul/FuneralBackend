@@ -364,7 +364,7 @@ const upload = multer();
 
 app.post('/aws/upload', upload.array('photos', 10), async (req, res) => {
   try {
-   
+    console.log('INside AWS API S3_ACCESS_KEY_ID:'+ process.env.S3_ACCESS_KEY_ID);
     const uploadedImageURLs = [];
     //console.log("NodeJS Print"+JSON.stringify(req.files))
     const promises = req.files.map(async (file) => {
