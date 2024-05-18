@@ -392,7 +392,7 @@ app.post('/aws/upload', upload.array('photos', 10), async (req, res) => {
       }
     }
 
-    //console.log("Concatenated Image URLs" +concatenatedString)
+    console.log("Concatenated Image URLs" +concatenatedString)
     res.status(200).json({ imageURLs: uploadedImageURLs });
 
     //Database Update Logic
@@ -491,6 +491,61 @@ app.post("/gb/funeralground", (req, res) => {
   
   
       var sql = "INSERT INTO GB_FuneralGround (GroundName, GroundImageURL, GroundPhoneNumber, GroundWebsiteURL, ContactPersonDesignation, ContactPersonName, ContactPersonMobileNumber, Email, Taluk, VillageName, City, State, Country, Address,Pincode, OperationalHours, ReligionSupported, Services, Facilities, Fees, Procedures, Requirements,UserReview) VALUES ('"+GroundName+"', '"+GroundImageURL+"','"+GroundPhoneNumber+"','"+GroundWebsiteURL+"','"+ContactPersonDesignation+"','"+ContactPersonName+"','"+ContactPersonMobileNumber+"','"+Email+"','"+Taluk+"','"+VillageName+"','"+City+"','"+State+"','"+Address+"','"+Country+"','"+Pincode+"','"+OperationalHours+"','"+ReligionSupported+"','"+Services+"','"+Facilities+"','"+Fees+"','"+Procedures+"','"+Requirements+"','"+UserReview+"')";  
+      con.query(sql, function (err, result) {  
+     //  if (err) throw err;  
+     if (err) console.log(err);
+      console.log("1 record inserted");  
+      console.log("Result"+result.data);  
+      });  
+      con.end();
+  
+      res.status(200).json({ Status: "Data Upload completed Successfully" });
+  
+  
+    } catch (error) {
+      console.error('Error uploading data to AWS DB:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+
+});
+app.post("/admee/partner/registration", (req, res) => {
+
+    console.log("INSIDE NODE JS API Function")
+
+      //Database Update Logic
+      try
+      {
+      var con = dbConnection();
+      con.connect();
+      //console.log('Connected to database.' +con);
+  
+      //Data from the req parameters
+  
+   
+      console.log("Received Request at Node End : "+JSON.stringify (req.body))
+      var PartnerName = req.body.partnerName;
+      var PartnerImageURL = req.body.partnerPhotos;
+      var PartnerPhoneNumber = req.body.partnerPhoneNumber;
+      var PartnerType = req.body.partnerType;
+      var PartnerAdvertisementType = req.body.partnerAdvertisementType;
+      var PartnerAdvertisementCategory = req.body.partnerAdvertisementCategory;
+      var PartnerAvailability = req.body.partnerAvailability;
+      var Email = req.body.email;
+      var City = req.body.city;
+      var State = req.body.state;
+      var Address = req.body.address;
+      var Country = req.body.country;
+      var Pincode = req.body.pincode;
+      var AreaCoverage = req.body.areaCoverage;
+      var Landmark = req.body.landmark;
+      var ExpectedAmount = req.body.expectedAmount;
+      var Remarks = req.body.remarks;
+      
+  
+  
+  
+      var sql = "INSERT INTO ADMEE_PARTNER_REGISTRATION (PartnerName, PartnerImageURL, PartnerPhoneNumber, PartnerType, PartnerAdvertisementType, PartnerAdvertisementCategory,PartnerAvailability, Email, City, State, Country, Address,Pincode, AreaCoverage, Landmark, ExpectedAmount, Remarks) VALUES ('"+PartnerName+"', '"+PartnerImageURL+"','"+PartnerPhoneNumber+"','"+PartnerType+"','"+PartnerAdvertisementType+"','"+PartnerAdvertisementCategory+"','"+PartnerAvailability+"','"+Email+"','"+City+"','"+State+"','"+Country+"','"+Address+"','"+Pincode+"','"+AreaCoverage+"','"+Landmark+"','"+ExpectedAmount+"','"+Remarks+"')";  
+      Console.log("Inside api from node boss");
       con.query(sql, function (err, result) {  
      //  if (err) throw err;  
      if (err) console.log(err);
