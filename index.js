@@ -510,7 +510,6 @@ app.post("/gb/funeralground", (req, res) => {
 });
 app.post("/admee/partner/registration", (req, res) => {
 
-    console.log("INSIDE NODE JS API Function")
 
       //Database Update Logic
       try
@@ -545,7 +544,6 @@ app.post("/admee/partner/registration", (req, res) => {
   
   
       var sql = "INSERT INTO ADMEE_PARTNER_REGISTRATION (PartnerName, PartnerImageURL, PartnerPhoneNumber, PartnerType, PartnerAdvertisementType, PartnerAdvertisementCategory,PartnerAvailability, Email, City, State, Country, Address,Pincode, AreaCoverage, Landmark, ExpectedAmount, Remarks) VALUES ('"+PartnerName+"', '"+PartnerImageURL+"','"+PartnerPhoneNumber+"','"+PartnerType+"','"+PartnerAdvertisementType+"','"+PartnerAdvertisementCategory+"','"+PartnerAvailability+"','"+Email+"','"+City+"','"+State+"','"+Country+"','"+Address+"','"+Pincode+"','"+AreaCoverage+"','"+Landmark+"','"+ExpectedAmount+"','"+Remarks+"')";  
-      Console.log("Inside api from node boss");
       con.query(sql, function (err, result) {  
      //  if (err) throw err;  
      if (err) console.log(err);
