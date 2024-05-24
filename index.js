@@ -568,7 +568,7 @@ app.post("/admee/partner/registration", (req, res) => {
 
 // Get Design Catalogue API
 
-app.get('api/cc/designcatalogue',(req,res) => {
+app.get('/api/cc/designcatalogue',(req,res) => {
 
   var connection = dbConnection();
   
