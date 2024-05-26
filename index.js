@@ -574,13 +574,20 @@ app.get('/api/cc/designcatalogue',(req,res) => {
   
    connection.connect();
 
-   
-     //console.log('Connected to database.' +connection);
+   const category = req.query.category;
+
+   console.log("Category" +category)
  
      let query = 'SELECT * FROM CC_DesignCatalogue';
-     connection.query (query,(err,data) => {
+
+     if(category)
+     {
+      query += ' WHERE ProductCategory = ?'
+     }
+
+     connection.query (query,[category],(err,data) => {
        if(err) throw err;
-       console.log(data)
+       //console.log(data)
        res.json({data})
      })
      connection.end();
