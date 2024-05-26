@@ -588,6 +588,28 @@ app.get('/api/cc/designcatalogue',(req,res) => {
    });
 
 
+// Get Catalogue Categories
+
+app.get('/api/cc/categories',(req,res) => {
+
+  var connection = dbConnection();
+  
+   connection.connect();
+
+   
+     //console.log('Connected to database.' +connection);
+ 
+     let query = 'SELECT * FROM CC_CatalogueCategory';
+     connection.query (query,(err,data) => {
+       if(err) throw err;
+       console.log(data)
+       res.json({data})
+     })
+     connection.end();
+     //console.log("Connection Ended ")
+   });
+
+
 
 const options = {
   key: fs.readFileSync(path.join(__dirname,'cert', 'admee.in.key')),
