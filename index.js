@@ -568,31 +568,76 @@ app.post("/admee/partner/registration", (req, res) => {
 
 // Get Design Catalogue API
 
-app.get('/api/cc/designcatalogue',(req,res) => {
+// app.get('/api/cc/designcatalogue',(req,res) => {
 
+//   var connection = dbConnection();
+  
+//    connection.connect();
+
+//    const category = req.query.category;
+
+//    console.log("Category" +category)
+ 
+//      let query = 'SELECT * FROM CC_DesignCatalogue';
+
+//      if(category)
+//      {
+//       query += ' WHERE ProductCategory = ?'
+//      }
+
+//      connection.query (query,[category],(err,data) => {
+//        if(err) throw err;
+//        //console.log(data)
+//        res.json({data})
+//      })
+//      connection.end();
+//      //console.log("Connection Ended ")
+//    });
+
+
+app.get('/api/cc/designcatalogue', (req, res) => {
   var connection = dbConnection();
   
-   connection.connect();
+  connection.connect();
 
-   const category = req.query.category;
+  const category = req.query.category;
+  const occasion = req.query.occasion;
 
-   console.log("Category" +category)
- 
-     let query = 'SELECT * FROM CC_DesignCatalogue';
+  console.log("Category: " + category);
+  console.log("Occasion: " + occasion);
 
-     if(category)
-     {
-      query += ' WHERE ProductCategory = ?'
-     }
+  let query = 'SELECT * FROM CC_DesignCatalogue';
+  let queryParams = [];
 
-     connection.query (query,[category],(err,data) => {
-       if(err) throw err;
-       //console.log(data)
-       res.json({data})
-     })
-     connection.end();
-     //console.log("Connection Ended ")
-   });
+  if (category || occasion) {
+    query += ' WHERE';
+
+    if (category) {
+      query += ' ProductCategory = ?';
+      queryParams.push(category);
+    }
+
+    if (category && occasion) {
+      query += ' AND';
+    }
+
+    if (occasion) {
+      query += ' FIND_IN_SET(?, ProductUsageCategory)';
+      queryParams.push(occasion);
+    }
+  }
+
+  connection.query(query, queryParams, (err, data) => {
+    if (err) {
+      console.error('Error executing query:', err);
+      res.status(500).json({ error: 'Internal Server Error' });
+      return;
+    }
+    res.json({ data });
+  });
+
+  connection.end();
+});
 
 
 // Get Catalogue Categories
