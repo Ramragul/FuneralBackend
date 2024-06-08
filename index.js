@@ -606,7 +606,7 @@ app.get('/api/cc/designcatalogue', (req, res) => {
   console.log("Category: " + category);
   console.log("Occasion: " + occasion);
 
-  let query = 'SELECT * FROM CC_DesignCatalogue';
+  let query = 'SELECT * FROM CC_ProductMaster';
   let queryParams = [];
 
   if (category || occasion) {
