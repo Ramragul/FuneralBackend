@@ -618,7 +618,7 @@ app.get('/api/cc/designcatalogue', (req, res) => {
     }
 
     if (occasion) {
-      query += ' FIND_IN_SET(?, ProductUsageCategory)';
+      query += ' FIND_IN_SET(?, ProductUsageOccasion)';
       queryParams.push(occasion);
     }
   }
