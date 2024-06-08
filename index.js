@@ -11,6 +11,7 @@ const path = require('path')  ;
 const multer = require('multer');
 const AWS = require('aws-sdk');
 const { v4: uuidv4 } = require('uuid');
+const sharp = require('sharp');
 
 const PORT = process.env.PORT || 3003;
 
