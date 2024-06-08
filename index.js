@@ -353,35 +353,77 @@ app.get("/api/test", (req, res) => {
 
 // Configure AWS S3
 
-const s3 = new AWS.S3({
-  accessKeyId: process.env.S3_ACCESS_KEY_ID,
-  secretAccessKey: process.env.S3_SECRET_ACCESS_KEY ,
-  region: process.env.S3_REGION
-});
+// const s3 = new AWS.S3({
+//   accessKeyId: process.env.S3_ACCESS_KEY_ID,
+//   secretAccessKey: process.env.S3_SECRET_ACCESS_KEY ,
+//   region: process.env.S3_REGION
+// });
 
-// Configure multer for file uploads
-const upload = multer();
+// // Configure multer for file uploads
+// const upload = multer();
+
+// app.post('/aws/upload', upload.array('photos', 10), async (req, res) => {
+//   try {
+//     console.log('INside AWS API S3_ACCESS_KEY_ID:'+ process.env.S3_ACCESS_KEY_ID);
+//     const uploadedImageURLs = [];
+//     const promises = req.files.map(async (file) => {   
+//       const params = {
+//         Bucket: 'snektoawsbucket',
+//         Key: `gb_ground/${uuidv4()}_${file.originalname}`,
+//         Body: file.buffer,
+//         ContentType: file.mimetype,
+//         ACL: 'public-read',
+//       };
+
+//       const data = await s3.upload(params).promise();      
+//       uploadedImageURLs.push(data.Location);
+//     });
+//     await Promise.all(promises);
+
+//     let concatenatedString = "";
+//     for (let i = 0; i < uploadedImageURLs.length; i++) {
+//       concatenatedString += uploadedImageURLs[i];
+//       if (i !== uploadedImageURLs.length - 1) {
+//         concatenatedString += ', ';
+//       }
+//     }
+
+//     console.log("Concatenated Image URLs" +concatenatedString)
+//     res.status(200).json({ imageURLs: uploadedImageURLs });
+
+//   } catch (error) {
+//     console.error('Error uploading images to AWS S3:', error);
+//     res.status(500).json({ error: 'Internal Server Error' });
+//   }
+// });
+
 
 app.post('/aws/upload', upload.array('photos', 10), async (req, res) => {
   try {
-    console.log('INside AWS API S3_ACCESS_KEY_ID:'+ process.env.S3_ACCESS_KEY_ID);
     const uploadedImageURLs = [];
-    //console.log("NodeJS Print"+JSON.stringify(req.files))
+
     const promises = req.files.map(async (file) => {
-      //console.log("inside map fumction ****@@@" +file)
+      // Resize and compress the image using sharp
+      const resizedBuffer = await sharp(file.buffer)
+        .resize(800, 800, {
+          fit: sharp.fit.inside,
+          withoutEnlargement: true
+        })
+        .toFormat('jpeg', { quality: 80 })
+        .toBuffer();
+
       const params = {
         Bucket: 'snektoawsbucket',
         Key: `gb_ground/${uuidv4()}_${file.originalname}`,
-        Body: file.buffer,
-        ContentType: file.mimetype,
+        Body: resizedBuffer,
+        ContentType: 'image/jpeg', // assuming the output is JPEG
         ACL: 'public-read',
       };
 
-     // console.log("Params" +JSON.stringify(params))
       const data = await s3.upload(params).promise();
-      //console.log("Aws Location "+data.Location)
       uploadedImageURLs.push(data.Location);
     });
+
     await Promise.all(promises);
 
     let concatenatedString = "";
@@ -392,55 +434,8 @@ app.post('/aws/upload', upload.array('photos', 10), async (req, res) => {
       }
     }
 
-    console.log("Concatenated Image URLs" +concatenatedString)
+    console.log("Concatenated Image URLs: " + concatenatedString);
     res.status(200).json({ imageURLs: uploadedImageURLs });
-
-    //Database Update Logic
-
-    // var con = dbConnection();
-    // con.connect();
-    //console.log('Connected to database.' +con);
-
-    //Data from the req parameters
-
-  
-
-  //   var GroundName = req.groundName;
-  //   var GroundImageURL = req.groundImageURL;
-  //   var GroundPhoneNumber = req.groundPhoneNumber;
-  //   var GroundWebsiteURL = req.groundWebsiteURL;
-  //   var ContactPersonDesignation = req.contactPersonDesignation;
-  //   var ContactPersonName = req.contactPersonName;
-  //   var ContactPersonMobileNumber = req.contactPersonMobileNumber;
-  //   var Email = req.email;
-  //   var Taluk = req.taluk;
-  //   var VillageName = req.villageName;
-  //   var City = req.city;
-  //   var State = req.state;
-  //   var Address = req.address;
-  //   var Country = req.country;
-  //   var Pincode = req.pincode;
-  //   var OperationalHours = req.operationalHours;
-  //   var ReligionSupported = req.religionSupported;
-  //   var Services = req.services;
-  //   var Facilities = req.facilities;
-  //   var Fees = req.fees;
-  //   var Procedures = req.procedures;
-  //   var Requirements = req.Requirements;
-  //   var UserReview = req.userReview;
-
-
-
-  //   var sql = "INSERT INTO GB_FuneralGround (GroundName, GroundImageURL, GroundPhoneNumber, GroundWebsiteURL, ContactPersonDesignation, ContactPersonName, ContactPersonMobileNumber, Email, Taluk, VillageName, City, State, Country, Address,Pincode, OperationalHours, ReligionSupported, Services, Facilities, Fees, Procedures, Requirements,UserReview) VALUES ('"+GroundName+"', '"+GroundImageURL+"','"+GroundPhoneNumber+"','"+GroundWebsiteURL+"','"+ContactPersonDesignation+"','"+ContactPersonName+"','"+ContactPersonMobileNumber+"','"+Email+"','"+Taluk+"','"+VillageName+"','"+City+"','"+State+"','"+Address+"','"+Country+"','"+Pincode+"','"+OperationalHours+"','"+ReligionSupported+"','"+Services+"','"+Facilities+"','"+Fees+"','"+Procedures+"','"+Requirements+"','"+UserReview+"')";  
-  //   con.query(sql, function (err, result) {  
-  //  //  if (err) throw err;  
-  //  if (err) console.log(err);
-  //   console.log("1 record inserted");  
-  //   });  
-  //   con.end();
-
-  //   res.status(200).json({ imageURLs: concatenatedString });
-
 
   } catch (error) {
     console.error('Error uploading images to AWS S3:', error);
