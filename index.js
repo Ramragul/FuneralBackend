@@ -353,14 +353,14 @@ app.get("/api/test", (req, res) => {
 
 // Configure AWS S3
 
-// const s3 = new AWS.S3({
-//   accessKeyId: process.env.S3_ACCESS_KEY_ID,
-//   secretAccessKey: process.env.S3_SECRET_ACCESS_KEY ,
-//   region: process.env.S3_REGION
-// });
+const s3 = new AWS.S3({
+  accessKeyId: process.env.S3_ACCESS_KEY_ID,
+  secretAccessKey: process.env.S3_SECRET_ACCESS_KEY ,
+  region: process.env.S3_REGION
+});
 
-// // Configure multer for file uploads
-// const upload = multer();
+// Configure multer for file uploads
+const upload = multer();
 
 // app.post('/aws/upload', upload.array('photos', 10), async (req, res) => {
 //   try {
