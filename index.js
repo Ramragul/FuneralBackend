@@ -695,7 +695,7 @@ app.get('/api/cc/categories',(req,res) => {
    
      //console.log('Connected to database.' +connection);
  
-     let query = 'SELECT * FROM CC_CatalogueCategory';
+     let query = 'SELECT * FROM CC_ProductCategory';
      connection.query (query,(err,data) => {
        if(err) throw err;
        console.log(data)
