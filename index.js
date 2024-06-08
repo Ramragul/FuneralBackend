@@ -657,6 +657,7 @@ app.post("/api/cc/designcatalogue", (req, res) => {
   var ProductUsageOccasion = req.body.productUsageOccasion;
   var ProductOrigin = req.body.productOrigin;
   var ProductCategory = req.body.productCategory;
+  var ProductCategoryID = req.body.productCategoryID
   var ProductPriceBand = req.body.productPriceBand;
   var ProductPrice = req.body.productPrice;
   var Remarks = req.body.remarks;
@@ -664,7 +665,7 @@ app.post("/api/cc/designcatalogue", (req, res) => {
 
 
 
-  var sql = "INSERT INTO CC_ProductMaster (ProductName, ProductImageURL, ProductUsageGender, ProductUsageOccasion, ProductOrigin, ProductCategory,ProductPriceBand, ProductPrice,Remarks) VALUES ('"+ProductName+"', '"+ProductImageURL+"','"+ProductUsageGender+"','"+ProductUsageOccasion+"','"+ProductOrigin+"','"+ProductCategory+"','"+ProductPriceBand+"','"+ProductPrice+"','"+Remarks+"')";  
+  var sql = "INSERT INTO CC_ProductMaster (ProductName, ProductImageURL, ProductUsageGender, ProductUsageOccasion, ProductOrigin, ProductCategory,ProductCategoryID,ProductPriceBand, ProductPrice,Remarks) VALUES ('"+ProductName+"', '"+ProductImageURL+"','"+ProductUsageGender+"','"+ProductUsageOccasion+"','"+ProductOrigin+"','"+ProductCategory+"','"+ProductCategoryID+"','"+ProductPriceBand+"','"+ProductPrice+"','"+Remarks+"')";  
   con.query(sql, function (err, result) {  
  //  if (err) throw err;  
  if (err) console.log(err);
