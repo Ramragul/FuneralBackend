@@ -722,7 +722,7 @@ app.post("/api/cc/rental/product/upload", (req, res) => {
  //  if (err) throw err;  
  if (err) console.log(err);
   console.log("1 record inserted");  
-  console.log("Result"+result.data);  
+ // console.log("Result"+result.data);  
   });  
   con.end();
 
