@@ -685,6 +685,57 @@ app.post("/api/cc/designcatalogue", (req, res) => {
 });
 
 
+// Post Rentail Products Master Table 
+
+app.post("/api/cc/rental/master", (req, res) => {
+
+
+  //Database Update Logic
+  try
+  {
+  var con = dbConnection();
+  con.connect();
+  //console.log('Connected to database.' +con);
+
+  //Data from the req parameters
+
+
+  console.log("Received Request at Node End : "+JSON.stringify (req.body))
+  var ProductName = req.body.productName;
+  var ProductImageURL = req.body.productImageURL;
+  var ProductUsageGender = req.body.productUsageGender;
+  var ProductUsageOccasion = req.body.productUsageOccasion;
+  var ProductOrigin = req.body.productOrigin;
+  var ProductCategory = req.body.productCategory;
+  //var ProductCategoryID = req.body.productCategoryID
+  var ProductPriceBand = req.body.productPriceBand;
+  var ProductPrice = req.body.productPrice;
+  var ProductRentalPrice = req.body.productRentalPrice
+  var ProductAvailability = req.body.productavailability
+  var Remarks = req.body.remarks;
+  
+
+
+
+  var sql = "INSERT INTO CC_RentalProductMaster (ProductName, ProductImageURL, ProductUsageGender, ProductUsageOccasion, ProductOrigin, ProductCategory,ProductPriceBand, ProductPrice,ProductRentalPrice,ProductAvailability,Remarks) VALUES ('"+ProductName+"', '"+ProductImageURL+"','"+ProductUsageGender+"','"+ProductUsageOccasion+"','"+ProductOrigin+"','"+ProductCategory+"','"+ProductPriceBand+"','"+ProductPrice+"','"+ProductRentalPrice+"','"+ProductAvailability+"','"+Remarks+"')";  
+  con.query(sql, function (err, result) {  
+ //  if (err) throw err;  
+ if (err) console.log(err);
+  console.log("1 record inserted");  
+  console.log("Result"+result.data);  
+  });  
+  con.end();
+
+  res.status(200).json({ Status: "Data Upload completed Successfully" });
+
+
+} catch (error) {
+  console.error('Error uploading data to AWS DB:', error);
+  res.status(500).json({ error: 'Internal Server Error' });
+}
+
+});
+
 // Get Catalogue Categories
 
 app.get('/api/cc/categories',(req,res) => {
