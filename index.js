@@ -710,14 +710,14 @@ app.post("/api/cc/rental/product/upload", (req, res) => {
   //var ProductCategoryID = req.body.productCategoryID
   var ProductPriceBand = req.body.productPriceBand;
   var ProductPrice = req.body.productPrice;
-  var ProductRentalPrice = req.body.productRentalPrice
-  var ProductAvailability = req.body.productAvailability
+  //var ProductRentalPrice = req.body.productRentalPrice
+  //var ProductAvailability = req.body.productAvailability
   var Remarks = req.body.remarks;
   
 
 
 
-  var sql = "INSERT INTO CC_RentalProductMaster (ProductName, ProductImageURL, ProductUsageGender, ProductUsageOccasion, ProductOrigin, ProductCategory,ProductPriceBand, ProductPrice,ProductRentalPrice,ProductAvailability,Remarks) VALUES ('"+ProductName+"', '"+ProductImageURL+"','"+ProductUsageGender+"','"+ProductUsageOccasion+"','"+ProductOrigin+"','"+ProductCategory+"','"+ProductPriceBand+"','"+ProductPrice+"','"+ProductRentalPrice+"','"+ProductAvailability+"','"+Remarks+"')";  
+  var sql = "INSERT INTO CC_RentalProductMaster (ProductName, ProductImageURL, ProductUsageGender, ProductUsageOccasion, ProductOrigin, ProductCategory,ProductPriceBand, ProductPrice,Remarks) VALUES ('"+ProductName+"', '"+ProductImageURL+"','"+ProductUsageGender+"','"+ProductUsageOccasion+"','"+ProductOrigin+"','"+ProductCategory+"','"+ProductPriceBand+"','"+ProductPrice+"','"+Remarks+"')";  
   con.query(sql, function (err, result) {  
  //  if (err) throw err;  
  if (err) console.log(err);
