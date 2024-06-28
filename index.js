@@ -685,7 +685,7 @@ app.post("/api/cc/designcatalogue", (req, res) => {
 });
 
 
-// Post Rentail Products Master Table 
+// POST Rental Master Table Data Upload api 
 
 app.post("/api/cc/rental/master", (req, res) => {
 
