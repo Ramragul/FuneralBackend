@@ -687,7 +687,7 @@ app.post("/api/cc/designcatalogue", (req, res) => {
 
 // POST Rental Master Table Data Upload api 
 
-app.post("/api/cc/rental/master", (req, res) => {
+app.post("/api/cc/rental/product/upload", (req, res) => {
 
 
   //Database Update Logic
