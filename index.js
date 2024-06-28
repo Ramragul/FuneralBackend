@@ -718,7 +718,7 @@ app.post("/api/cc/rental/product/upload", (req, res) => {
  
  
    var sql = "INSERT INTO CC_RentalProductMaster (ProductName, ProductImageURL, ProductUsageGender, ProductUsageOccasion, ProductOrigin, ProductCategory,ProductPriceBand, ProductPrice,ProductRentalPrice,ProductAvailability,Remarks) VALUES ('"+ProductName+"', '"+ProductImageURL+"','"+ProductUsageGender+"','"+ProductUsageOccasion+"','"+ProductOrigin+"','"+ProductCategory+"','"+ProductPriceBand+"','"+ProductPrice+"','"+ProductRentalPrice+"','"+ProductAvailability+"','"+Remarks+"')";  
-                          CC_RentalProductMaster
+                          
    con.query(sql, function (err, result) {  
   //  if (err) throw err;  
   if (err) console.log(err);
