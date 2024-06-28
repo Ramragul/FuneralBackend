@@ -711,7 +711,7 @@ app.post("/api/cc/rental/product/upload", (req, res) => {
   var ProductPriceBand = req.body.productPriceBand;
   var ProductPrice = req.body.productPrice;
   var ProductRentalPrice = req.body.productRentalPrice
-  var ProductAvailability = req.body.productavailability
+  var ProductAvailability = req.body.productAvailability
   var Remarks = req.body.remarks;
   
 
