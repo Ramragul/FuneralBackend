@@ -591,6 +591,8 @@ app.post("/admee/partner/registration", (req, res) => {
 //    });
 
 
+// GET Tailoring Product Data
+
 app.get('/api/cc/designcatalogue', (req, res) => {
   var connection = dbConnection();
   
@@ -635,7 +637,7 @@ app.get('/api/cc/designcatalogue', (req, res) => {
   connection.end();
 });
 
-// Post Design Catalogues
+// POST Tailoring Data Upload
 
 app.post("/api/cc/designcatalogue", (req, res) => {
 
@@ -682,6 +684,52 @@ app.post("/api/cc/designcatalogue", (req, res) => {
   res.status(500).json({ error: 'Internal Server Error' });
 }
 
+});
+
+// GET Rental Master Table Data Upload api
+
+app.get('/api/cc/rental/product', (req, res) => {
+  var connection = dbConnection();
+  
+  connection.connect();
+
+  const category = req.query.category;
+  const occasion = req.query.occasion;
+
+  console.log("Category: " + category);
+  console.log("Occasion: " + occasion);
+
+  let query = 'SELECT * FROM CC_RentalProductMaster';
+  let queryParams = [];
+
+  if (category || occasion) {
+    query += ' WHERE';
+
+    if (category) {
+      query += ' ProductCategory = ?';
+      queryParams.push(category);
+    }
+
+    if (category && occasion) {
+      query += ' AND';
+    }
+
+    if (occasion) {
+      query += ' FIND_IN_SET(?, ProductUsageOccasion)';
+      queryParams.push(occasion);
+    }
+  }
+
+  connection.query(query, queryParams, (err, data) => {
+    if (err) {
+      console.error('Error executing query:', err);
+      res.status(500).json({ error: 'Internal Server Error' });
+      return;
+    }
+    res.json({ data });
+  });
+
+  connection.end();
 });
 
 
