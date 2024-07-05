@@ -15,13 +15,13 @@ const sharp = require('sharp');
 
 
 // Twilio Imports 
-const twilio = require('twilio');
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
-const dotenv = require('dotenv');
+// const twilio = require('twilio');
+// const jwt = require('jsonwebtoken');
+// const bcrypt = require('bcryptjs');
+// const dotenv = require('dotenv');
 
-dotenv.config();
-const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+// dotenv.config();
+// const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
 const PORT = process.env.PORT || 3003;
 
@@ -820,32 +820,32 @@ app.get('/api/cc/categories',(req,res) => {
 
    // CC Auth and Send OTP To Mobile
 
-   app.post('/api/sendOTP', async (req, res) => {
-    const { mobileNumber } = req.body;
-    try {
-      const otp = Math.floor(1000 + Math.random() * 9000); // Generate random 4-digit OTP
-      const message = await client.messages.create({
-        body: `Your OTP for login is: ${otp}`,
-        from: process.env.TWILIO_PHONE_NUMBER,
-        to: mobileNumber
-      });
-      res.status(200).json({ message: 'OTP sent successfully', otp }); // For testing purposes only
-    } catch (err) {
-      console.error('Error sending OTP:', err);
-      res.status(500).json({ message: 'Failed to send OTP' });
-    }
-  });
+  //  app.post('/api/sendOTP', async (req, res) => {
+  //   const { mobileNumber } = req.body;
+  //   try {
+  //     const otp = Math.floor(1000 + Math.random() * 9000); // Generate random 4-digit OTP
+  //     const message = await client.messages.create({
+  //       body: `Your OTP for login is: ${otp}`,
+  //       from: process.env.TWILIO_PHONE_NUMBER,
+  //       to: mobileNumber
+  //     });
+  //     res.status(200).json({ message: 'OTP sent successfully', otp }); // For testing purposes only
+  //   } catch (err) {
+  //     console.error('Error sending OTP:', err);
+  //     res.status(500).json({ message: 'Failed to send OTP' });
+  //   }
+  // });
   
   // Route to verify OTP
-  app.post('/api/verifyOTP', async (req, res) => {
-    const { otp, receivedOTP, mobileNumber } = req.body;
-    if (otp === receivedOTP) {
-      const token = jwt.sign({ mobileNumber }, process.env.JWT_SECRET, { expiresIn: '1h' });
-      res.status(200).json({ message: 'OTP verified successfully', token });
-    } else {
-      res.status(401).json({ message: 'Incorrect OTP' });
-    }
-  });
+  // app.post('/api/verifyOTP', async (req, res) => {
+  //   const { otp, receivedOTP, mobileNumber } = req.body;
+  //   if (otp === receivedOTP) {
+  //     const token = jwt.sign({ mobileNumber }, process.env.JWT_SECRET, { expiresIn: '1h' });
+  //     res.status(200).json({ message: 'OTP verified successfully', token });
+  //   } else {
+  //     res.status(401).json({ message: 'Incorrect OTP' });
+  //   }
+  // });
 
 
 
