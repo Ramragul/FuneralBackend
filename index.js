@@ -1,6 +1,6 @@
 // server/index.js
 
-require("dotenv").config();
+//require("dotenv").config();
 const express = require("express");
 const https = require('https');
 const fs = require('fs');
@@ -11,17 +11,29 @@ const path = require('path')  ;
 const multer = require('multer');
 const AWS = require('aws-sdk');
 const { v4: uuidv4 } = require('uuid');
-const sharp = require('sharp');
+// const sharp = require('sharp');
 
 
 // Twilio Imports 
-// const twilio = require('twilio');
-// const jwt = require('jsonwebtoken');
-// const bcrypt = require('bcryptjs');
-// const dotenv = require('dotenv');
+const twilio = require('twilio');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+ const dotenv = require('dotenv');
 
-// dotenv.config();
-// const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+dotenv.config();
+
+//Send OTP Logic Begins
+
+ const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+
+ const otpStore = new Map();
+
+// Generate a random OTP
+const generateOTP = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+// Send OTP Logic Ends
 
 const PORT = process.env.PORT || 3003;
 
@@ -818,34 +830,91 @@ app.get('/api/cc/categories',(req,res) => {
    });
 
 
-   // CC Auth and Send OTP To Mobile
+   // CC Login 
 
-  //  app.post('/api/sendOTP', async (req, res) => {
-  //   const { mobileNumber } = req.body;
-  //   try {
-  //     const otp = Math.floor(1000 + Math.random() * 9000); // Generate random 4-digit OTP
-  //     const message = await client.messages.create({
-  //       body: `Your OTP for login is: ${otp}`,
-  //       from: process.env.TWILIO_PHONE_NUMBER,
-  //       to: mobileNumber
-  //     });
-  //     res.status(200).json({ message: 'OTP sent successfully', otp }); // For testing purposes only
-  //   } catch (err) {
-  //     console.error('Error sending OTP:', err);
-  //     res.status(500).json({ message: 'Failed to send OTP' });
-  //   }
-  // });
+   app.post('/login', (req, res) => {
+    const { username, password } = req.body;
+
+    const users = [
+      { username: 'Ram', password: '1234' },
+      { username: 'Rahul', password: '4321' },
+    ];
   
-  // Route to verify OTP
-  // app.post('/api/verifyOTP', async (req, res) => {
-  //   const { otp, receivedOTP, mobileNumber } = req.body;
-  //   if (otp === receivedOTP) {
-  //     const token = jwt.sign({ mobileNumber }, process.env.JWT_SECRET, { expiresIn: '1h' });
-  //     res.status(200).json({ message: 'OTP verified successfully', token });
-  //   } else {
-  //     res.status(401).json({ message: 'Incorrect OTP' });
-  //   }
-  // });
+    // Simple validation
+    if (!username || !password) {
+      return res.status(400).json({ message: 'Username and password are required' });
+    }
+  
+    // Check if user exists and password matches (replace with actual database lookup)
+    const user = users.find(u => u.username === username && u.password === password);
+  
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+  
+    // Mock generating a token (replace with actual token generation logic)
+    const token = 'mock-access-token';
+  
+    // Ideally, you would set a session or return a token here for subsequent authenticated requests
+    res.json({ token }); // You might also return user data here
+  });
+
+   // CC Order Creation API
+
+   app.post("/api/cc/order", (req, res) => {
+
+
+    //Database Update Logic
+    // try
+    // {
+    //var con = dbConnection();
+    //con.connect();
+    //console.log('Connected to database.' +con);
+  
+    //Data from the req parameters
+  
+  
+    console.log("Received Request at Node End : "+JSON.stringify (req.body))
+    // var ProductName = req.body.productName;
+    // var ProductBrandName = req.body.productBrandName;
+    // var ProductImageURL = req.body.productImageURL;
+    // var ProductUsageGender = req.body.productUsageGender;
+    // var ProductUsageOccasion = req.body.productUsageOccasion;
+    // var ProductOrigin = req.body.productOrigin;
+    // var ProductCategory = req.body.productCategory;
+    //var ProductCategoryID = req.body.productCategoryID
+    // var ProductPriceBand = req.body.productPriceBand;
+    // var ProductPrice = req.body.productPrice;
+    // var ProductPurchasePrice = req.body.productPurchasePrice;
+    // var ProductAvailability = req.body.productAvailability;
+    // var Remarks = req.body.remarks;
+    
+  
+  
+  
+    //var sql = "INSERT INTO CC_RentalProductMaster (ProductName,ProductBrandName, ProductImageURL, ProductUsageGender, ProductUsageOccasion, ProductOrigin, ProductCategory,ProductPriceBand, ProductPrice,ProductPurchasePrice,ProductAvailability,Remarks) VALUES ('"+ProductName+"','"+ProductBrandName+"', '"+ProductImageURL+"','"+ProductUsageGender+"','"+ProductUsageOccasion+"','"+ProductOrigin+"','"+ProductCategory+"','"+ProductPriceBand+"','"+ProductPrice+"','"+ProductPurchasePrice+"','"+ProductAvailability+"','"+Remarks+"')";  
+                           
+  //   con.query(sql, function (err, result) {  
+  //  //  if (err) throw err;  
+  //  if (err) console.log(err);
+  //   console.log("1 record inserted");  
+  //   console.log("Result"+result.data);  
+  //   });  
+    //con.end();
+  
+    res.status(200).json({ Status: "Data Upload completed Successfully" });
+  
+  
+  // } catch (error) {
+  //   console.error('Error uploading data to AWS DB:', error);
+  //   res.status(500).json({ error: 'Internal Server Error' });
+  // }
+ 
+ });
+
+
+
+
 
 
 
