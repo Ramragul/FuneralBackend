@@ -15,16 +15,16 @@ const { v4: uuidv4 } = require('uuid');
 
 
 // Twilio Imports 
-const twilio = require('twilio');
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
- const dotenv = require('dotenv');
+// const twilio = require('twilio');
+// const jwt = require('jsonwebtoken');
+// const bcrypt = require('bcryptjs');
+//  const dotenv = require('dotenv');
 
-dotenv.config();
+// dotenv.config();
 
 //Send OTP Logic Begins
 
- const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+ //const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
  const otpStore = new Map();
 
@@ -874,7 +874,7 @@ app.get('/api/cc/categories',(req,res) => {
     //Data from the req parameters
   
   
-    console.log("Received Request at Node End : "+JSON.stringify (req.body))
+    console.log("Received Request at Node App: "+JSON.stringify (req.body))
     // var ProductName = req.body.productName;
     // var ProductBrandName = req.body.productBrandName;
     // var ProductImageURL = req.body.productImageURL;
