@@ -6,7 +6,7 @@ const https = require('https');
 const fs = require('fs');
 const cors = require("cors");
 const bodyParser = require("body-parser");
-var mysql = require('mysql');
+var mysql = require('mysql2');
 const path = require('path')  ;
 const multer = require('multer');
 const AWS = require('aws-sdk');
@@ -18,9 +18,9 @@ const { v4: uuidv4 } = require('uuid');
 // const twilio = require('twilio');
 // const jwt = require('jsonwebtoken');
 // const bcrypt = require('bcryptjs');
-//  const dotenv = require('dotenv');
+  const dotenv = require('dotenv');
 
-// dotenv.config();
+ dotenv.config();
 
 //Send OTP Logic Begins
 
@@ -47,6 +47,7 @@ app.use(bodyParser.json());
 function dbConnection () {
   console.log("PORT NUMBER" +process.env.DATABASE_PORT)
   var connection = mysql.createConnection({
+  
     //host     : "smartdisplay.cj0ybsa00pzb.ap-northeast-1.rds.amazonaws.com",
     host     : process.env.DATABASE_URL,
     user     : process.env.DATABASE_USERNAME,
@@ -361,12 +362,12 @@ app.get("/api/test", (req, res) => {
        
          console.log('Connected to the database.' +connection);
      
-         let query = 'SELECT * FROM Persons';
-         connection.query (query,(err,data) => {
-           if(err) throw err;
-           console.log(data)
-           res.json({data})
-         })
+        //  let query = 'SELECT * FROM CC_RentalProductMaster';
+        //  connection.query (query,(err,data) => {
+        //    if(err) throw err;
+        //    console.log(data)
+        //    res.json({data})
+        //  })
          connection.end();
          console.log("Connection Ended ")
        });
