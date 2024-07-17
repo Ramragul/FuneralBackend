@@ -960,14 +960,16 @@ app.get('/api/cc/categories',(req,res) => {
 
             // Insert order
             const orderQuery = `
-                INSERT INTO CC_Orders (delivery_details_id, products_price, security_deposit, total_amount)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO CC_Orders (delivery_details_id, products_price, security_deposit, total_amount,order_date,order_status)
+                VALUES (?, ?, ?, ?,?,?)
             `;
             const orderValues = [
                 deliveryId,
                 totals.productsPrice,
                 totals.securityDeposit,
-                totals.totalAmount
+                totals.totalAmount,
+                new Date().toISOString().slice(0, 10),
+                "Created"
             ];
 
             connection.query(orderQuery, orderValues, (err, orderResult) => {
@@ -981,7 +983,7 @@ app.get('/api/cc/categories',(req,res) => {
 
                 // Insert cart items
                 const cartQuery = `
-                    INSERT INTO CC_Order_Itemss (order_id, product_id, name, size, duration, delivery_date, return_date, quantity, price, image_url)
+                    INSERT INTO CC_Order_Items (order_id, product_id, name, size, duration, delivery_date, return_date, quantity, price, image_url)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 `;
 
