@@ -964,7 +964,7 @@ app.get('/api/cc/categories',(req,res) => {
 
             // Insert order
             const orderQuery = `
-                INSERT INTO CC_Orders (delivery_details_id, products_price, security_deposit, total_amount,order_date,order_status)
+                INSERT INTO CC_Orderss (delivery_details_id, products_price, security_deposit, total_amount,order_date,order_status)
                 VALUES (?, ?, ?, ?,?,?)
             `;
             const orderValues = [
