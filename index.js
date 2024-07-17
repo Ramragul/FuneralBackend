@@ -958,8 +958,8 @@ app.get('/api/cc/categories',(req,res) => {
             }
 
             const deliveryId = deliveryResult.insertId;
-            //var orderDate = moment().format('YYYY-MM-DD HH:mm:ss');
-            var orderDate = new Date().toLocaleString('en-GB').replace(',', '').replace(/\//g, '-').replace(/(\d{2})-(\d{2})-(\d{4})/, '$3-$2-$1');
+            var orderDate = moment().format('YYYY-MM-DD HH:mm:ss');
+            //var orderDate = new Date().toLocaleString('en-GB').replace(',', '').replace(/\//g, '-').replace(/(\d{2})-(\d{2})-(\d{4})/, '$3-$2-$1');
 
 
             // Insert order
