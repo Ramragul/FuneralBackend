@@ -919,7 +919,9 @@ app.get('/api/cc/categories',(req,res) => {
  app.post('/api/cc/order', async (req, res) => {
   const { deliveryDetails, cart, totals } = req.body;
 
-  const connection = await pool.getConnection();
+  var connection = dbConnection();
+  
+  //connection.connect();
 
   try {
       await connection.beginTransaction();
