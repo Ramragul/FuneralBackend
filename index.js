@@ -11,6 +11,7 @@ const path = require('path')  ;
 const multer = require('multer');
 const AWS = require('aws-sdk');
 const { v4: uuidv4 } = require('uuid');
+const moment = require('moment');
 // const sharp = require('sharp');
 
 
@@ -957,6 +958,7 @@ app.get('/api/cc/categories',(req,res) => {
             }
 
             const deliveryId = deliveryResult.insertId;
+            var orderDate = moment().format('YYYY-MM-DD HH:mm:ss');
 
             // Insert order
             const orderQuery = `
@@ -969,7 +971,7 @@ app.get('/api/cc/categories',(req,res) => {
                 totals.securityDeposit,
                 totals.totalAmount,
                 //new Date().toISOString().replace('T', ' ').substring(0, 19),
-                new Date().toLocaleString('en-GB', { hour12: false }).replace(',', ''),
+                orderDate,
                 "Created",
             ];
 
