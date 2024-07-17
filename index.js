@@ -996,7 +996,7 @@ app.get('/api/cc/categories',(req,res) => {
       await connection.rollback();
       res.status(500).json({ error: error.message });
   } finally {
-      connection.release();
+      connection.end();
   }
 });
 
