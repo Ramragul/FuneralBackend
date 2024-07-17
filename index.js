@@ -968,7 +968,8 @@ app.get('/api/cc/categories',(req,res) => {
                 totals.productsPrice,
                 totals.securityDeposit,
                 totals.totalAmount,
-                new Date().toISOString().replace('T', ' ').substring(0, 19),
+                //new Date().toISOString().replace('T', ' ').substring(0, 19),
+                new Date().toLocaleString('en-GB', { hour12: false }).replace(',', ''),
                 "Created",
             ];
 
