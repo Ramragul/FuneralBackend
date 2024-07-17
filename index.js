@@ -919,9 +919,7 @@ app.get('/api/cc/categories',(req,res) => {
  app.post('/api/cc/order', async (req, res) => {
   const { deliveryDetails, cart, totals } = req.body;
 
-  var connection = dbConnection();
-  
-  //connection.connect();
+  const connection = dbConnection();
 
   try {
       await connection.beginTransaction();
@@ -949,7 +947,7 @@ app.get('/api/cc/categories',(req,res) => {
           deliveryDetails.returnPincode
       ];
 
-      const [deliveryResult] = await connection.execute(deliveryQuery, deliveryValues);
+      const [deliveryResult] = await connection.promise().query(deliveryQuery, deliveryValues);
       const deliveryId = deliveryResult.insertId;
 
       // Insert order
@@ -964,7 +962,7 @@ app.get('/api/cc/categories',(req,res) => {
           totals.totalAmount
       ];
 
-      const [orderResult] = await connection.execute(orderQuery, orderValues);
+      const [orderResult] = await connection.promise().query(orderQuery, orderValues);
       const orderId = orderResult.insertId;
 
       // Insert cart items
@@ -987,7 +985,7 @@ app.get('/api/cc/categories',(req,res) => {
               item.imageURL
           ];
 
-          await connection.execute(cartQuery, cartValues);
+          await connection.promise().query(cartQuery, cartValues);
       }
 
       await connection.commit();
@@ -996,7 +994,7 @@ app.get('/api/cc/categories',(req,res) => {
       await connection.rollback();
       res.status(500).json({ error: error.message });
   } finally {
-      connection.end();
+      connection.end(); // Close the connection properly
   }
 });
 
