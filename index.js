@@ -968,8 +968,8 @@ app.get('/api/cc/categories',(req,res) => {
                 totals.productsPrice,
                 totals.securityDeposit,
                 totals.totalAmount,
-                new Date().toISOString().slice(0, 10),
-                "Created"
+                new Date().toISOString().replace('T', ' ').substring(0, 19),
+                "Created",
             ];
 
             connection.query(orderQuery, orderValues, (err, orderResult) => {
