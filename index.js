@@ -919,83 +919,115 @@ app.get('/api/cc/categories',(req,res) => {
  app.post('/api/cc/order', async (req, res) => {
   const { deliveryDetails, cart, totals } = req.body;
 
-  const connection = dbConnection();
+    const connection = dbConnection();
 
-  try {
-      await connection.beginTransaction();
+    connection.beginTransaction((err) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
 
-      // Insert delivery details
-      const deliveryQuery = `
-          INSERT INTO CC_Delivery_Details (first_name, last_name, email, mobile_number, address, landmark, city, pincode, order_notes, delivery_type, return_pickup, return_address, return_landmark, return_city, return_pincode)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `;
-      const deliveryValues = [
-          deliveryDetails.firstName,
-          deliveryDetails.lastName,
-          deliveryDetails.email,
-          deliveryDetails.mobileNumber,
-          deliveryDetails.address,
-          deliveryDetails.landmark,
-          deliveryDetails.city,
-          deliveryDetails.pincode,
-          deliveryDetails.orderNotes,
-          deliveryDetails.deliveryType,
-          deliveryDetails.returnPickup,
-          deliveryDetails.returnAddress,
-          deliveryDetails.returnLandmark,
-          deliveryDetails.returnCity,
-          deliveryDetails.returnPincode
-      ];
+        // Insert delivery details
+        const deliveryQuery = `
+            INSERT INTO CC_Delivery_Details (first_name, last_name, email, mobile_number, address, landmark, city, pincode, order_notes, delivery_type, return_pickup, return_address, return_landmark, return_city, return_pincode)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        const deliveryValues = [
+            deliveryDetails.firstName,
+            deliveryDetails.lastName,
+            deliveryDetails.email,
+            deliveryDetails.mobileNumber,
+            deliveryDetails.address,
+            deliveryDetails.landmark,
+            deliveryDetails.city,
+            deliveryDetails.pincode,
+            deliveryDetails.orderNotes,
+            deliveryDetails.deliveryType,
+            deliveryDetails.returnPickup,
+            deliveryDetails.returnAddress,
+            deliveryDetails.returnLandmark,
+            deliveryDetails.returnCity,
+            deliveryDetails.returnPincode
+        ];
 
-      const [deliveryResult] = await connection.promise().query(deliveryQuery, deliveryValues);
-      const deliveryId = deliveryResult.insertId;
+        connection.query(deliveryQuery, deliveryValues, (err, deliveryResult) => {
+            if (err) {
+                return connection.rollback(() => {
+                    res.status(500).json({ error: err.message });
+                });
+            }
 
-      // Insert order
-      const orderQuery = `
-          INSERT INTO CC_Orders (delivery_id, products_price, security_deposit, total_amount)
-          VALUES (?, ?, ?, ?)
-      `;
-      const orderValues = [
-          deliveryId,
-          totals.productsPrice,
-          totals.securityDeposit,
-          totals.totalAmount
-      ];
+            const deliveryId = deliveryResult.insertId;
 
-      const [orderResult] = await connection.promise().query(orderQuery, orderValues);
-      const orderId = orderResult.insertId;
+            // Insert order
+            const orderQuery = `
+                INSERT INTO CC_Orders (delivery_id, products_price, security_deposit, total_amount)
+                VALUES (?, ?, ?, ?)
+            `;
+            const orderValues = [
+                deliveryId,
+                totals.productsPrice,
+                totals.securityDeposit,
+                totals.totalAmount
+            ];
 
-      // Insert cart items
-      const cartQuery = `
-          INSERT INTO CC_Order_Items (order_id, product_id, name, size, duration, delivery_date, return_date, quantity, price, image_url)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `;
+            connection.query(orderQuery, orderValues, (err, orderResult) => {
+                if (err) {
+                    return connection.rollback(() => {
+                        res.status(500).json({ error: err.message });
+                    });
+                }
 
-      for (const item of cart) {
-          const cartValues = [
-              orderId,
-              item.id,
-              item.name,
-              item.size,
-              item.duration,
-              item.deliveryDate,
-              item.returnDate,
-              item.quantity,
-              item.price,
-              item.imageURL
-          ];
+                const orderId = orderResult.insertId;
 
-          await connection.promise().query(cartQuery, cartValues);
-      }
+                // Insert cart items
+                const cartQuery = `
+                    INSERT INTO CC_Order_Items (order_id, product_id, name, size, duration, delivery_date, return_date, quantity, price, image_url)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `;
 
-      await connection.commit();
-      res.status(201).json({ message: 'Order placed successfully' });
-  } catch (error) {
-      await connection.rollback();
-      res.status(500).json({ error: error.message });
-  } finally {
-      connection.end(); // Close the connection properly
-  }
+                let cartPromises = cart.map(item => {
+                    return new Promise((resolve, reject) => {
+                        const cartValues = [
+                            orderId,
+                            item.id,
+                            item.name,
+                            item.size,
+                            item.duration,
+                            item.deliveryDate,
+                            item.returnDate,
+                            item.quantity,
+                            item.price,
+                            item.imageURL
+                        ];
+
+                        connection.query(cartQuery, cartValues, (err) => {
+                            if (err) {
+                                return reject(err);
+                            }
+                            resolve();
+                        });
+                    });
+                });
+
+                Promise.all(cartPromises)
+                    .then(() => {
+                        connection.commit((err) => {
+                            if (err) {
+                                return connection.rollback(() => {
+                                    res.status(500).json({ error: err.message });
+                                });
+                            }
+                            res.status(201).json({ message: 'Order placed successfully' });
+                        });
+                    })
+                    .catch((err) => {
+                        connection.rollback(() => {
+                            res.status(500).json({ error: err.message });
+                        });
+                    });
+            });
+        });
+    });
 });
 
 
