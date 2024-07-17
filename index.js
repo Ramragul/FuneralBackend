@@ -973,7 +973,7 @@ app.get('/api/cc/categories',(req,res) => {
                 totals.securityDeposit,
                 totals.totalAmount,
                 //new Date().toISOString().replace('T', ' ').substring(0, 19),
-                orderDate,
+                moment().format('YYYY-MM-DD HH:mm:ss'),
                 "Created",
             ];
 
