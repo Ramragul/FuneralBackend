@@ -862,7 +862,7 @@ app.get('/api/cc/categories',(req,res) => {
 
    // CC Order Creation API
 
-   app.post("/api/cc/order", (req, res) => {
+   //app.post("/api/cc/order", (req, res) => {
 
 
     //Database Update Logic
@@ -875,7 +875,7 @@ app.get('/api/cc/categories',(req,res) => {
     //Data from the req parameters
   
   
-    console.log("Received Request at Node App: "+JSON.stringify (req.body))
+    //console.log("Received Request at Node App: "+JSON.stringify (req.body))
     // var ProductName = req.body.productName;
     // var ProductBrandName = req.body.productBrandName;
     // var ProductImageURL = req.body.productImageURL;
@@ -903,7 +903,7 @@ app.get('/api/cc/categories',(req,res) => {
   //   });  
     //con.end();
   
-    res.status(200).json({ Status: "Data Upload completed Successfully" });
+    //res.status(200).json({ Status: "Data Upload completed Successfully" });
   
   
   // } catch (error) {
@@ -911,9 +911,97 @@ app.get('/api/cc/categories',(req,res) => {
   //   res.status(500).json({ error: 'Internal Server Error' });
   // }
  
- });
+// });
 
 
+ // Order API 
+
+ app.post('/api/cc/order', async (req, res) => {
+  const { deliveryDetails, cart, totals } = req.body;
+
+  const connection = await pool.getConnection();
+
+  try {
+      await connection.beginTransaction();
+
+      // Insert delivery details
+      const deliveryQuery = `
+          INSERT INTO CC_Delivery_Details (first_name, last_name, email, mobile_number, address, landmark, city, pincode, order_notes, delivery_type, return_pickup, return_address, return_landmark, return_city, return_pincode)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+      const deliveryValues = [
+          deliveryDetails.firstName,
+          deliveryDetails.lastName,
+          deliveryDetails.email,
+          deliveryDetails.mobileNumber,
+          deliveryDetails.address,
+          deliveryDetails.landmark,
+          deliveryDetails.city,
+          deliveryDetails.pincode,
+          deliveryDetails.orderNotes,
+          deliveryDetails.deliveryType,
+          deliveryDetails.returnPickup,
+          deliveryDetails.returnAddress,
+          deliveryDetails.returnLandmark,
+          deliveryDetails.returnCity,
+          deliveryDetails.returnPincode
+      ];
+
+      const [deliveryResult] = await connection.execute(deliveryQuery, deliveryValues);
+      const deliveryId = deliveryResult.insertId;
+
+      // Insert order
+      const orderQuery = `
+          INSERT INTO CC_Orders (delivery_id, products_price, security_deposit, total_amount)
+          VALUES (?, ?, ?, ?)
+      `;
+      const orderValues = [
+          deliveryId,
+          totals.productsPrice,
+          totals.securityDeposit,
+          totals.totalAmount
+      ];
+
+      const [orderResult] = await connection.execute(orderQuery, orderValues);
+      const orderId = orderResult.insertId;
+
+      // Insert cart items
+      const cartQuery = `
+          INSERT INTO CC_Order_Items (order_id, product_id, name, size, duration, delivery_date, return_date, quantity, price, image_url)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+
+      for (const item of cart) {
+          const cartValues = [
+              orderId,
+              item.id,
+              item.name,
+              item.size,
+              item.duration,
+              item.deliveryDate,
+              item.returnDate,
+              item.quantity,
+              item.price,
+              item.imageURL
+          ];
+
+          await connection.execute(cartQuery, cartValues);
+      }
+
+      await connection.commit();
+      res.status(201).json({ message: 'Order placed successfully' });
+  } catch (error) {
+      await connection.rollback();
+      res.status(500).json({ error: error.message });
+  } finally {
+      connection.release();
+  }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
 
 
 
