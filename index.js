@@ -981,7 +981,7 @@ app.get('/api/cc/categories',(req,res) => {
 
                 // Insert cart items
                 const cartQuery = `
-                    INSERT INTO CC_Order_Items (order_id, product_id, name, size, duration, delivery_date, return_date, quantity, price, image_url)
+                    INSERT INTO CC_Order_Itemss (order_id, product_id, name, size, duration, delivery_date, return_date, quantity, price, image_url)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 `;
 
