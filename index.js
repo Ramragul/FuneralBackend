@@ -918,7 +918,7 @@ app.get('/api/cc/categories',(req,res) => {
  // Order API 
 
  app.post('/api/cc/order', async (req, res) => {
-  const { deliveryDetails, cart, totals } = req.body;
+  const { deliveryDetails, cart, totals ,userId} = req.body;
 
     const connection = dbConnection();
 
@@ -964,9 +964,11 @@ app.get('/api/cc/categories',(req,res) => {
 
             // Insert order
             const orderQuery = `
-                INSERT INTO CC_Orders (delivery_details_id, products_price, security_deposit, total_amount,order_date,order_status)
+                INSERT INTO CC_Orders (delivery_details_id, products_price, security_deposit, total_amount,order_date,order_status,user_id)
                 VALUES (?, ?, ?, ?,?,?)
             `;
+
+            const orderStatus = "Created"
             const orderValues = [
                 deliveryId,
                 totals.productsPrice,
@@ -974,7 +976,8 @@ app.get('/api/cc/categories',(req,res) => {
                 totals.totalAmount,
                 //new Date().toISOString().replace('T', ' ').substring(0, 19),
                orderDate,
-                "Created",
+                orderStatus,
+                userId
             ];
 
             connection.query(orderQuery, orderValues, (err, orderResult) => {
