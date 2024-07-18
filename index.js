@@ -855,7 +855,7 @@ app.get('/api/cc/categories',(req,res) => {
     }
   
     // Mock generating a token (replace with actual token generation logic)
-    const token = 'mock-access-token';
+    const token = '9788875557';
   
     // Ideally, you would set a session or return a token here for subsequent authenticated requests
     res.json({ token }); // You might also return user data here
