@@ -903,7 +903,7 @@ app.get('/api/cc/categories',(req,res) => {
 
 //CC Registration API 
 
-app.post('/register', async (req, res) => {
+app.post('/api/cc/register', async (req, res) => {
   console.log("Requestreceived From registration page");
   const { name, mobile, email, address, city, password } = req.body;
   const hashedPassword = await bcrypt.hash(password, 10);
