@@ -17,8 +17,8 @@ const moment = require('moment');
 
 // Twilio Imports 
 // const twilio = require('twilio');
-// const jwt = require('jsonwebtoken');
-// const bcrypt = require('bcryptjs');
+ const jwt = require('jsonwebtoken');
+ const bcrypt = require('bcryptjs');
   const dotenv = require('dotenv');
 
  dotenv.config();
@@ -834,7 +834,7 @@ app.get('/api/cc/categories',(req,res) => {
 
    // CC Login 
 
-   app.post('/login', (req, res) => {
+   app.post('/login1', (req, res) => {
     const { username, password } = req.body;
 
     const users = [
@@ -861,58 +861,62 @@ app.get('/api/cc/categories',(req,res) => {
     res.json({ token }); // You might also return user data here
   });
 
-   // CC Order Creation API
 
-   //app.post("/api/cc/order", (req, res) => {
+  app.post('/login', (req, res) => {
 
+    try
+    {
+    var con = dbConnection();
+    con.connect();
+    } catch (error) {
+      console.error('DB Connection Error', error);
+      res.status(500).json({ error: 'DB Connection Error' });
+    }
+    const { mobile, password } = req.body;
+  
+    const query = 'SELECT * FROM CC_Users WHERE mobile = ?';
+    con.query(query, [mobile], async (err, results) => {
+      if (err) {
+        console.error('Error fetching user:', err);
+        return res.status(500).json({ message: 'Server error' });
+      }
+  
+      if (results.length === 0) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
+  
+      const user = results[0];
+      console.log("Password from User:" +password)
+      console.log("Password from `DB:" +user.password)
+      const isMatch = await bcrypt.compare(password, user.password);
+      console.log("Comparison Results" +await bcrypt.compare(password, user.password))
+  
+      if (!isMatch) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
+      con.end();
+      const token = jwt.sign({ id: user.id, email: user.email,mobile: mobile }, 'your-secret-key', { expiresIn: '1h' });
+      res.json({ token, username: user.name });
 
-    //Database Update Logic
-    // try
-    // {
-    //var con = dbConnection();
-    //con.connect();
-    //console.log('Connected to database.' +con);
-  
-    //Data from the req parameters
-  
-  
-    //console.log("Received Request at Node App: "+JSON.stringify (req.body))
-    // var ProductName = req.body.productName;
-    // var ProductBrandName = req.body.productBrandName;
-    // var ProductImageURL = req.body.productImageURL;
-    // var ProductUsageGender = req.body.productUsageGender;
-    // var ProductUsageOccasion = req.body.productUsageOccasion;
-    // var ProductOrigin = req.body.productOrigin;
-    // var ProductCategory = req.body.productCategory;
-    //var ProductCategoryID = req.body.productCategoryID
-    // var ProductPriceBand = req.body.productPriceBand;
-    // var ProductPrice = req.body.productPrice;
-    // var ProductPurchasePrice = req.body.productPurchasePrice;
-    // var ProductAvailability = req.body.productAvailability;
-    // var Remarks = req.body.remarks;
-    
-  
-  
-  
-    //var sql = "INSERT INTO CC_RentalProductMaster (ProductName,ProductBrandName, ProductImageURL, ProductUsageGender, ProductUsageOccasion, ProductOrigin, ProductCategory,ProductPriceBand, ProductPrice,ProductPurchasePrice,ProductAvailability,Remarks) VALUES ('"+ProductName+"','"+ProductBrandName+"', '"+ProductImageURL+"','"+ProductUsageGender+"','"+ProductUsageOccasion+"','"+ProductOrigin+"','"+ProductCategory+"','"+ProductPriceBand+"','"+ProductPrice+"','"+ProductPurchasePrice+"','"+ProductAvailability+"','"+Remarks+"')";  
-                           
-  //   con.query(sql, function (err, result) {  
-  //  //  if (err) throw err;  
-  //  if (err) console.log(err);
-  //   console.log("1 record inserted");  
-  //   console.log("Result"+result.data);  
-  //   });  
-    //con.end();
-  
-    //res.status(200).json({ Status: "Data Upload completed Successfully" });
-  
-  
-  // } catch (error) {
-  //   console.error('Error uploading data to AWS DB:', error);
-  //   res.status(500).json({ error: 'Internal Server Error' });
-  // }
- 
-// });
+    });
+  });
+
+//CC Registration API 
+
+app.post('/register', async (req, res) => {
+  const { name, mobile, email, address, city, password } = req.body;
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const query = 'INSERT INTO CC_users (name, mobile, email, address, city, password) VALUES (?, ?, ?, ?, ?, ?)';
+  db.query(query, [name, mobile, email, address, city, hashedPassword], (err, result) => {
+    if (err) {
+      console.error('Error inserting user:', err);
+      return res.status(500).json({ message: 'Server error' });
+    }
+    res.status(201).json({ message: 'User registered successfully' });
+  });
+});
+
 
 
  // Order API 
