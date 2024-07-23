@@ -916,7 +916,7 @@ app.post('/api/cc/register', async (req, res) => {
   const { name, mobile, email, address, city, password } = req.body;
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  const query = 'INSERT INTO CC_users (name, mobile, email, address, city, password) VALUES (?, ?, ?, ?, ?, ?)';
+  const query = 'INSERT INTO CC_Users (name, mobile, email, address, city, password) VALUES (?, ?, ?, ?, ?, ?)';
   con.query(query, [name, mobile, email, address, city, hashedPassword], (err, result) => {
     if (err) {
       console.error('Error inserting user:', err);
