@@ -872,13 +872,13 @@ app.get('/api/cc/categories',(req,res) => {
       console.error('DB Connection Error', error);
       res.status(500).json({ error: 'DB Connection Error' });
     }
-    const { mobile, password } = req.body;
+    const { username, password } = req.body;
 
-    console.log("Mobile Number :" +mobile)
+    console.log("Mobile Number :" +username)
     console.log("Passowrd : " +password);
   
     const query = 'SELECT * FROM CC_Users WHERE mobile = ?';
-    con.query(query, [mobile], async (err, results) => {
+    con.query(query, [username], async (err, results) => {
       if (err) {
         console.error('Error fetching user:', err);
         return res.status(500).json({ message: 'Server error' });
