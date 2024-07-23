@@ -899,7 +899,7 @@ app.get('/api/cc/categories',(req,res) => {
       }
       con.end();
       const token = jwt.sign({ id: user.id, mobile: user.mobile}, 'your-secret-key', { expiresIn: '1h' });
-      res.json({ token, username: user.name });
+      res.json({ token, userName: user.name,userId: user.mobile });
 
     });
   });
