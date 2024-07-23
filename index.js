@@ -923,7 +923,7 @@ app.post('/api/cc/register', async (req, res) => {
   con.query(query, [name, mobile, email, address, city, hashedPassword], (err, result) => {
     if (err) {
       console.error('Error inserting user:', err);
-      return res.status(500).json({ message: 'Server error' });
+      return res.status(500).json({ message: err });
     }
     con.end();
     res.status(201).json({ message: 'User registered successfully' });
