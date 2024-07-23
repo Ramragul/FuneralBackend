@@ -873,6 +873,9 @@ app.get('/api/cc/categories',(req,res) => {
       res.status(500).json({ error: 'DB Connection Error' });
     }
     const { mobile, password } = req.body;
+
+    console.log("Mobile Number :" +mobile)
+    console.log("Passowrd : " +password);
   
     const query = 'SELECT * FROM CC_Users WHERE mobile = ?';
     con.query(query, [mobile], async (err, results) => {
