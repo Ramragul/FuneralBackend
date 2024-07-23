@@ -905,15 +905,24 @@ app.get('/api/cc/categories',(req,res) => {
 
 app.post('/api/cc/register', async (req, res) => {
   console.log("Requestreceived From registration page");
+  try
+  {
+  var con = dbConnection();
+  con.connect();
+  } catch (error) {
+    console.error('DB Connection Error', error);
+    res.status(500).json({ error: 'DB Connection Error' });
+  }
   const { name, mobile, email, address, city, password } = req.body;
   const hashedPassword = await bcrypt.hash(password, 10);
 
   const query = 'INSERT INTO CC_users (name, mobile, email, address, city, password) VALUES (?, ?, ?, ?, ?, ?)';
-  db.query(query, [name, mobile, email, address, city, hashedPassword], (err, result) => {
+  con.query(query, [name, mobile, email, address, city, hashedPassword], (err, result) => {
     if (err) {
       console.error('Error inserting user:', err);
       return res.status(500).json({ message: 'Server error' });
     }
+    con.end();
     res.status(201).json({ message: 'User registered successfully' });
   });
 });
