@@ -898,7 +898,7 @@ app.get('/api/cc/categories',(req,res) => {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
       con.end();
-      const token = jwt.sign({ id: user.id, email: user.email,mobile: mobile }, 'your-secret-key', { expiresIn: '1h' });
+      const token = jwt.sign({ id: user.id, mobile: user.mobile}, 'your-secret-key', { expiresIn: '1h' });
       res.json({ token, username: user.name });
 
     });
