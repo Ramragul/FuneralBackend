@@ -1123,7 +1123,7 @@ app.get('/api/cc/user/orders', async (req, res) => {
 
     const ordersArray = Object.values(groupedOrders);
     
-    res.json(ordersArray);
+    res.json({data : ordersArray});
     con.end;
   } catch (error) {
     con.end;
