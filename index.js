@@ -1058,7 +1058,79 @@ app.post('/api/cc/register', async (req, res) => {
 });
 
 
+// Get User Orders API 
 
+app.get('/api/cc/user/orders', async (req, res) => {
+  const { userId } = req.query;
+
+  if (!userId) {
+    return res.status(400).json({ error: 'User ID is required' });
+  }
+
+  try
+  {
+  var con = dbConnection();
+  con.connect();
+  } catch (error) {
+    console.error('DB Connection Error', error);
+    res.status(500).json({ error: 'DB Connection Error' });
+  }
+
+  try {
+    const ordersQuery = `
+      SELECT 
+        o.id AS orderId, 
+        o.total_amount AS total, 
+        o.products_price AS productsPrice,
+        o.security_deposit AS securityDeposit,
+        o.order_status AS status, 
+        o.order_date AS date,
+        oi.id AS itemId, 
+        oi.name AS itemName, 
+        oi.quantity AS itemQuantity, 
+        oi.price AS itemPrice,
+        oi.image_url AS imageURL
+      FROM CC_Orders o
+      LEFT JOIN CC_Order_Items oi ON o.id = oi.order_id
+      WHERE o.user_id = ?
+    `;
+
+    const [orders] = await con.promise().query(ordersQuery, [userId]);
+
+    // Grouping orders by orderId
+    const groupedOrders = orders.reduce((acc, order) => {
+      const { orderId, total, status, date, itemId, itemName, itemQuantity, itemPrice,imageURL,productsPrice,securityDeposit } = order;
+      if (!acc[orderId]) {
+        acc[orderId] = {
+          id: orderId,
+          productsPrice,
+          securityDeposit,
+          total,
+          status,
+          date,
+          items: []
+        };
+      }
+      acc[orderId].items.push({
+        id: itemId,
+        name: itemName,
+        quantity: itemQuantity,
+        price: itemPrice,
+        imageURL : imageURL
+      });
+      return acc;
+    }, {});
+
+    const ordersArray = Object.values(groupedOrders);
+    
+    res.json(ordersArray);
+    con.end;
+  } catch (error) {
+    con.end;
+    console.error('Error fetching orders:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 
 
