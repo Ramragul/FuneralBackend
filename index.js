@@ -12,7 +12,7 @@ const multer = require('multer');
 const AWS = require('aws-sdk');
 const { v4: uuidv4 } = require('uuid');
 const moment = require('moment');
-// const sharp = require('sharp');
+const sharp = require('sharp');
 
 
 // Twilio Imports 
