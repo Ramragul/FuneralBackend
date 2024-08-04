@@ -719,28 +719,57 @@ app.get('/api/cc/rental/product', (req, res) => {
 
   const category = req.query.category;
   const occasion = req.query.occasion;
+  const productType = req.query.productType;
 
   console.log("Category: " + category);
   console.log("Occasion: " + occasion);
+  console.log("Product Type :" +productType);
 
   let query = 'SELECT * FROM CC_RentalProductMaster';
   let queryParams = [];
 
-  if (category || occasion) {
-    query += ' WHERE';
+  // if (category || occasion) {
+  //   query += ' WHERE';
 
+  //   if (category) {
+  //     query += ' ProductCategory = ?';
+  //     queryParams.push(category);
+  //   }
+
+  //   if (category && occasion) {
+  //     query += ' AND';
+  //   }
+
+  //   if (occasion) {
+  //     query += ' FIND_IN_SET(?, ProductUsageOccasion)';
+  //     queryParams.push(occasion);
+  //   }
+  // }
+
+  if (category || occasion || productType) {
+    query += ' WHERE';
+  
     if (category) {
       query += ' ProductCategory = ?';
       queryParams.push(category);
     }
-
-    if (category && occasion) {
+  
+    if (category && (occasion || productType)) {
       query += ' AND';
     }
-
+  
     if (occasion) {
       query += ' FIND_IN_SET(?, ProductUsageOccasion)';
       queryParams.push(occasion);
+    }
+  
+    if (occasion && productType) {
+      query += ' AND';
+    }
+  
+    if (productType) {
+      query += ' ProductType = ?';
+      queryParams.push(productType);
     }
   }
 
