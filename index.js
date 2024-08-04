@@ -846,8 +846,8 @@ app.get('/api/cc/categories',(req,res) => {
 
   if (productType) {
     query += ' WHERE';
-    query += ' ProductCategory = ?';
-    queryParams.push(category);
+    query += ' ProductType = ?';
+    queryParams.push(productType);
   }
 
 
