@@ -832,6 +832,10 @@ app.get('/api/cc/categories',(req,res) => {
   
    connection.connect();
 
+   const productType = req.query.productType;
+
+   console.log("Product Type value from Categories Filter " +productType)
+
    
      //console.log('Connected to database.' +connection);
  
