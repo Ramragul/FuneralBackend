@@ -728,23 +728,7 @@ app.get('/api/cc/rental/product', (req, res) => {
   let query = 'SELECT * FROM CC_RentalProductMaster';
   let queryParams = [];
 
-  // if (category || occasion) {
-  //   query += ' WHERE';
 
-  //   if (category) {
-  //     query += ' ProductCategory = ?';
-  //     queryParams.push(category);
-  //   }
-
-  //   if (category && occasion) {
-  //     query += ' AND';
-  //   }
-
-  //   if (occasion) {
-  //     query += ' FIND_IN_SET(?, ProductUsageOccasion)';
-  //     queryParams.push(occasion);
-  //   }
-  // }
 
   if (category || occasion || productType) {
     query += ' WHERE';
@@ -852,7 +836,18 @@ app.get('/api/cc/categories',(req,res) => {
      //console.log('Connected to database.' +connection);
  
      let query = 'SELECT * FROM CC_ProductCategory';
-     connection.query (query,(err,data) => {
+     let queryParams = [];
+
+
+
+  if (productType) {
+    query += ' WHERE';
+    query += ' ProductCategory = ?';
+    queryParams.push(category);
+  }
+
+
+     connection.query (query,queryParams,(err,data) => {
        if(err) throw err;
        console.log(data)
        res.json({data})
