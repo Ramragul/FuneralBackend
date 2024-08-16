@@ -1162,6 +1162,77 @@ app.get('/api/cc/user/orders', async (req, res) => {
 });
 
 
+// Order Management API - Get Orders using Order Id
+
+
+
+  app.get('/api/cc/orders', async (req, res) => {
+
+
+    try
+    {
+    var con = dbConnection();
+    con.connect();
+    } catch (error) {
+      console.error('DB Connection Error', error);
+      res.status(500).json({ error: 'DB Connection Error' });
+    }
+
+    try {
+      // Query to fetch details from CC_Orders, CC_Order_Items, CC_Delivery_Details
+      const query = `
+          SELECT 
+              o.id AS order_id,
+              o.order_date,
+              o.order_status,
+              o.order_assignment,
+              oi.product_id,
+              oi.name AS product_name,
+              oi.size,
+              oi.duration,
+              oi.delivery_date,
+              oi.return_date,
+              oi.quantity,
+              oi.price,
+              oi.image_url,
+              dd.id AS delivery_id,
+              dd.first_name,
+              dd.last_name,
+              dd.address,
+              dd.city,
+              dd.pincode,
+              dd.email,
+              dd.mobile_number,
+              dd.return_address,
+              dd.return_city,
+              dd.return_pincode
+          FROM 
+              CC_Orders o
+          INNER JOIN 
+              CC_Order_Items oi ON o.id = oi.order_id
+          LEFT JOIN 
+              CC_Delivery_Details dd ON o.delivery_details_id = dd.id;
+      `;
+
+      // Get a connection from the pool
+      
+      
+      // Execute the query using the promise-based method
+      //const [orders] = await con.query(query);
+      const [orders] = await con.promise().query(query);
+
+      // Release the connection back to the pool
+      con.end();
+
+      // Send the result as a response
+      res.status(200).json(orders);
+  } catch (error) {
+    con.end();
+      console.error('Error fetching order details:', error);
+      res.status(500).json({ error: 'Error fetching order details' });
+  }
+
+  });
 
 const options = {
   key: fs.readFileSync(path.join(__dirname,'cert', 'admee.in.key')),
