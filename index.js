@@ -1184,7 +1184,7 @@ app.get('/api/cc/user/orders', async (req, res) => {
           SELECT 
               o.id AS order_id,
               o.order_date,
-              o.product_price,
+              o.products_price,
               o.security_deposit,
               o.total_amount,
               o.order_status,
