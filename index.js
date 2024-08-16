@@ -1225,7 +1225,7 @@ app.get('/api/cc/user/orders', async (req, res) => {
       con.end();
 
       // Send the result as a response
-      res.status(200).json(orders);
+      res.status(200).json({data :orders});
   } catch (error) {
     con.end();
       console.error('Error fetching order details:', error);
