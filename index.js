@@ -1184,6 +1184,9 @@ app.get('/api/cc/user/orders', async (req, res) => {
           SELECT 
               o.id AS order_id,
               o.order_date,
+              o.product_price,
+              o.security_deposit,
+              o.total_amount,
               o.order_status,
               o.order_assignment,
               oi.product_id,
@@ -1226,6 +1229,7 @@ app.get('/api/cc/user/orders', async (req, res) => {
 
       // Send the result as a response
       res.status(200).json({data :orders});
+
   } catch (error) {
     con.end();
       console.error('Error fetching order details:', error);
