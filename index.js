@@ -1243,6 +1243,27 @@ app.get('/api/cc/user/orders', async (req, res) => {
   app.post('/api/cc/luckydraw', async (req, res) => { 
 
     console.log("Data Received "+JSON.stringify(req.body))
+
+    try
+    {
+    var con = dbConnection();
+    con.connect();
+    } catch (error) {
+      console.error('DB Connection Error', error);
+      res.status(500).json({ error: 'DB Connection Error' });
+    }
+    const { userId, prize, eventType, participationDate, referenceNumber} = req.body;
+    
+  
+    const query = 'INSERT INTO CC_Raffles (userId, prize, eventType, participationDate, referenceNumber) VALUES (?, ?, ?, ?, ?)';
+    con.query(query, [userId, prize, eventType, participationDate, referenceNumber], (err, result) => {
+      if (err) {
+        console.error('Error inserting user:', err);
+        return res.status(205).json({ message: err });
+      }
+      con.end();
+      res.status(201).json({ message: 'Raffles Data updated Successfully' });
+    });
   });
 
 const options = {
