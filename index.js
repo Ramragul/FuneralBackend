@@ -1242,6 +1242,8 @@ app.get('/api/cc/user/orders', async (req, res) => {
 
   app.post('/api/cc/luckydraw', async (req, res) => { 
 
+    var participationDate = moment().format('YYYY-MM-DD HH:mm:ss');
+
     console.log("Data Received "+JSON.stringify(req.body))
 
     try
@@ -1252,7 +1254,7 @@ app.get('/api/cc/user/orders', async (req, res) => {
       console.error('DB Connection Error', error);
       res.status(500).json({ error: 'DB Connection Error' });
     }
-    const { userId, prize, eventType, participationDate, referenceNumber} = req.body;
+    const { userId, prize, eventType, referenceNumber} = req.body;
     
   
     const query = 'INSERT INTO CC_Raffles (userId, prize, eventType, participationDate, referenceNumber) VALUES (?, ?, ?, ?, ?)';
