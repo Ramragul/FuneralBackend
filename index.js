@@ -1238,6 +1238,13 @@ app.get('/api/cc/user/orders', async (req, res) => {
 
   });
 
+  
+
+  app.post('/api/cc/luckydraw', async (req, res) => { 
+
+    console.log("Data Received "+JSON.stringify(req.body))
+  });
+
 const options = {
   key: fs.readFileSync(path.join(__dirname,'cert', 'admee.in.key')),
   cert: fs.readFileSync(path.join(__dirname, 'cert', 'admee_in.crt'))
