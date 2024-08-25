@@ -1268,6 +1268,54 @@ app.get('/api/cc/user/orders', async (req, res) => {
     });
   });
 
+
+  // Add this endpoint to your Node.js API
+
+app.get('/api/cc/user/:userId/status', (req, res) => {
+  var con  = dbConnection();
+
+
+  try
+    {
+    var con = dbConnection();
+    con.connect();
+    } catch (error) {
+      console.error('DB Connection Error', error);
+      res.status(500).json({ error: 'DB Connection Error' });
+    }
+  const userId = req.params.userId; // Get the userId from the URL parameter
+
+  // Connect to the database
+
+
+  console.log('Connected to database.');
+
+  // Define the query to check if the user has won
+  let query = "SELECT has_won FROM CC_Raffles WHERE UserId = ?"; // Using parameterized query to prevent SQL injection
+
+  con.query(query, [userId], (err, data) => {
+      if (err) {
+          console.error("Error executing query", err);
+          res.status(500).json({ error: 'Internal Server Error' });
+          return;
+      }
+
+      if (data.length > 0) {
+          const hasWon = data[0].has_won; // Assuming 'has_won' is the column in the table
+          (hasWon == "true") ? res.json({ hasWon: hasWon }) : res.json({ hasWon: false }) ;
+      } else {
+          res.json({ hasWon: false }); // Default to false if no record found
+      }
+  });
+
+  // End the connection
+  con.end();
+  console.log("Connection Ended ");
+});
+
+
+
+
 const options = {
   key: fs.readFileSync(path.join(__dirname,'cert', 'admee.in.key')),
   cert: fs.readFileSync(path.join(__dirname, 'cert', 'admee_in.crt'))
