@@ -1256,8 +1256,7 @@ app.get('/api/cc/user/orders', async (req, res) => {
     }
     const { userId, prize, eventType, referenceNumber, hasWon} = req.body;
 
-    console.log("Has Won Value From Node JS " +hasWon)
-    
+
   
     const query = 'INSERT INTO CC_Raffles (userId, prize, eventType, participationDate, referenceNumber,hasWon) VALUES (?, ?, ?, ?, ?,?)';
     con.query(query, [userId, prize, eventType, participationDate, referenceNumber,hasWon], (err, result) => {
@@ -1273,47 +1272,52 @@ app.get('/api/cc/user/orders', async (req, res) => {
 
   // Add this endpoint to your Node.js API
 
-app.get('/api/cc/user/:userId/status', (req, res) => {
-  var con  = dbConnection();
+  app.get('/api/cc/user/:userId/status', (req, res) => {
+    let con;
 
-
-  try
-    {
-    var con = dbConnection();
-    con.connect();
+    try {
+        con = dbConnection();
+        con.connect();
     } catch (error) {
-      console.error('DB Connection Error', error);
-      res.status(500).json({ error: 'DB Connection Error' });
+        console.error('DB Connection Error', error);
+        res.status(500).json({ error: 'DB Connection Error' });
+        return; // Exit the function after sending the error response
     }
-  const userId = req.params.userId; // Get the userId from the URL parameter
 
-  // Connect to the database
+    const userId = req.params.userId; // Get the userId from the URL parameter
 
+    console.log('Connected to database.');
 
-  console.log('Connected to database.');
+    // Define the query to check if the user has won
+    let query = "SELECT hasWon FROM CC_Raffles WHERE UserId = ?"; // Using parameterized query to prevent SQL injection
 
-  // Define the query to check if the user has won
-  let query = "SELECT hasWon FROM CC_Raffles WHERE UserId = ?"; // Using parameterized query to prevent SQL injection
+    con.query(query, [userId], (err, data) => {
+        if (err) {
+            console.error("Error executing query", err);
+            res.status(500).json({ error: 'Internal Server Error' });
+            return;
+        }
 
-  con.query(query, [userId], (err, data) => {
-      if (err) {
-          console.error("Error executing query", err);
-          res.status(500).json({ error: 'Internal Server Error' });
-          return;
-      }
+        // Check if any row has hasWon set to true
+        let hasUserWon = false;
 
-      if (data.length > 0) {
-          const hasWon = data[0].hasWon; 
-          (hasWon == "true") ? res.json({ hasWon: hasWon }) : res.json({ hasWon: false }) ;
-      } else {
-          res.json({ hasWon: false }); // Default to false if no record found
-      }
-  });
+        if (data.length > 0) {
+            for (let row of data) {
+                if (row.hasWon === "true") {
+                    hasUserWon = true;
+                    break; // Exit loop if any row indicates the user has won
+                }
+            }
+        }
 
-  // End the connection
-  con.end();
-  console.log("Connection Ended ");
+        res.json({ hasWon: hasUserWon });
+    });
+
+    // End the connection
+    con.end();
+    console.log("Connection Ended ");
 });
+
 
 
 
