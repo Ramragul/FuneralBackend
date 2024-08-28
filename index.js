@@ -1254,11 +1254,11 @@ app.get('/api/cc/user/orders', async (req, res) => {
       console.error('DB Connection Error', error);
       res.status(500).json({ error: 'DB Connection Error' });
     }
-    const { userId, prize, eventType, referenceNumber} = req.body;
+    const { userId, prize, eventType, referenceNumber, hasWon} = req.body;
     
   
-    const query = 'INSERT INTO CC_Raffles (userId, prize, eventType, participationDate, referenceNumber) VALUES (?, ?, ?, ?, ?)';
-    con.query(query, [userId, prize, eventType, participationDate, referenceNumber], (err, result) => {
+    const query = 'INSERT INTO CC_Raffles (userId, prize, eventType, participationDate, referenceNumber,hasWon) VALUES (?, ?, ?, ?, ?)';
+    con.query(query, [userId, prize, eventType, participationDate, referenceNumber,hasWon], (err, result) => {
       if (err) {
         console.error('Error inserting user:', err);
         return res.status(205).json({ message: err });
@@ -1291,7 +1291,7 @@ app.get('/api/cc/user/:userId/status', (req, res) => {
   console.log('Connected to database.');
 
   // Define the query to check if the user has won
-  let query = "SELECT has_won FROM CC_Raffles WHERE UserId = ?"; // Using parameterized query to prevent SQL injection
+  let query = "SELECT hasWon FROM CC_Raffles WHERE UserId = ?"; // Using parameterized query to prevent SQL injection
 
   con.query(query, [userId], (err, data) => {
       if (err) {
@@ -1301,7 +1301,7 @@ app.get('/api/cc/user/:userId/status', (req, res) => {
       }
 
       if (data.length > 0) {
-          const hasWon = data[0].has_won; // Assuming 'has_won' is the column in the table
+          const hasWon = data[0].hasWon; 
           (hasWon == "true") ? res.json({ hasWon: hasWon }) : res.json({ hasWon: false }) ;
       } else {
           res.json({ hasWon: false }); // Default to false if no record found
