@@ -1255,9 +1255,11 @@ app.get('/api/cc/user/orders', async (req, res) => {
       res.status(500).json({ error: 'DB Connection Error' });
     }
     const { userId, prize, eventType, referenceNumber, hasWon} = req.body;
+
+    console.log("Has Won Value From Node JS " +hasWon)
     
   
-    const query = 'INSERT INTO CC_Raffles (userId, prize, eventType, participationDate, referenceNumber,hasWon) VALUES (?, ?, ?, ?, ?)';
+    const query = 'INSERT INTO CC_Raffles (userId, prize, eventType, participationDate, referenceNumber,hasWon) VALUES (?, ?, ?, ?, ?,?)';
     con.query(query, [userId, prize, eventType, participationDate, referenceNumber,hasWon], (err, result) => {
       if (err) {
         console.error('Error inserting user:', err);
