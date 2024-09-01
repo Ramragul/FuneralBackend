@@ -1087,6 +1087,10 @@ app.post('/api/cc/register', async (req, res) => {
 });
 
 
+
+
+
+
 // Get User Orders API 
 
 app.get('/api/cc/user/orders', async (req, res) => {
@@ -1318,6 +1322,104 @@ app.get('/api/cc/user/orders', async (req, res) => {
     console.log("Connection Ended ");
 });
 
+
+
+// Endpoint to handle tailoring booking order creation
+app.post('/api/cc/tailoringOrder', async (req, res) => {
+  const {
+      name,
+      email,
+      phone,
+      stitchOption,
+      customDesign, // Assuming this is a file path or some kind of identifier
+      address,
+      city,
+      pincode,
+      orderNotes,
+      appointmentDate,
+      userId
+  } = req.body;
+
+  console.log("RECEIVED FROM FRONT END :" +JSON.stringify(req.body))
+  console.log("Name " +name)
+
+  // try
+  // {
+  // var con = dbConnection();
+  // con.connect();
+  // } catch (error) {
+  //   console.error('DB Connection Error', error);
+  //   res.status(500).json({ error: 'DB Connection Error' });
+  // }
+
+  // con.beginTransaction((err) => {
+  //     if (err) {
+  //         return res.status(500).json({ error: err.message });
+  //     }
+
+  //     // Insert tailoring details
+  //     const tailoringQuery = `
+  //         INSERT INTO CC_Tailoring_Details (name, email, phone, stitch_option, custom_design, address, city, pincode, order_notes, appointment_date)
+  //         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  //     `;
+  //     const tailoringValues = [
+  //         name,
+  //         email,
+  //         phone,
+  //         stitchOption,
+  //         customDesign,
+  //         address,
+  //         city,
+  //         pincode,
+  //         orderNotes,
+  //         appointmentDate ? moment(appointmentDate).format('YYYY-MM-DD HH:mm:ss') : null
+  //     ];
+
+  //     con.query(tailoringQuery, tailoringValues, (err, tailoringResult) => {
+  //         if (err) {
+  //             return connection.rollback(() => {
+  //                 res.status(500).json({ error: err.message });
+  //             });
+  //         }
+
+  //         const tailoringId = tailoringResult.insertId;
+  //         const orderDate = moment().format('YYYY-MM-DD HH:mm:ss');
+  //         const orderStatus = "Created";
+
+  //         // Insert order related to tailoring
+  //         const orderQuery = `
+  //             INSERT INTO CC_Orders (tailoring_details_id, order_date, order_status, user_id)
+  //             VALUES (?, ?, ?, ?)
+  //         `;
+
+  //         const orderValues = [
+  //             tailoringId,
+  //             orderDate,
+  //             orderStatus,
+  //             userId
+  //         ];
+
+  //         con.query(orderQuery, orderValues, (err, orderResult) => {
+  //             if (err) {
+  //                 return connection.rollback(() => {
+  //                     res.status(500).json({ error: err.message });
+  //                     con.end();
+  //                 });
+  //             }
+
+  //             con.commit((err) => {
+  //                 if (err) {
+  //                     return connection.rollback(() => {
+  //                         res.status(500).json({ error: err.message });
+  //                     });
+  //                 }
+  //                 res.status(201).json({ message: 'Tailoring order placed successfully' });
+  //                 con.end();
+  //             });
+  //         });
+  //     });
+  // });
+});
 
 
 
