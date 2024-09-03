@@ -1388,7 +1388,7 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
 
           // Insert order related to tailoring
           const orderQuery = `
-              INSERT INTO CC_Tailoring_Orderss (tailoring_details_id, order_date, order_status, user_id)
+              INSERT INTO CC_Tailoring_Orders (tailoring_details_id, order_date, order_status, user_id)
               VALUES (?, ?, ?, ?)
           `;
 
