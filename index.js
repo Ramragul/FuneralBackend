@@ -1330,7 +1330,7 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
       name,
       email,
       phone,
-      stitchOption,
+      stitchType,
       customDesignImage, // Assuming this is a file path or some kind of identifier
       address,
       city,
