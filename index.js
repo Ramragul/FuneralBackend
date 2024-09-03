@@ -1359,7 +1359,7 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
 
       // Insert tailoring details
       const tailoringQuery = `
-          INSERT INTO CC_Tailoring_Details (name, email, phone, stitch_option, custom_design, address, city, pincode, order_notes, appointment_date)
+          INSERT INTO CC_Tailoring_Order_Details (name, email, phone, stitch_option, custom_design, address, city, pincode, order_notes, appointment_date)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
       const tailoringValues = [
@@ -1388,7 +1388,7 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
 
           // Insert order related to tailoring
           const orderQuery = `
-              INSERT INTO CC_Orders (tailoring_details_id, order_date, order_status, user_id)
+              INSERT INTO CC_Tailoring_Orders (tailoring_details_id, order_date, order_status, user_id)
               VALUES (?, ?, ?, ?)
           `;
 
