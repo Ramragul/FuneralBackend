@@ -1377,7 +1377,7 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
 
       con.query(tailoringQuery, tailoringValues, (err, tailoringResult) => {
           if (err) {
-              return connection.rollback(() => {
+              return con.rollback(() => {
                   res.status(500).json({ error: err.message });
               });
           }
@@ -1401,7 +1401,7 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
 
           con.query(orderQuery, orderValues, (err, orderResult) => {
               if (err) {
-                  return connection.rollback(() => {
+                  return con.rollback(() => {
                       res.status(500).json({ error: err.message });
                       con.end();
                   });
@@ -1409,7 +1409,7 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
 
               con.commit((err) => {
                   if (err) {
-                      return connection.rollback(() => {
+                      return con.rollback(() => {
                           res.status(500).json({ error: err.message });
                       });
                   }
