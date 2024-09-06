@@ -13,6 +13,7 @@ const AWS = require('aws-sdk');
 const { v4: uuidv4 } = require('uuid');
 const moment = require('moment');
 const sharp = require('sharp');
+const nodemailer = require('nodemailer');
 
 
 // Twilio Imports 
@@ -945,6 +946,16 @@ app.post('/api/cc/register', async (req, res) => {
     console.error('DB Connection Error', error);
     res.status(500).json({ error: 'DB Connection Error' });
   }
+
+  const transporter = nodemailer.createTransport({
+    host: 'smtpout.secureserver.net', 
+    port: 465, 
+    secure: true,
+    auth: {
+      user: process.env.EMAIL_USERNAME,
+      pass: process.env.EMAIL_PASSWORD,
+    },
+  });
   const { name, mobile, email, address, city, password } = req.body;
   const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -955,8 +966,49 @@ app.post('/api/cc/register', async (req, res) => {
       return res.status(205).json({ message: err });
     }
     con.end();
+    sendRegistrationEmail('iotprograms@gmail.com', 'Bairava');
     res.status(201).json({ message: 'User registered successfully' });
+    
   });
+
+
+  
+  // Function to send registration email
+  const sendRegistrationEmail = (userEmail, userName) => {
+    // Set the correct path to the HTML template
+    const templatePath = path.join(__dirname, 'emailTemplates', 'registrationEmailTemplate.html');
+  
+    // Read the HTML template file
+    fs.readFile(templatePath, 'utf-8', (err, htmlTemplate) => {
+      if (err) {
+        console.error('Error reading the email template file:', err);
+        return;
+      }
+  
+      // Replace {{userName}} with the actual user's name
+      const emailHtml = htmlTemplate.replace('{{userName}}', userName);
+  
+      // Define email options
+      const mailOptions = {
+        from: '"Cotton Candy Support" <support@cottoncandy.co.in>',
+        to: userEmail,
+        subject: 'Welcome to Cotton Candy!',
+        html: emailHtml,
+      };
+  
+      // Send the email
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          res.status(500).json({ message: 'Failure in Email Delivery ' +error });
+        } else {
+          res.status(201).json({ message: 'Tailoring order placed successfully ' +info.response });
+        }
+      });
+    });
+  };
+  
+  // Example usage
+  
 });
 
 
@@ -1422,7 +1474,169 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
 });
 
 
+// Send Email Api
 
+app.get('/api/cc/mail', async (req, res) => { 
+  // let transporter = nodemailer.createTransport({
+  //   host: 'smtpout.secureserver.net', // GoDaddy SMTP server
+  //   port: 465, // Use 465 for SSL, 587 for TLS
+  //   secure: true, // true for 465, false for 587
+  //   auth: {
+  //     user: 'support@cottoncandy.co.in', // Your email address
+  //     pass: "Bairava77@", // Your email password (store in environment variables)
+  //   },
+  // });
+  
+
+
+
+  // const mailOptions = {
+  //   from: '"Cotton Candy Support" <support@cottoncandy.co.in>', // Sender address
+  //   to: "iotprograms@gmail.com", // Receiver email
+  //   subject: 'Welcome to Cotton Candy!', // Subject line
+  //   html: `<!DOCTYPE html>
+  // <html lang="en">
+  // <head>
+  //     <meta charset="UTF-8">
+  //     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  //     <style>
+  //         body {
+  //             font-family: 'Arial', sans-serif;
+  //             background-color: #f4f4f4;
+  //             margin: 0;
+  //             padding: 0;
+  //         }
+  //         .container {
+  //             max-width: 600px;
+  //             margin: 0 auto;
+  //             background-color: #ffffff;
+  //             padding: 20px;
+  //             border-radius: 8px;
+  //             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  //         }
+  //         .header {
+  //             background-color: #ff69b4;
+  //             padding: 20px;
+  //             text-align: center;
+  //             border-radius: 8px 8px 0 0;
+  //         }
+  //         .header h1 {
+  //             color: #ffffff;
+  //             margin: 0;
+  //         }
+  //         .content {
+  //             padding: 20px;
+  //         }
+  //         .content h2 {
+  //             color: #ff69b4;
+  //             font-size: 24px;
+  //         }
+  //         .content p {
+  //             color: #333;
+  //             font-size: 16px;
+  //             line-height: 1.5;
+  //         }
+  //         .content a {
+  //             display: inline-block;
+  //             background-color: #ff69b4;
+  //             color: #ffffff;
+  //             padding: 10px 20px;
+  //             text-decoration: none;
+  //             border-radius: 4px;
+  //             margin-top: 20px;
+  //         }
+  //         .footer {
+  //             margin-top: 30px;
+  //             text-align: center;
+  //             font-size: 12px;
+  //             color: #777;
+  //         }
+  //     </style>
+  // </head>
+  // <body>
+  //     <div class="container">
+  //         <div class="header">
+  //             <h1>Welcome to Cotton Candy!</h1>
+  //         </div>
+  //         <div class="content">
+  //             <h2>Hello, User</h2>
+  //             <p>
+  //                 Thank you for registering with <strong>Cotton Candy</strong>. We are thrilled to have you with us on this journey of elegance and style. Our mission is to make luxury affordable, and we are excited to offer you the finest selection of clothes, jewelry, and tailoring services.
+  //             </p>
+  //             <p>
+  //                 As a member of the Cotton Candy family, you now have access to exclusive collections and rental options for premium dresses and accessories at a fraction of the cost.
+  //             </p>
+  //             <a href="https://cottoncandy.co.in" target="_blank">Explore Our Collection</a>
+  //         </div>
+  //         <div class="footer">
+  //             <p>&copy; 2024 Cotton Candy. All rights reserved.</p>
+  //         </div>
+  //     </div>
+  // </body>
+  // </html>`,
+  // };
+  
+
+  
+  // Send email
+  // transporter.sendMail(mailOptions, (error, info) => {
+  //   if (error) {
+  //     res.status(500).json({ message: 'Error in Seding Error' });
+  //   }
+  //   res.status(201).json({ message: 'Email Sent Successfully' });
+  // });
+
+
+  // version 2 
+
+  const transporter = nodemailer.createTransport({
+    host: 'smtpout.secureserver.net', 
+    port: 465, 
+    secure: true,
+    auth: {
+      user: process.env.EMAIL_USERNAME,
+      pass: process.env.EMAIL_PASSWORD,
+    },
+  });
+  
+  // Function to send registration email
+  const sendRegistrationEmail = (userEmail, userName) => {
+    // Set the correct path to the HTML template
+    const templatePath = path.join(__dirname, 'emailTemplates', 'registrationEmailTemplate.html');
+  
+    // Read the HTML template file
+    fs.readFile(templatePath, 'utf-8', (err, htmlTemplate) => {
+      if (err) {
+        console.error('Error reading the email template file:', err);
+        return;
+      }
+  
+      // Replace {{userName}} with the actual user's name
+      const emailHtml = htmlTemplate.replace('{{userName}}', userName);
+  
+      // Define email options
+      const mailOptions = {
+        from: '"Cotton Candy Support" <support@cottoncandy.co.in>',
+        to: userEmail,
+        subject: 'Welcome to Cotton Candy!',
+        html: emailHtml,
+      };
+  
+      // Send the email
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          res.status(500).json({ message: 'Failure in Email Delivery ' +error });
+        } else {
+          res.status(201).json({ message: 'Tailoring order placed successfully ' +info.response });
+        }
+      });
+    });
+  };
+  
+  // Example usage
+  sendRegistrationEmail('iotprograms@gmail.com', 'Ramragul Balakrishnan');
+ 
+});
 
 const options = {
   key: fs.readFileSync(path.join(__dirname,'cert', 'admee.in.key')),
