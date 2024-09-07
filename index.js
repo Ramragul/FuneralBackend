@@ -46,6 +46,8 @@ app.use(bodyParser.json());
 
 
 
+
+
 function dbConnection () {
   console.log("PORT NUMBER" +process.env.DATABASE_PORT)
   var connection = mysql.createConnection({
@@ -1313,6 +1315,17 @@ app.get('/api/cc/user/orders', async (req, res) => {
     const { userId, prize, eventType, referenceNumber, hasWon} = req.body;
 
 
+    const transporter = nodemailer.createTransport({
+      host: 'smtpout.secureserver.net', 
+      port: 465, 
+      secure: true,
+      auth: {
+        user: process.env.EMAIL_USERNAME,
+        pass: process.env.EMAIL_PASSWORD,
+      },
+    });
+
+
   
     const query = 'INSERT INTO CC_Raffles (userId, prize, eventType, participationDate, referenceNumber,hasWon) VALUES (?, ?, ?, ?, ?,?)';
     con.query(query, [userId, prize, eventType, participationDate, referenceNumber,hasWon], (err, result) => {
@@ -1320,9 +1333,50 @@ app.get('/api/cc/user/orders', async (req, res) => {
         console.error('Error inserting user:', err);
         return res.status(205).json({ message: err });
       }
+
+      if(hasWon === "true")
+      {
+      sendRegistrationEmail('iotprograms@gmail.com', 'Bairava');
+      }
       con.end();
       res.status(201).json({ message: 'Raffles Data updated Successfully' });
     });
+
+
+      // Function to send registration email
+  const sendRegistrationEmail = (userEmail, userName) => {
+    // Set the correct path to the HTML template
+    const templatePath = path.join(__dirname, 'emailTemplates', 'spinWheelLuckyDrawTemplate.html');
+  
+    // Read the HTML template file
+    fs.readFile(templatePath, 'utf-8', (err, htmlTemplate) => {
+      if (err) {
+        console.error('Error reading the email template file:', err);
+        return;
+      }
+  
+      // Replace {{userName}} with the actual user's name
+      const emailHtml = htmlTemplate.replace('{{referenceNumber}}', referenceNumber);
+  
+      // Define email options
+      const mailOptions = {
+        from: '"Cotton Candy Support" <support@cottoncandy.co.in>',
+        to: userEmail,
+        subject: 'Welcome to Cotton Candy!',
+        html: emailHtml,
+      };
+  
+      // Send the email
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          res.status(500).json({ message: 'Failure in Email Delivery ' +error });
+        } else {
+          res.status(201).json({ message: 'Tailoring order placed successfully ' +info.response });
+        }
+      });
+    });
+  };
+    
   });
 
 

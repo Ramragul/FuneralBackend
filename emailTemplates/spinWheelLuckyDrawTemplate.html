@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lucky Draw Entry Confirmation</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      width: 100%;
+      padding: 20px;
+      background-color: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      max-width: 600px;
+      margin: 30px auto;
+      text-align: center;
+    }
+    h1 {
+      color: #ff66b2;
+      margin-bottom: 20px;
+    }
+    p {
+      font-size: 16px;
+      line-height: 1.5;
+      color: #333333;
+    }
+    .cta-button {
+      background-color: #ff66b2;
+      color: white;
+      text-decoration: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      margin-top: 20px;
+      display: inline-block;
+    }
+    .footer {
+      margin-top: 30px;
+      font-size: 14px;
+      color: #999999;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>You've Entered the Lucky Draw!</h1>
+    <!-- <p>Dear {{userName}},</p> -->
+    <p>Dear Valued Participant,</p>
+    <p>
+      Thank you for participating in the Cotton Candy Spinwheel Play & Win contest! 🎉
+    </p>
+    <p>
+      Your reference number <strong>{{referenceNumber}}</strong> has been successfully entered into our lucky draw. You now stand a chance to win exciting prizes!
+    </p>
+
+    <!-- New section explaining the selection process -->
+    <p>
+      Winners will be selected at random from all participants using a fair and automated process. Stay tuned for the results—your luck might just bring you some amazing rewards!
+    </p>
+    
+    <p>
+      We’ll notify you if your reference number is selected as a winner.
+    </p>
+
+    <a href="https://cottoncandy.co.in" class="cta-button">Explore More on Cotton Candy</a>
+
+    <div class="footer">
+      <p>
+        Thank you for being part of the Cotton Candy family.<br>
+        For any queries, feel free to reach us at <a href="mailto:support@cottoncandy.co.in">support@cottoncandy.co.in</a>.
+      </p>
+      <p>Good luck, and may the odds be in your favor!</p>
+    </div>
+  </div>
+</body>
+</html>
