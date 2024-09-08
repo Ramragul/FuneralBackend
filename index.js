@@ -968,7 +968,7 @@ app.post('/api/cc/register', async (req, res) => {
       return res.status(205).json({ message: err });
     }
     con.end();
-    sendRegistrationEmail('iotprograms@gmail.com', 'Bairava');
+    sendRegistrationEmail(email, name);
     res.status(201).json({ message: 'User registered successfully' });
     
   });
@@ -1312,7 +1312,7 @@ app.get('/api/cc/user/orders', async (req, res) => {
       console.error('DB Connection Error', error);
       res.status(500).json({ error: 'DB Connection Error' });
     }
-    const { userId, prize, eventType, referenceNumber, hasWon} = req.body;
+    const { userId, userName, userEmail, prize, eventType, referenceNumber, hasWon} = req.body;
 
 
     const transporter = nodemailer.createTransport({
@@ -1336,7 +1336,7 @@ app.get('/api/cc/user/orders', async (req, res) => {
 
       if(hasWon === "true")
       {
-      sendRegistrationEmail('iotprograms@gmail.com', 'Bairava');
+      sendRafflesEmail(userEmail, userName);
       }
       con.end();
       res.status(201).json({ message: 'Raffles Data updated Successfully' });
@@ -1344,7 +1344,7 @@ app.get('/api/cc/user/orders', async (req, res) => {
 
 
       // Function to send registration email
-  const sendRegistrationEmail = (userEmail, userName) => {
+  const sendRafflesEmail = (userEmail, userName) => {
     // Set the correct path to the HTML template
     const templatePath = path.join(__dirname, 'emailTemplates', 'spinWheelLuckyDrawTemplate.html');
   
@@ -1356,13 +1356,18 @@ app.get('/api/cc/user/orders', async (req, res) => {
       }
   
       // Replace {{userName}} with the actual user's name
-      const emailHtml = htmlTemplate.replace('{{referenceNumber}}', referenceNumber);
+      // const emailHtml = htmlTemplate.replace('{{referenceNumber}}', referenceNumber);
+
+      const emailHtml = htmlTemplate
+      .replace('{{referenceNumber}}', referenceNumber)
+      .replace('{{userName}}', userName);
+
   
       // Define email options
       const mailOptions = {
         from: '"Cotton Candy Support" <support@cottoncandy.co.in>',
         to: userEmail,
-        subject: 'Welcome to Cotton Candy!',
+        subject: 'Congratulations! Your Lucky Draw Reference Number Inside 🎉',
         html: emailHtml,
       };
   
@@ -1371,7 +1376,7 @@ app.get('/api/cc/user/orders', async (req, res) => {
         if (error) {
           res.status(500).json({ message: 'Failure in Email Delivery ' +error });
         } else {
-          res.status(201).json({ message: 'Tailoring order placed successfully ' +info.response });
+          res.status(201).json({ message: 'Raffles Email has been sent successfully ' +info.response });
         }
       });
     });
