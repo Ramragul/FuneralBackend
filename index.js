@@ -1470,6 +1470,8 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
       userId
   } = req.body;
 
+var orderId = ""
+
   console.log("RECEIVED FROM FRONT END :" +JSON.stringify(req.body))
   console.log("Custom Design Image Length " +customDesignImage.length)
 
@@ -1540,6 +1542,7 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
               }
 
               console.log("Order Results " +JSON.stringify(orderResult))
+              orderId = orderResut.insertId
 
               con.commit((err) => {
                   if (err) {
@@ -1548,7 +1551,7 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
                       });
                   }
 
-                  sendRegistrationEmail(email, name);
+                  sendorderConfirmationEmail(email, name);
                   res.status(201).json({ message: 'Tailoring order placed successfully' });
                   con.end();
               });
@@ -1556,9 +1559,9 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
       });
   });
   // Function to send registration email
-  const sendRegistrationEmail = (userEmail, userName) => {
+  const sendOrderConfirmationEmail = (userEmail, userName) => {
     // Set the correct path to the HTML template
-    const templatePath = path.join(__dirname, 'emailTemplates', 'registrationEmailTemplate.html');
+    const templatePath = path.join(__dirname, 'emailTemplates', 'tailoringOrderConfirmationTemplate.html');
   
     // Read the HTML template file
     fs.readFile(templatePath, 'utf-8', (err, htmlTemplate) => {
@@ -1568,7 +1571,15 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
       }
   
       // Replace {{userName}} with the actual user's name
-      const emailHtml = htmlTemplate.replace('{{userName}}', userName);
+      // const emailHtml = htmlTemplate.replace('{{userName}}', userName);
+
+      const emailHtml = htmlTemplate
+      .replace('{{orderId}}', orderId)
+      .replace('{{userName}}', userName)
+      .replace('{{appointmentDate}}' , appointmentDate)
+      .replace('{{orderDetails}}' , stitchType)
+      .replace('{{userEmail}}',email)
+
   
       // Define email options
       const mailOptions = {
