@@ -1471,7 +1471,7 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
   } = req.body;
 
   console.log("RECEIVED FROM FRONT END :" +JSON.stringify(req.body))
-  console.log("Name " +name)
+  console.log("Custom Design Image Length " +customDesignImage.length)
 
   try
   {
@@ -1497,11 +1497,11 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
           email,
           phone,
           stitchType,
-          customDesignImage,
+          (customDesignImage.length>0) ? customDesignImage : "",
           address,
           city,
           pincode,
-          (orderNotes !== "") ? orderNotes : "Order Notes Empty",
+          orderNotes,
           appointmentDate ? moment(appointmentDate).format('YYYY-MM-DD HH:mm:ss') : null
       ];
 
