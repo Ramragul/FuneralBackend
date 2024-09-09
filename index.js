@@ -1542,7 +1542,7 @@ var orderId = ""
               }
 
               console.log("Order Results " +JSON.stringify(orderResult))
-              orderId = orderResut.insertId
+              orderId = orderResult.insertId
 
               con.commit((err) => {
                   if (err) {
