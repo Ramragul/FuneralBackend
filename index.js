@@ -1501,7 +1501,7 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
           address,
           city,
           pincode,
-          orderNotes ? orderNotes : "Order Notes Empty",
+          (orderNotes !== "") ? orderNotes : "Order Notes Empty",
           appointmentDate ? moment(appointmentDate).format('YYYY-MM-DD HH:mm:ss') : null
       ];
 
