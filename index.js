@@ -1557,8 +1557,8 @@ var orderId = ""
               });
           });
       });
-  });
-  // Function to send registration email
+
+       // Function to send registration email
   const sendOrderConfirmationEmail = (userEmail, userName) => {
     // Set the correct path to the HTML template
     const templatePath = path.join(__dirname, 'emailTemplates', 'tailoringOrderConfirmationTemplate.html');
@@ -1599,6 +1599,8 @@ var orderId = ""
       });
     });
   };
+  });
+ 
 
 });
 
