@@ -1539,8 +1539,8 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
                   });
               }
               console.log("Order Result :" +JSON.stringify(orderResult))
-              const orderId = orderResult.order_id;
-              console.log("Order Id is :" +order_id)
+             // const orderId = orderResult.order_id;
+              //console.log("Order Id is :" +order_id)
 
               con.commit((err) => {
                   if (err) {
