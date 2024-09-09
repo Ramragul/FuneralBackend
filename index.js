@@ -1551,7 +1551,7 @@ var orderId = ""
                       });
                   }
 
-                  sendorderConfirmationEmail(email, name);
+                  sendOrderConfirmationEmail(email, name);
                   res.status(201).json({ message: 'Tailoring order placed successfully' });
                   con.end();
               });
