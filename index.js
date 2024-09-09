@@ -1548,7 +1548,7 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
                           res.status(500).json({ error: err.message });
                       });
                   }
-                  sendTailoringOrderEmail(email, name);
+                  // sendTailoringOrderEmail(email, name);
                   res.status(201).json({ message: 'Tailoring order placed successfully' });
                   con.end();
               });
@@ -1557,38 +1557,38 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
   });
 
   // Function to send registration email
-  const sendTailoringOrderEmail = (userEmail, userName) => {
-    // Set the correct path to the HTML template
-    const templatePath = path.join(__dirname, 'emailTemplates', 'registrationEmailTemplate.html');
+  // const sendTailoringOrderEmail = (userEmail, userName) => {
+  //   // Set the correct path to the HTML template
+  //   const templatePath = path.join(__dirname, 'emailTemplates', 'registrationEmailTemplate.html');
   
-    // Read the HTML template file
-    fs.readFile(templatePath, 'utf-8', (err, htmlTemplate) => {
-      if (err) {
-        console.error('Error reading the email template file:', err);
-        return;
-      }
+  //   // Read the HTML template file
+  //   fs.readFile(templatePath, 'utf-8', (err, htmlTemplate) => {
+  //     if (err) {
+  //       console.error('Error reading the email template file:', err);
+  //       return;
+  //     }
   
-      // Replace {{userName}} with the actual user's name
-      const emailHtml = htmlTemplate.replace('{{userName}}', userName);
+  //     // Replace {{userName}} with the actual user's name
+  //     const emailHtml = htmlTemplate.replace('{{userName}}', userName);
   
-      // Define email options
-      const mailOptions = {
-        from: '"Cotton Candy Support" <support@cottoncandy.co.in>',
-        to: userEmail,
-        subject: 'Welcome to Cotton Candy!',
-        html: emailHtml,
-      };
+  //     // Define email options
+  //     const mailOptions = {
+  //       from: '"Cotton Candy Support" <support@cottoncandy.co.in>',
+  //       to: userEmail,
+  //       subject: 'Welcome to Cotton Candy!',
+  //       html: emailHtml,
+  //     };
   
-      // Send the email
-      transporter.sendMail(mailOptions, (error, info) => {
-        if (error) {
-          res.status(500).json({ message: 'Failure in Email Delivery ' +error });
-        } else {
-          res.status(201).json({ message: 'Tailoring order placed successfully ' +info.response });
-        }
-      });
-    });
-  };
+  //     // Send the email
+  //     transporter.sendMail(mailOptions, (error, info) => {
+  //       if (error) {
+  //         res.status(500).json({ message: 'Failure in Email Delivery ' +error });
+  //       } else {
+  //         res.status(201).json({ message: 'Tailoring order placed successfully ' +info.response });
+  //       }
+  //     });
+  //   });
+  // };
 
 });
 
