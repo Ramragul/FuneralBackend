@@ -63,6 +63,21 @@ function dbConnection () {
 }
 
 
+function mailConfig () {
+const transporter = nodemailer.createTransport({
+  host: 'smtpout.secureserver.net', 
+  port: 465, 
+  secure: true,
+  auth: {
+    user: process.env.EMAIL_USERNAME,
+    pass: process.env.EMAIL_PASSWORD,
+  },
+});
+
+return transporter;
+}
+
+
 
 app.use(function (req, res, next) {
 
@@ -949,15 +964,17 @@ app.post('/api/cc/register', async (req, res) => {
     res.status(500).json({ error: 'DB Connection Error' });
   }
 
-  const transporter = nodemailer.createTransport({
-    host: 'smtpout.secureserver.net', 
-    port: 465, 
-    secure: true,
-    auth: {
-      user: process.env.EMAIL_USERNAME,
-      pass: process.env.EMAIL_PASSWORD,
-    },
-  });
+  // const transporter = nodemailer.createTransport({
+  //   host: 'smtpout.secureserver.net', 
+  //   port: 465, 
+  //   secure: true,
+  //   auth: {
+  //     user: process.env.EMAIL_USERNAME,
+  //     pass: process.env.EMAIL_PASSWORD,
+  //   },
+  // });
+
+  const transporter = mailConfig();
   const { name, mobile, email, address, city, password } = req.body;
   const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -1315,15 +1332,17 @@ app.get('/api/cc/user/orders', async (req, res) => {
     const { userId, userName, userEmail, prize, eventType, referenceNumber, hasWon} = req.body;
 
 
-    const transporter = nodemailer.createTransport({
-      host: 'smtpout.secureserver.net', 
-      port: 465, 
-      secure: true,
-      auth: {
-        user: process.env.EMAIL_USERNAME,
-        pass: process.env.EMAIL_PASSWORD,
-      },
-    });
+    // const transporter = nodemailer.createTransport({
+    //   host: 'smtpout.secureserver.net', 
+    //   port: 465, 
+    //   secure: true,
+    //   auth: {
+    //     user: process.env.EMAIL_USERNAME,
+    //     pass: process.env.EMAIL_PASSWORD,
+    //   },
+    // });
+
+    const transporter = mailConfig();
 
 
   
@@ -1463,6 +1482,8 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
     res.status(500).json({ error: 'DB Connection Error' });
   }
 
+  const transporter = mailConfig();
+
   con.beginTransaction((err) => {
       if (err) {
           return res.status(500).json({ error: err.message });
@@ -1517,6 +1538,9 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
                       con.end();
                   });
               }
+              console.log("Order Result :" +JSON.stringify(orderResult))
+              const orderId = orderResult.order_id;
+              console.log("Order Id is :" +order_id)
 
               con.commit((err) => {
                   if (err) {
@@ -1524,12 +1548,48 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
                           res.status(500).json({ error: err.message });
                       });
                   }
+                  sendTailoringOrderEmail(email, name);
                   res.status(201).json({ message: 'Tailoring order placed successfully' });
                   con.end();
               });
           });
       });
   });
+
+  // Function to send registration email
+  const sendTailoringOrderEmail = (userEmail, userName) => {
+    // Set the correct path to the HTML template
+    const templatePath = path.join(__dirname, 'emailTemplates', 'registrationEmailTemplate.html');
+  
+    // Read the HTML template file
+    fs.readFile(templatePath, 'utf-8', (err, htmlTemplate) => {
+      if (err) {
+        console.error('Error reading the email template file:', err);
+        return;
+      }
+  
+      // Replace {{userName}} with the actual user's name
+      const emailHtml = htmlTemplate.replace('{{userName}}', userName);
+  
+      // Define email options
+      const mailOptions = {
+        from: '"Cotton Candy Support" <support@cottoncandy.co.in>',
+        to: userEmail,
+        subject: 'Welcome to Cotton Candy!',
+        html: emailHtml,
+      };
+  
+      // Send the email
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          res.status(500).json({ message: 'Failure in Email Delivery ' +error });
+        } else {
+          res.status(201).json({ message: 'Tailoring order placed successfully ' +info.response });
+        }
+      });
+    });
+  };
+
 });
 
 
