@@ -1769,6 +1769,12 @@ app.get('/api/cc/mail', async (req, res) => {
  
 });
 
+app.post('/api/orders/:orderId/update', async (req, res) => {
+
+  console.log("values from udpate api" +JSON.stringify(req))
+  console.log("orderId :" +req.params.orderId)
+})
+
 const options = {
   key: fs.readFileSync(path.join(__dirname,'cert', 'admee.in.key')),
   cert: fs.readFileSync(path.join(__dirname, 'cert', 'admee_in.crt'))
