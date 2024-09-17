@@ -1770,9 +1770,11 @@ app.get('/api/cc/mail', async (req, res) => {
 });
 
 app.post('/api/orders/:orderId/update', async (req, res) => {
-  
+
+  orderStatus = req.orderStatus;
+
   console.log("orderId :" +req.params.orderId)
-  console.log("values from udpate api" +req)
+  console.log("values from udpate api" +req.orderStatus)
  
 });
 
