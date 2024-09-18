@@ -1769,7 +1769,7 @@ app.get('/api/cc/mail', async (req, res) => {
  
 });
 
-app.post('/api/orders/:orderId/update', async (req, res) => {
+app.patch('/api/orders/:orderId/update', async (req, res) => {
 
   const {orderStatus,orderAssignment }= req.body;
 
