@@ -1797,7 +1797,7 @@ app.patch('/api/orders/:orderId/update', async (req, res) => {
     id = ?;
 `;
 
-  con.query(query, [orderAssignment, orderStatus, updatedBy, currentDate], (err, result) => {
+  con.query(query, [orderAssignment, orderStatus, updatedBy, currentDate,orderId], (err, result) => {
     if (err) {
       console.error('Error updating order status:', err);
       return res.status(205).json({ message: err });
