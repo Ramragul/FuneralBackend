@@ -1812,6 +1812,8 @@ app.patch('/api/orders/:orderId/update', async (req, res) => {
  
 });
 
+});
+
 const options = {
   key: fs.readFileSync(path.join(__dirname,'cert', 'admee.in.key')),
   cert: fs.readFileSync(path.join(__dirname, 'cert', 'admee_in.crt'))
