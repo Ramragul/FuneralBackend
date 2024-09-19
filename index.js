@@ -1788,11 +1788,14 @@ app.patch('/api/orders/:orderId/update', async (req, res) => {
   //const currentDate = new Date()
   
 
-  const currentISTDate = new Date().toLocaleString('en-GB', { timeZone: 'Asia/Kolkata' });
+  const currentDate = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
 
-// Convert the date string to a format suitable for SQL (YYYY-MM-DD HH:MM:SS)
-const formattedDate = new Date(currentISTDate).toISOString().slice(0, 19).replace('T', ' ');
+// Convert the formatted date to YYYY-MM-DD HH:MM:SS format
+const [datePart, timePart] = currentDate.split(', ');
+const [month, day, year] = datePart.split('/');
 
+// Format the date as YYYY-MM-DD HH:MM:SS
+const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')} ${timePart}`;
 
   const query = `
   UPDATE CC_Orders 
