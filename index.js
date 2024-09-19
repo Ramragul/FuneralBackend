@@ -1786,7 +1786,13 @@ app.patch('/api/orders/:orderId/update', async (req, res) => {
   }
 
   //const currentDate = new Date()
-  const currentDate = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+  
+
+  const currentISTDate = new Date().toLocaleString('en-GB', { timeZone: 'Asia/Kolkata' });
+
+// Convert the date string to a format suitable for SQL (YYYY-MM-DD HH:MM:SS)
+const formattedDate = new Date(currentISTDate).toISOString().slice(0, 19).replace('T', ' ');
+
 
   const query = `
   UPDATE CC_Orders 
@@ -1799,7 +1805,7 @@ app.patch('/api/orders/:orderId/update', async (req, res) => {
     id = ?;
 `;
 
-  con.query(query, [orderAssignment, orderStatus, updatedBy, currentDate,orderId], (err, result) => {
+  con.query(query, [orderAssignment, orderStatus, updatedBy, formattedDate,orderId], (err, result) => {
     if (err) {
       console.error('Error updating order status:', err);
       return res.status(205).json({ message: err });
