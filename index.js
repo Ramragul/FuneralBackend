@@ -1771,6 +1771,8 @@ app.get('/api/cc/mail', async (req, res) => {
 
 app.patch('/api/orders/:orderId/update', async (req, res) => {
 
+  const orderId = req.params.orderId;
+
   const {orderStatus,orderAssignment, updatedBy }= req.body;
 
 
