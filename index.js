@@ -1771,7 +1771,41 @@ app.get('/api/cc/mail', async (req, res) => {
 
 app.patch('/api/orders/:orderId/update', async (req, res) => {
 
-  const {orderStatus,orderAssignment }= req.body;
+  const {orderStatus,orderAssignment, updatedBy }= req.body;
+
+
+  try
+  {
+  var con = dbConnection();
+  con.connect();
+  } catch (error) {
+    console.error('DB Connection Error', error);
+    res.status(500).json({ error: 'DB Connection Error' });
+  }
+
+  //const currentDate = new Date()
+  const currentDate = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+
+  const query = `
+  UPDATE CC_Orders 
+  SET 
+    order_assignment = ?, 
+    order_status = ?, 
+    updated_by = ?, 
+    last_updated_date = ? 
+  WHERE 
+    id = ?;
+`;
+
+  con.query(query, [orderAssignment, orderStatus, updatedBy, currentDate], (err, result) => {
+    if (err) {
+      console.error('Error updating order status:', err);
+      return res.status(205).json({ message: err });
+    }
+    con.end();
+    res.status(201).json({ message: 'Order Status Updated Successfully' });
+
+
 
   console.log("orderId :" +req.params.orderId)
   console.log("orderStatus" +orderStatus + "Order Assignment" +orderAssignment)
