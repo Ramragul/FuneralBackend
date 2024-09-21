@@ -1508,9 +1508,9 @@ var orderId = ""
           city,
           pincode,
           orderNotes,
+          appointmentDate ? moment(appointmentDate).format('YYYY-MM-DD HH:mm:ss') : null,
           productId,
           productImageURL,
-          appointmentDate ? moment(appointmentDate).format('YYYY-MM-DD HH:mm:ss') : null
       ];
 
       con.query(tailoringQuery, tailoringValues, (err, tailoringResult) => {
