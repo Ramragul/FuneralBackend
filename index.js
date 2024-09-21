@@ -1493,6 +1493,19 @@ var orderId = ""
           return res.status(500).json({ error: err.message });
       }
 
+      // Date Formatting Logic Begins
+
+      const currentDate = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+
+      // Convert the formatted date to YYYY-MM-DD HH:MM:SS format
+      const [datePart, timePart] = currentDate.split(', ');
+      const [month, day, year] = datePart.split('/');
+
+      // Format the date as YYYY-MM-DD HH:MM:SS
+      const appointmentDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')} ${timePart}`;
+
+      // Date Formatting Logic Ends
+
       // Insert tailoring details
       const tailoringQuery = `
           INSERT INTO CC_Tailoring_Order_Details (name, email, phone, stitch_option, custom_design, address, city, pincode, order_notes, appointment_date,product_id,product_image_url)
@@ -1508,7 +1521,8 @@ var orderId = ""
           city,
           pincode,
           orderNotes,
-          appointmentDate ? moment(appointmentDate).format('YYYY-MM-DD HH:mm:ss') : null,
+         // appointmentDate ? moment(appointmentDate).format('YYYY-MM-DD HH:mm:ss') : null,
+          appointmentDate ? appointmentDate : null,
           productId,
           productImageURL,
       ];
