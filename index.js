@@ -1472,6 +1472,22 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
       productImageURL
   } = req.body;
 
+
+  // Date Formatting Logic Begins
+
+     // const currentDate = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+    
+
+      // Convert the formatted date to YYYY-MM-DD HH:MM:SS format
+      const [datePart, timePart] = appointmentDate.split(', ');
+      const [month, day, year] = datePart.split('/');
+
+      // Format the date as YYYY-MM-DD HH:MM:SS
+      appointmentDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')} ${timePart}`;
+
+      // Date Formatting Logic Ends
+
+
 var orderId = ""
 
   console.log("RECEIVED FROM FRONT END :" +JSON.stringify(req.body))
@@ -1516,20 +1532,7 @@ var orderId = ""
           productImageURL,
       ];
 
-      // Date Formatting Logic Begins
-
-     // const currentDate = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
-    
-
-      // Convert the formatted date to YYYY-MM-DD HH:MM:SS format
-      const [datePart, timePart] = appointmentDate.split(', ');
-      const [month, day, year] = datePart.split('/');
-
-      // Format the date as YYYY-MM-DD HH:MM:SS
-      const appointmentDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')} ${timePart}`;
-
-      // Date Formatting Logic Ends
-
+      
       con.query(tailoringQuery, tailoringValues, (err, tailoringResult) => {
           if (err) {
               return con.rollback(() => {
