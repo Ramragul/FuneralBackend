@@ -1493,19 +1493,7 @@ var orderId = ""
           return res.status(500).json({ error: err.message });
       }
 
-      // Date Formatting Logic Begins
-
-     // const currentDate = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
-    
-
-      // Convert the formatted date to YYYY-MM-DD HH:MM:SS format
-      const [datePart, timePart] = appointmentDate.split(', ');
-      const [month, day, year] = datePart.split('/');
-
-      // Format the date as YYYY-MM-DD HH:MM:SS
-      const appointmentDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')} ${timePart}`;
-
-      // Date Formatting Logic Ends
+      
 
       // Insert tailoring details
       const tailoringQuery = `
@@ -1527,6 +1515,20 @@ var orderId = ""
           productId,
           productImageURL,
       ];
+
+      // Date Formatting Logic Begins
+
+     // const currentDate = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+    
+
+      // Convert the formatted date to YYYY-MM-DD HH:MM:SS format
+      const [datePart, timePart] = appointmentDate.split(', ');
+      const [month, day, year] = datePart.split('/');
+
+      // Format the date as YYYY-MM-DD HH:MM:SS
+      const appointmentDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')} ${timePart}`;
+
+      // Date Formatting Logic Ends
 
       con.query(tailoringQuery, tailoringValues, (err, tailoringResult) => {
           if (err) {
