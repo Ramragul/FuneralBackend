@@ -1467,7 +1467,9 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
       pincode,
       orderNotes,
       appointmentDate,
-      userId
+      userId,
+      productId,
+      productImageURL
   } = req.body;
 
 var orderId = ""
@@ -1493,8 +1495,8 @@ var orderId = ""
 
       // Insert tailoring details
       const tailoringQuery = `
-          INSERT INTO CC_Tailoring_Order_Details (name, email, phone, stitch_option, custom_design, address, city, pincode, order_notes, appointment_date)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO CC_Tailoring_Order_Details (name, email, phone, stitch_option, custom_design, address, city, pincode, order_notes, appointment_date,product_id,product_image_url)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?)
       `;
       const tailoringValues = [
           name,
@@ -1506,6 +1508,8 @@ var orderId = ""
           city,
           pincode,
           orderNotes,
+          productId,
+          productImageURL,
           appointmentDate ? moment(appointmentDate).format('YYYY-MM-DD HH:mm:ss') : null
       ];
 
