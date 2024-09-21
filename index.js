@@ -1495,10 +1495,11 @@ var orderId = ""
 
       // Date Formatting Logic Begins
 
-      const currentDate = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+     // const currentDate = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+    
 
       // Convert the formatted date to YYYY-MM-DD HH:MM:SS format
-      const [datePart, timePart] = currentDate.split(', ');
+      const [datePart, timePart] = appointmentDate.split(', ');
       const [month, day, year] = datePart.split('/');
 
       // Format the date as YYYY-MM-DD HH:MM:SS
