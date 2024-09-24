@@ -1836,6 +1836,17 @@ const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}
 
 });
 
+
+app.post('/api/businessPartnerRegistration', async (req, res) => {
+
+const {name, aadharImageURL, address , contact, email , pincode, city, state, availability,partnerType} = req.body;
+
+
+console.log("aadharImage URL :" +aadharImageURL)
+
+
+});
+
 const options = {
   key: fs.readFileSync(path.join(__dirname,'cert', 'admee.in.key')),
   cert: fs.readFileSync(path.join(__dirname, 'cert', 'admee_in.crt'))
