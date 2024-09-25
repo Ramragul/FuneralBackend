@@ -978,13 +978,25 @@ app.get('/api/cc/categories',(req,res) => {
 
       // CC Partners Partner id fetch logic begins
 
-      const pid = con.query("SELECT pid from CC_Partners where mobile = '978887'")
-      console.log("PID " +JSON.stringify(pid))
+      const pidQuery = "SELECT pid FROM CC_Partners WHERE mobile = ?";
+      const mobile = '978887'; // Example mobile number
+      
+      const pid = await new Promise((resolve, reject) => {
+        con.query(pidQuery, [mobile], (err, results) => {
+          if (err) {
+            reject(err); // Handle query error
+          } else if (results.length > 0) {
+            resolve(results[0].pid); // Return the pid if found
+          } else {
+            resolve(null); // Return null if no matching record
+          }
+        });
+      });
 
-      con.end();
+      console.log("Pid value is " +pid);
 
       // Partners Table parther id fetch logic ends
-
+      con.end();
       res.json({ token, userName: user.name,userId: user.mobile,userEmail: user.email });
 
     });
