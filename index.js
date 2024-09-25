@@ -973,13 +973,15 @@ app.get('/api/cc/categories',(req,res) => {
       if (!isMatch) {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
-      con.end();
+      
       const token = jwt.sign({ id: user.id, mobile: user.mobile}, 'your-secret-key', { expiresIn: '1h' });
 
       // CC Partners Partner id fetch logic begins
 
       const pid = con.query("SELECT pid from CC_Partners where mobile = '978887'")
       console.log("PID " +pid)
+
+      con.end();
 
       // Partners Table parther id fetch logic ends
 
