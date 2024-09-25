@@ -1853,7 +1853,7 @@ app.post('/api/businessPartnerRegistration', async (req, res) => {
 
   // Validate required fields
 
-  console.log("Incoming Request:" req.body)
+  console.log("Incoming Request:" +req.body)
   if (!email || !name || !mobile || !partnerType) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
