@@ -979,7 +979,7 @@ app.get('/api/cc/categories',(req,res) => {
       // CC Partners Partner id fetch logic begins
 
       const pid = con.query("SELECT pid from CC_Partners where mobile = '978887'")
-      console.log("PID " +pid)
+      console.log("PID " +JSON.stringify(pid))
 
       con.end();
 
