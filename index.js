@@ -1852,6 +1852,8 @@ app.post('/api/businessPartnerRegistration', async (req, res) => {
   const hashedPassword = await bcrypt.hash(password, 10);
 
   // Validate required fields
+
+  console.log("Incoming Request:" req.body)
   if (!email || !name || !mobile || !partnerType) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
