@@ -77,6 +77,35 @@ const transporter = nodemailer.createTransport({
 return transporter;
 }
 
+// Partner ID Generation Function 
+
+const generateNextPid = async (con) => {
+  return new Promise((resolve, reject) => {
+    // Get the last inserted PID from the CC_Partners table
+    const query = "SELECT pid FROM CC_Partners ORDER BY pid DESC LIMIT 1";
+    con.query(query, (err, results) => {
+      if (err) {
+        reject(err);
+      } else {
+        let lastPid = results.length > 0 ? results[0].pid : null;
+        
+        if (lastPid) {
+          // Extract number part from last PID (e.g., P0001 -> 1)
+          const lastNumber = parseInt(lastPid.substring(1));
+          const nextNumber = lastNumber + 1;
+
+          // Format the next PID with leading zeros (e.g., 1 -> P0001)
+          const nextPid = `P${nextNumber.toString().padStart(4, '0')}`;
+          resolve(nextPid);
+        } else {
+          // If no previous PID, start with P0001
+          resolve('P0001');
+        }
+      }
+    });
+  });
+};
+
 
 
 app.use(function (req, res, next) {
@@ -1894,7 +1923,11 @@ app.post('/api/businessPartnerRegistration', async (req, res) => {
     });
 
     // Generate unique partner ID (PID)
-    const pid = uuidv4();
+    // const pid = uuidv4();
+
+        // Generate next PID in the format P0001, P0002, etc.
+        const pid = await generateNextPid(con);
+
 
     // Insert into CC_Partners table with mobile as foreign key
     const insertPartnerQuery = `INSERT INTO CC_Partners (pid, mobile, partner_type, availability,address,city,pincode) VALUES (?, ?, ?, ?, ?, ?, ?)`;
