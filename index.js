@@ -862,7 +862,7 @@ app.post("/api/cc/rental/product/upload", (req, res) => {
    });  
    con.end();
  
-   res.status(200).json({ Status: "Data Upload completed Successfully" });
+   res.status(201).json({ Status: "Data Upload completed Successfully" });
  
  
  } catch (error) {
