@@ -847,11 +847,12 @@ app.post("/api/cc/rental/product/upload", (req, res) => {
    var ProductPurchasePrice = req.body.productPurchasePrice;
    var ProductAvailability = req.body.productAvailability;
    var Remarks = req.body.remarks;
+   var OwningAuthority = req.body.owningAuthority;
    
  
  
  
-   var sql = "INSERT INTO CC_RentalProductMaster (ProductName,ProductType,ProductBrandName, ProductImageURL, ProductUsageGender, ProductUsageOccasion, ProductOrigin, ProductCategory,ProductPriceBand, ProductPrice,ProductPurchasePrice,ProductAvailability,Remarks) VALUES ('"+ProductName+"','"+ProductType+"','"+ProductBrandName+"', '"+ProductImageURL+"','"+ProductUsageGender+"','"+ProductUsageOccasion+"','"+ProductOrigin+"','"+ProductCategory+"','"+ProductPriceBand+"','"+ProductPrice+"','"+ProductPurchasePrice+"','"+ProductAvailability+"','"+Remarks+"')";  
+   var sql = "INSERT INTO CC_RentalProductMaster (ProductName,ProductType,ProductBrandName, ProductImageURL, ProductUsageGender, ProductUsageOccasion, ProductOrigin, ProductCategory,ProductPriceBand, ProductPrice,ProductPurchasePrice,ProductAvailability,Remarks, OwningAuthority) VALUES ('"+ProductName+"','"+ProductType+"','"+ProductBrandName+"', '"+ProductImageURL+"','"+ProductUsageGender+"','"+ProductUsageOccasion+"','"+ProductOrigin+"','"+ProductCategory+"','"+ProductPriceBand+"','"+ProductPrice+"','"+ProductPurchasePrice+"','"+ProductAvailability+"','"+Remarks+"', '"+OwningAuthority+"')";  
                           
    con.query(sql, function (err, result) {  
   //  if (err) throw err;  
@@ -979,9 +980,9 @@ app.get('/api/cc/categories',(req,res) => {
       // CC Partners Partner id fetch logic begins
 
       const pidQuery = "SELECT pid FROM CC_Partners WHERE mobile = ?";
-      const mobile = '978887'; // Example mobile number
+      const mobile = user.mobile; // Example mobile number
       
-      const pid = await new Promise((resolve, reject) => {
+      const pId = await new Promise((resolve, reject) => {
         con.query(pidQuery, [mobile], (err, results) => {
           if (err) {
             reject(err); // Handle query error
@@ -993,11 +994,11 @@ app.get('/api/cc/categories',(req,res) => {
         });
       });
 
-      console.log("Pid value is " +pid);
+      console.log("Pid value is " +pId);
 
       // Partners Table parther id fetch logic ends
       con.end();
-      res.json({ token, userName: user.name,userId: user.mobile,userEmail: user.email });
+      res.json({ token, userName: user.name,userId: user.mobile,userEmail: user.email , pId : pId});
 
     });
   });
