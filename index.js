@@ -1837,14 +1837,102 @@ const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}
 });
 
 
+// app.post('/api/businessPartnerRegistration', async (req, res) => {
+
+// const {name, aadharImageURL, address , contact, email , pincode, city, state, availability,partnerType} = req.body;
+
+
+// console.log("aadharImage URL :" +aadharImageURL)
+
+
+// });
+
 app.post('/api/businessPartnerRegistration', async (req, res) => {
+  const { email, name, address, city, pincode, password, role, user_type, mobile, partnerType, availability } = req.body;
+  const hashedPassword = await bcrypt.hash(password, 10);
 
-const {name, aadharImageURL, address , contact, email , pincode, city, state, availability,partnerType} = req.body;
+  // Validate required fields
+  if (!email || !name || !mobile || !partnerType) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
 
+  
 
-console.log("aadharImage URL :" +aadharImageURL)
+  try
+  {
+  var con = dbConnection();
+  con.connect();
+  } catch (error) {
+    console.error('DB Connection Error', error);
+    res.status(500).json({ error: 'DB Connection Error' });
+  }
+  
+  try {
+ 
+    // Start transaction
+    await new Promise((resolve, reject) => {
+      con.beginTransaction(err => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
 
+    // Insert into CC_Users table
+    const insertUserQuery = `INSERT INTO CC_Users (email, name, address, city, password, role, user_type, mobile) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+    const userValues = [email, name, address, city, hashedPassword, role, user_type, mobile];
 
+    await new Promise((resolve, reject) => {
+      con.query(insertUserQuery, userValues, (err, results) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(results);
+        }
+      });
+    });
+
+    // Generate unique partner ID (PID)
+    const pid = uuidv4();
+
+    // Insert into CC_Partners table with mobile as foreign key
+    const insertPartnerQuery = `INSERT INTO CC_Partners (pid, mobile, partner_type, availability) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+    const partnerValues = [pid, mobile, partnerType, availability,address,city,pincode];
+
+    await new Promise((resolve, reject) => {
+      con.query(insertPartnerQuery, partnerValues, (err, results) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(results);
+        }
+      });
+    });
+
+    // Commit transaction
+    await new Promise((resolve, reject) => {
+      con.commit(err => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+
+    res.status(201).json({ message: 'Business partner registered successfully!', pid, mobile });
+
+  } catch (error) {
+    // Rollback transaction in case of error
+    await new Promise((resolve, reject) => {
+      con.rollback(err => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+
+    console.error('Error during business partner registration:', error);
+    res.status(500).json({ error: 'Business partner registration failed' });
+
+  } finally {
+    con.end(); // Close the connection
+  }
 });
 
 const options = {
