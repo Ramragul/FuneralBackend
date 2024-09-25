@@ -1897,7 +1897,7 @@ app.post('/api/businessPartnerRegistration', async (req, res) => {
     const pid = uuidv4();
 
     // Insert into CC_Partners table with mobile as foreign key
-    const insertPartnerQuery = `INSERT INTO CC_Partners (pid, mobile, partner_type, availability) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+    const insertPartnerQuery = `INSERT INTO CC_Partners (pid, mobile, partner_type, availability,address,city,pincode) VALUES (?, ?, ?, ?, ?, ?, ?)`;
     const partnerValues = [pid, mobile, partnerType, availability,address,city,pincode];
 
     await new Promise((resolve, reject) => {
