@@ -975,6 +975,14 @@ app.get('/api/cc/categories',(req,res) => {
       }
       con.end();
       const token = jwt.sign({ id: user.id, mobile: user.mobile}, 'your-secret-key', { expiresIn: '1h' });
+
+      // CC Partners Partner id fetch logic begins
+
+      const pid = con.query("SELECT pid from CC_Partners where mobile = '978887'")
+      console.log("PID " +pid)
+
+      // Partners Table parther id fetch logic ends
+
       res.json({ token, userName: user.name,userId: user.mobile,userEmail: user.email });
 
     });
