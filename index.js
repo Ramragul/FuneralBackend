@@ -998,7 +998,7 @@ app.get('/api/cc/categories',(req,res) => {
 
       // Partners Table parther id fetch logic ends
       con.end();
-      res.json({ token, userName: user.name,userId: user.mobile,userEmail: user.email , pId : pId});
+      res.json({ token, userName: user.name,userId: user.mobile,userEmail: user.email , pId : pId , userRole : user.role});
 
     });
   });
