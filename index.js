@@ -1903,6 +1903,8 @@ app.post('/api/businessPartnerRegistration', async (req, res) => {
   const { email, name, address, city, pincode, password, role, user_type, mobile, partnerType, availability } = req.body;
   const hashedPassword = await bcrypt.hash(password, 10);
 
+  const transporter = mailConfig();
+
   // Validate required fields
 
   console.log("Incoming Request:" +email + name +mobile +partnerType)
@@ -1973,7 +1975,8 @@ app.post('/api/businessPartnerRegistration', async (req, res) => {
         else resolve();
       });
     });
-
+    
+    sendRegistrationEmail(email, name);
     res.status(201).json({ message: 'Business partner registered successfully!', pid, mobile });
 
   } catch (error) {
@@ -1991,6 +1994,41 @@ app.post('/api/businessPartnerRegistration', async (req, res) => {
   } finally {
     con.end(); // Close the connection
   }
+
+
+    // Function to send registration email
+    const sendRegistrationEmail = (userEmail, userName) => {
+      // Set the correct path to the HTML template
+      const templatePath = path.join(__dirname, 'emailTemplates', 'registrationEmailTemplate.html');
+    
+      // Read the HTML template file
+      fs.readFile(templatePath, 'utf-8', (err, htmlTemplate) => {
+        if (err) {
+          console.error('Error reading the email template file:', err);
+          return;
+        }
+    
+        // Replace {{userName}} with the actual user's name
+        const emailHtml = htmlTemplate.replace('{{userName}}', userName);
+    
+        // Define email options
+        const mailOptions = {
+          from: '"Cotton Candy Support" <support@cottoncandy.co.in>',
+          to: userEmail,
+          subject: 'Welcome to Cotton Candy!',
+          html: emailHtml,
+        };
+    
+        // Send the email
+        transporter.sendMail(mailOptions, (error, info) => {
+          if (error) {
+            res.status(500).json({ message: 'Failure in Email Delivery ' +error });
+          } else {
+            res.status(201).json({ message: 'Tailoring order placed successfully ' +info.response });
+          }
+        });
+      });
+    };
 });
 
 const options = {
