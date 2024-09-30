@@ -736,7 +736,7 @@ app.post("/api/cc/designcatalogue", (req, res) => {
   var Remarks = req.body.remarks;
   var ProductDesignDetails = req.body.productDesignDetails;
   var ProductWorkDescription = req.body.productWorkDescription;
-  var productAlteraions = req.body.productAlteration;
+  var ProductAlterations = req.body.productAlteration;
   
 
 
