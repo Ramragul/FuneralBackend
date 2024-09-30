@@ -746,7 +746,7 @@ app.post("/api/cc/designcatalogue", (req, res) => {
  //  if (err) throw err;  
  if (err) console.log(err);
   console.log("1 record inserted");  
-  console.log("Result"+result.data);  
+  //console.log("Result"+result.data);  
   });  
   con.end();
 
