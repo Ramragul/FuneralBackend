@@ -741,13 +741,40 @@ app.post("/api/cc/designcatalogue", (req, res) => {
 
 
 
-  var sql = "INSERT INTO CC_ProductMaster (ProductName, ProductImageURL, ProductUsageGender, ProductUsageOccasion, ProductOrigin, ProductCategory,ProductPriceBand, ProductPrice,Remarks,ProductDesignDetails,ProductWorkDescription,ProductAlterations) VALUES ('"+ProductName+"', '"+ProductImageURL+"','"+ProductUsageGender+"','"+ProductUsageOccasion+"','"+ProductOrigin+"','"+ProductCategory+"','"+ProductPriceBand+"','"+ProductPrice+"','"+QUOTE(Remarks)+"','"+QUOTE(ProductDesignDetails)+"','"+QUOTE(ProductWorkDescription)+"','"+QUOTE(ProductAlterations)+"')";  
-  con.query(sql, function (err, result) {  
- //  if (err) throw err;  
- if (err) console.log(err);
-  console.log("1 record inserted");  
-  //console.log("Result"+result.data);  
-  });  
+//   var sql = "INSERT INTO CC_ProductMaster (ProductName, ProductImageURL, ProductUsageGender, ProductUsageOccasion, ProductOrigin, ProductCategory,ProductPriceBand, ProductPrice,Remarks,ProductDesignDetails,ProductWorkDescription,ProductAlterations) VALUES ('"+ProductName+"', '"+ProductImageURL+"','"+ProductUsageGender+"','"+ProductUsageOccasion+"','"+ProductOrigin+"','"+ProductCategory+"','"+ProductPriceBand+"','"+ProductPrice+"','"+QUOTE(Remarks)+"','"+QUOTE(ProductDesignDetails)+"','"+QUOTE(ProductWorkDescription)+"','"+QUOTE(ProductAlterations)+"')";  
+//   con.query(sql, function (err, result) {  
+//  //  if (err) throw err;  
+//  if (err) console.log(err);
+//   console.log("1 record inserted");  
+//   //console.log("Result"+result.data);  
+//   });  
+
+
+var sql = `
+    INSERT INTO CC_ProductMaster 
+    (ProductName, ProductImageURL, ProductUsageGender, ProductUsageOccasion, ProductOrigin, ProductCategory, ProductPriceBand, ProductPrice, Remarks, ProductDesignDetails, ProductWorkDescription, ProductAlterations) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`;
+
+var values = [
+    ProductName,
+    ProductImageURL,
+    ProductUsageGender,
+    ProductUsageOccasion,
+    ProductOrigin,
+    ProductCategory,
+    ProductPriceBand,
+    ProductPrice,
+    Remarks,
+    ProductDesignDetails,
+    ProductWorkDescription,
+    ProductAlterations
+];
+
+con.query(sql, values, function (err, result) {
+    if (err) throw err;
+    console.log("Product inserted successfully");
+});
   con.end();
 
   res.status(200).json({ Status: "Data Upload completed Successfully" });
