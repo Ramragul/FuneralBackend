@@ -737,6 +737,7 @@ app.post("/api/cc/designcatalogue", (req, res) => {
   var ProductDesignDetails = req.body.productDesignDetails;
   var ProductWorkDescription = req.body.productWorkDescription;
   var ProductAlterations = req.body.productAlterations;
+  var OwningAuthority = req.body.owningAuthority;
   
 
 
@@ -749,11 +750,12 @@ app.post("/api/cc/designcatalogue", (req, res) => {
 //   //console.log("Result"+result.data);  
 //   });  
 
+var ProductStatus = "pending"
 
 var sql = `
     INSERT INTO CC_ProductMaster 
-    (ProductName, ProductImageURL, ProductUsageGender, ProductUsageOccasion, ProductOrigin, ProductCategory, ProductPriceBand, ProductPrice, Remarks, ProductDesignDetails, ProductWorkDescription, ProductAlterations) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (ProductName, ProductImageURL, ProductUsageGender, ProductUsageOccasion, ProductOrigin, ProductCategory, ProductPriceBand, ProductPrice, Remarks, ProductDesignDetails, ProductWorkDescription, ProductAlterations, OwningAuthority,ProductStatus) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `;
 
 var values = [
@@ -768,7 +770,9 @@ var values = [
     Remarks,
     ProductDesignDetails,
     ProductWorkDescription,
-    ProductAlterations
+    ProductAlterations,
+    OwningAuthority,
+    ProductStatus
 ];
 
 con.query(sql, values, function (err, result) {
