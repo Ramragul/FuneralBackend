@@ -781,7 +781,7 @@ con.query(sql, values, function (err, result) {
 });
   con.end();
 
-  res.status(200).json({ Status: "Data Upload completed Successfully" });
+  res.status(201).json({ Status: "Data Upload completed Successfully" });
 
 
 } catch (error) {
