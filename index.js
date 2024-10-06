@@ -1631,7 +1631,7 @@ var orderId = ""
               orderDate,
               orderStatus,
               userId,
-              partner
+              owningAuthority
           ];
 
           con.query(orderQuery, orderValues, (err, orderResult) => {
