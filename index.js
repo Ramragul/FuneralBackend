@@ -1565,8 +1565,8 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
 
 var orderId = ""
 
-  console.log("RECEIVED FROM FRONT END :" +JSON.stringify(req.body))
-  console.log("Custom Design Image Length " +customDesignImage.length)
+  console.log("Appointment DateRECEIVED FROM FRONT END :" +JSON.stringify(req.body.appointmentDate))
+  console.log("Appoinment date direct value " +appointmentDate)
 
   try
   {
