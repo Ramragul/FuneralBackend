@@ -1562,10 +1562,11 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
 
   // GMT to IST Conversion
 
-  //const date = new Date();
+  const appointmentDateUTC = new Date(appointmentDate);
 
-  // date.setHours(appointmentDate.getHours() + 5);
-  // date.setMinutes(appointmentDate.getMinutes() + 30);
+  const appointmentDateIST = new Date(appointmentDateUTC);
+  appointmentDateIST.setHours(appointmentDateIST.getHours() + 5);
+  appointmentDateIST.setMinutes(appointmentDateIST.getMinutes() + 30);
 
 
 var orderId = ""
@@ -1606,7 +1607,7 @@ var orderId = ""
           city,
           pincode,
           orderNotes,
-          appointmentDate ? moment(appointmentDate).format('YYYY-MM-DD HH:mm:ss') : null,
+          appointmentDate ? moment(appointmentDateIST).format('YYYY-MM-DD HH:mm:ss') : null,
          // appointmentDate ? appointmentDate : null,
           productId,
           productImageURL,
@@ -1682,7 +1683,7 @@ var orderId = ""
       const emailHtml = htmlTemplate
       .replace('{{orderId}}', orderId)
       .replace('{{userName}}', userName)
-      .replace('{{appointmentDate}}' , appointmentDate)
+      .replace('{{appointmentDate}}' , appointmentDateIST)
       .replace('{{orderDetails}}' , stitchType)
       .replace('{{userEmail}}',email)
 
