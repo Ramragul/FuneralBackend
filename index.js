@@ -1562,8 +1562,8 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
 
   // GMT to IST Conversion
 
-  appointmentDate.setHours(date.getHours() + 5);
-  appointmentDate.setMinutes(date.getMinutes() + 30);
+  appointmentDate.setHours(appointmentDate.getHours() + 5);
+  appointmentDate.setMinutes(appointmentDate.getMinutes() + 30);
 
 
 var orderId = ""
