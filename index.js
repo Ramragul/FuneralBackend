@@ -1560,7 +1560,10 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
       owningAuthority,
   } = req.body;
 
+  // GMT to IST Conversion
 
+  appointmentDate.setHours(date.getHours() + 5);
+  appointmentDate.setMinutes(date.getMinutes() + 30);
 
 
 var orderId = ""
