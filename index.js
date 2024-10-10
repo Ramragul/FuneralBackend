@@ -2137,7 +2137,7 @@ app.post('/api/service/upload', async (req, res) => {
 
     // Commit transaction
     await con.commit();
-
+    con.end()
     res.status(200).json({ message: 'Service details uploaded successfully' });
   } catch (error) {
     // If an error occurs, roll back the transaction
@@ -2145,9 +2145,7 @@ app.post('/api/service/upload', async (req, res) => {
 
     console.error('Error during service upload:', error);
     res.status(500).json({ error: 'Failed to upload service details' });
-  } finally {
-    if (con) con.end();
-  }
+  } 
 });
 
 
