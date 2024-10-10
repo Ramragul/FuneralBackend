@@ -130,7 +130,7 @@ app.options('*', cors());
 
 app.post("/api/test", (req, res) => {
     //res.json({ message: "Hello from server! test path" });
-    console.log("data received" + req.body)
+    console.log("data received" + JSON.stringify(req.body))
   });
 
   app.get('/db',(req,res) => {
