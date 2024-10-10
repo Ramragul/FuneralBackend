@@ -58,7 +58,7 @@ function dbConnection () {
     password : process.env.DATABASE_PASSWORD,
     port     : process.env.DATABASE_PORT,
     database : process.env.DATABASE_NAME
-  });
+  }).promise();
   return connection;
 }
 
@@ -2088,7 +2088,7 @@ app.post('/api/service/upload', async (req, res) => {
   }
 
   try {
-    var con = dbConnection().promise();;
+    var con = dbConnection()
     con.connect();
 
     // Start transaction
