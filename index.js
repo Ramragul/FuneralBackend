@@ -128,7 +128,7 @@ app.use(function (req, res, next) {
 });
 app.options('*', cors());
 
-app.get("/api/test", (req, res) => {
+app.post("/api/test", (req, res) => {
     //res.json({ message: "Hello from server! test path" });
     console.log("data received" + req.body)
   });
