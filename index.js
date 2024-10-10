@@ -2079,6 +2079,78 @@ app.post('/api/businessPartnerRegistration', async (req, res) => {
 
 });
 
+
+app.post('/api/service/upload', async (req, res) => {
+  const { partnerId, serviceId, brandUsed, willingToTravel, rules, variants, portfolioImages } = req.body;
+
+  // if (!partnerId || !serviceId || !variants || !portfolioImages) {
+  //   return res.status(400).json({ error: 'Missing required fields' });
+  // }
+
+  try {
+    const con = dbConnection();
+    con.connect();
+
+    // Start transaction
+    await con.beginTransaction();
+
+    // Insert each variant into the CC_Service_Variants table
+    const variantInsertPromises = variants.map((variant) => {
+      const { variantName, description, price } = variant;
+      const sqlInsertVariant = `
+        INSERT INTO CC_Service_Variants 
+        (partner_id, service_id, variant_name, description, price, brand_used, willing_to_travel, policies)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+      return con.query(sqlInsertVariant, [
+        partnerId,
+        serviceId,
+        variantName,
+        description,
+        price,
+        brandUsed,
+        willingToTravel === 'true' ? 1 : 0, // Convert to boolean
+        rules,
+      ]);
+    });
+
+    // Wait for all variant insertions to complete
+    await Promise.all(variantInsertPromises);
+
+    // Insert portfolio images into the CC_Service_Portfolio table (for the entire service, not per variant)
+    const portfolioInsertPromises = portfolioImages.map((imageUrl) => {
+      const sqlInsertPortfolio = `
+        INSERT INTO CC_Service_Portfolio 
+        (partner_id, service_id, image_url, description)
+        VALUES (?, ?, ?, ?)
+      `;
+      return con.query(sqlInsertPortfolio, [
+        partnerId,
+        serviceId,
+        imageUrl,
+        '' // Description can be optional, you can update it if needed
+      ]);
+    });
+
+    // Wait for all portfolio insertions to complete
+    await Promise.all(portfolioInsertPromises);
+
+    // Commit transaction
+    await con.commit();
+
+    res.status(200).json({ message: 'Service details uploaded successfully' });
+  } catch (error) {
+    // If an error occurs, roll back the transaction
+    if (con) await con.rollback();
+
+    console.error('Error during service upload:', error);
+    res.status(500).json({ error: 'Failed to upload service details' });
+  } finally {
+    if (con) con.end();
+  }
+});
+
+
 const options = {
   key: fs.readFileSync(path.join(__dirname,'cert', 'admee.in.key')),
   cert: fs.readFileSync(path.join(__dirname, 'cert', 'admee_in.crt'))
