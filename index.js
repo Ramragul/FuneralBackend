@@ -2187,7 +2187,8 @@ app.post('/api/service/upload', async (req, res) => {
     await Promise.all(variantInsertPromises);
 
     // Prepare portfolioImages as a single string
-    const portfolioImagesString = portfolioImages; // This should already be a single comma-separated string
+    const portfolioImagesString = portfolioImages.toString(); // This should already be a single comma-separated string
+    console.log('Portfolio Images String:', portfolioImagesString);
 
     // Insert portfolio images as a single string (comma-separated)
     const sqlInsertPortfolio = `
