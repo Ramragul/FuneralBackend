@@ -2089,7 +2089,7 @@ app.post('/api/service/upload', async (req, res) => {
   }
 
   try {
-    var con = dbConnection();
+    const con = dbConnection();
     con.connect();
 
     // Start transaction
@@ -2124,10 +2124,12 @@ app.post('/api/service/upload', async (req, res) => {
       (partner_id, service_id, image_url, description)
       VALUES (?, ?, ?, ?)
     `;
+
+    // Insert concatenated portfolio images as a single string
     await con.query(sqlInsertPortfolio, [
       partnerId,
       serviceId,
-      portfolioImages,  // Single image URL
+      portfolioImages,  // Single concatenated string
       '' // Optional description (empty for now)
     ]);
 
@@ -2144,6 +2146,7 @@ app.post('/api/service/upload', async (req, res) => {
     res.status(500).json({ error: 'Failed to upload service details' });
   }
 });
+
 
 
 
