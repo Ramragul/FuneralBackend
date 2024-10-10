@@ -2080,6 +2080,74 @@ app.post('/api/businessPartnerRegistration', async (req, res) => {
 });
 
 
+// app.post('/api/service/upload', async (req, res) => {
+//   const { partnerId, serviceId, brandUsed, willingToTravel, rules, variants, portfolioImages } = req.body;
+
+//   // Check for missing fields
+//   if (!partnerId || !serviceId || !variants || !portfolioImages) {
+//     return res.status(400).json({ error: 'Missing required fields' });
+//   }
+
+//   try {
+//     var con = dbConnection();
+//     con.connect();
+
+//     // Start transaction
+//     await con.beginTransaction();
+
+//     // Insert each variant into the CC_Service_Variants table
+//     const variantInsertPromises = variants.map((variant) => {
+//       const { variantName, description, price } = variant;
+//       const sqlInsertVariant = `
+//         INSERT INTO CC_Service_Variants 
+//         (partner_id, service_id, variant_name, description, price, brand_used, willing_to_travel, policies)
+//         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+//       `;
+//       return con.query(sqlInsertVariant, [
+//         partnerId,
+//         serviceId,
+//         variantName,
+//         description,
+//         price,
+//         brandUsed,
+//         willingToTravel === 'true' ? 1 : 0, // Convert to boolean
+//         rules,
+//       ]);
+//     });
+
+//     // Wait for all variant insertions to complete
+//     await Promise.all(variantInsertPromises);
+
+//     // Insert portfolio image into the CC_Service_Portfolio table (only one image, no loop)
+//     const sqlInsertPortfolio = `
+//       INSERT INTO CC_Service_Portfolio 
+//       (partner_id, service_id, image_url, description)
+//       VALUES (?, ?, ?, ?)
+//     `;
+
+//     // Insert concatenated portfolio images as a single string
+//     await con.query(sqlInsertPortfolio, [
+//       partnerId,
+//       serviceId,
+//       portfolioImages,  // Single concatenated string
+//       '' // Optional description (empty for now)
+//     ]);
+
+//     // Commit transaction
+//     await con.commit();
+//     con.end();
+
+//     res.status(200).json({ message: 'Service details uploaded successfully' });
+//   } catch (error) {
+//     // If an error occurs, roll back the transaction
+//     if (con) await con.rollback();
+
+//     console.error('Error during service upload:', error);
+//     res.status(500).json({ error: 'Failed to upload service details' });
+//   }
+// });
+
+
 app.post('/api/service/upload', async (req, res) => {
   const { partnerId, serviceId, brandUsed, willingToTravel, rules, variants, portfolioImages } = req.body;
 
@@ -2089,7 +2157,7 @@ app.post('/api/service/upload', async (req, res) => {
   }
 
   try {
-    var con = dbConnection();
+    const con = dbConnection();
     con.connect();
 
     // Start transaction
@@ -2118,18 +2186,18 @@ app.post('/api/service/upload', async (req, res) => {
     // Wait for all variant insertions to complete
     await Promise.all(variantInsertPromises);
 
-    // Insert portfolio image into the CC_Service_Portfolio table (only one image, no loop)
+    // Insert portfolio images as a single string (comma-separated)
     const sqlInsertPortfolio = `
       INSERT INTO CC_Service_Portfolio 
       (partner_id, service_id, image_url, description)
       VALUES (?, ?, ?, ?)
     `;
 
-    // Insert concatenated portfolio images as a single string
+    // Ensure portfolioImages is treated as a single string
     await con.query(sqlInsertPortfolio, [
       partnerId,
       serviceId,
-      portfolioImages,  // Single concatenated string
+      portfolioImages,  // This should already be a single string
       '' // Optional description (empty for now)
     ]);
 
