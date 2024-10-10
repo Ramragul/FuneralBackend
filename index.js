@@ -2186,6 +2186,9 @@ app.post('/api/service/upload', async (req, res) => {
     // Wait for all variant insertions to complete
     await Promise.all(variantInsertPromises);
 
+    // Prepare portfolioImages as a single string
+    const portfolioImagesString = portfolioImages; // This should already be a single comma-separated string
+
     // Insert portfolio images as a single string (comma-separated)
     const sqlInsertPortfolio = `
       INSERT INTO CC_Service_Portfolio 
@@ -2197,7 +2200,7 @@ app.post('/api/service/upload', async (req, res) => {
     await con.query(sqlInsertPortfolio, [
       partnerId,
       serviceId,
-      portfolioImages,  // This should already be a single string
+      portfolioImagesString,  // This should be a single string now
       '' // Optional description (empty for now)
     ]);
 
