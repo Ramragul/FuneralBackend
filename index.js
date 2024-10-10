@@ -2087,113 +2087,66 @@ app.post('/api/service/upload', async (req, res) => {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
-  let con;
-
   try {
-    // Initialize DB connection
-    con = dbConnection();
-    con.connect((err) => {
-      if (err) {
-        console.error('DB connection failed:', err);
-        return res.status(500).json({ error: 'DB connection failed' });
-      } else {
-        console.log('DB connected successfully');
-      }
-    });
+    const con = dbConnection();
+    con.connect();
 
     // Start transaction
-    console.log('Starting transaction...');
     await con.beginTransaction();
 
-    // Insert each variant into the CC_Service_Variants table using async/await
-    for (const variant of variants) {
+    // Insert each variant into the CC_Service_Variants table
+    const variantInsertPromises = variants.map((variant) => {
       const { variantName, description, price } = variant;
-      console.log(`Inserting variant: ${variantName}, price: ${price}`);
-      
       const sqlInsertVariant = `
         INSERT INTO CC_Service_Variants 
         (partner_id, service_id, variant_name, description, price, brand_used, willing_to_travel, policies)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `;
+      return con.query(sqlInsertVariant, [
+        partnerId,
+        serviceId,
+        variantName,
+        description,
+        price,
+        brandUsed,
+        willingToTravel === 'true' ? 1 : 0, // Convert to boolean
+        rules,
+      ]);
+    });
 
-      const variantResult = await new Promise((resolve, reject) => {
-        con.query(sqlInsertVariant, [
-          partnerId,
-          serviceId,
-          variantName,
-          description,
-          price,
-          brandUsed,
-          willingToTravel === 'true' ? 1 : 0, // Convert to boolean
-          rules
-        ], (err, result) => {
-          if (err) {
-            console.error(`Error inserting variant ${variantName}:`, err);
-            reject(err); // Trigger rollback
-          } else {
-            console.log(`Variant inserted successfully: ${variantName}`, result);
-            resolve(result);
-          }
-        });
-      });
-    }
+    // Wait for all variant insertions to complete
+    await Promise.all(variantInsertPromises);
 
-    // Insert portfolio images into the CC_Service_Portfolio table using async/await
-    for (const imageUrl of portfolioImages) {
-      console.log(`Inserting portfolio image: ${imageUrl}`);
-
+    // Insert portfolio images into the CC_Service_Portfolio table (for the entire service, not per variant)
+    const portfolioInsertPromises = portfolioImages.map((imageUrl) => {
       const sqlInsertPortfolio = `
         INSERT INTO CC_Service_Portfolio 
         (partner_id, service_id, image_url, description)
         VALUES (?, ?, ?, ?)
       `;
+      return con.query(sqlInsertPortfolio, [
+        partnerId,
+        serviceId,
+        imageUrl,
+        '' // Description can be optional, you can update it if needed
+      ]);
+    });
 
-      const portfolioResult = await new Promise((resolve, reject) => {
-        con.query(sqlInsertPortfolio, [
-          partnerId,
-          serviceId,
-          imageUrl,
-          '' // Description can be optional, you can update it if needed
-        ], (err, result) => {
-          if (err) {
-            console.error(`Error inserting portfolio image ${imageUrl}:`, err);
-            reject(err); // Trigger rollback
-          } else {
-            console.log(`Portfolio image inserted successfully: ${imageUrl}`, result);
-            resolve(result);
-          }
-        });
-      });
-    }
+    // Wait for all portfolio insertions to complete
+    await Promise.all(portfolioInsertPromises);
 
     // Commit transaction
-    console.log('Committing transaction...');
     await con.commit();
-    console.log('Transaction committed successfully');
 
     res.status(200).json({ message: 'Service details uploaded successfully' });
-
   } catch (error) {
     // If an error occurs, roll back the transaction
-    console.error('Error during service upload, rolling back transaction:', error);
+    if (con) await con.rollback();
 
-    if (con) {
-      await con.rollback();
-      console.log('Transaction rolled back');
-    }
-
-    res.status(500).json({ error: 'Failed to upload service details', details: error.message });
-
+    console.error('Error during service upload:', error);
+    res.status(500).json({ error: 'Failed to upload service details' });
   } finally {
-    if (con) {
-      con.end((err) => {
-        if (err) {
-          console.error('Error closing the connection:', err);
-        } else {
-          console.log('DB connection closed');
-        }
-      });
-    }
+    if (con) con.end();
   }
 });
 
