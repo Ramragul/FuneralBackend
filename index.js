@@ -2088,7 +2088,7 @@ app.post('/api/service/upload', async (req, res) => {
   }
 
   try {
-    var con = dbConnection();
+    var con = dbConnection().promise();;
     con.connect();
 
     // Start transaction
