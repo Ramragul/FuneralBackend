@@ -2083,12 +2083,13 @@ app.post('/api/businessPartnerRegistration', async (req, res) => {
 app.post('/api/service/upload', async (req, res) => {
   const { partnerId, serviceId, brandUsed, willingToTravel, rules, variants, portfolioImages } = req.body;
 
+  // Check for missing fields
   if (!partnerId || !serviceId || !variants || !portfolioImages) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
   try {
-    var con = dbConnection()
+    var con = dbConnection();
     con.connect();
 
     // Start transaction
@@ -2117,27 +2118,23 @@ app.post('/api/service/upload', async (req, res) => {
     // Wait for all variant insertions to complete
     await Promise.all(variantInsertPromises);
 
-    // Insert portfolio images into the CC_Service_Portfolio table (for the entire service, not per variant)
-    const portfolioInsertPromises = portfolioImages.map((imageUrl) => {
-      const sqlInsertPortfolio = `
-        INSERT INTO CC_Service_Portfolio 
-        (partner_id, service_id, image_url, description)
-        VALUES (?, ?, ?, ?)
-      `;
-      return con.query(sqlInsertPortfolio, [
-        partnerId,
-        serviceId,
-        imageUrl,
-        '' // Description can be optional, you can update it if needed
-      ]);
-    });
-
-    // Wait for all portfolio insertions to complete
-    await Promise.all(portfolioInsertPromises);
+    // Insert portfolio image into the CC_Service_Portfolio table (only one image, no loop)
+    const sqlInsertPortfolio = `
+      INSERT INTO CC_Service_Portfolio 
+      (partner_id, service_id, image_url, description)
+      VALUES (?, ?, ?, ?)
+    `;
+    await con.query(sqlInsertPortfolio, [
+      partnerId,
+      serviceId,
+      portfolioImages,  // Single image URL
+      '' // Optional description (empty for now)
+    ]);
 
     // Commit transaction
     await con.commit();
-    con.end()
+    con.end();
+
     res.status(200).json({ message: 'Service details uploaded successfully' });
   } catch (error) {
     // If an error occurs, roll back the transaction
@@ -2145,7 +2142,7 @@ app.post('/api/service/upload', async (req, res) => {
 
     console.error('Error during service upload:', error);
     res.status(500).json({ error: 'Failed to upload service details' });
-  } 
+  }
 });
 
 
