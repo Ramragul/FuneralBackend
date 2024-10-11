@@ -1944,7 +1944,7 @@ const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}
 // });
 
 app.post('/api/businessPartnerRegistration', async (req, res) => {
-  const { email, name, address, city, pincode, password, role, user_type, mobile, partnerType, availability } = req.body;
+  const { email, name, businessName, address, city, pincode, aadharImageURL, password, role, user_type, mobile, partnerType, availability } = req.body;
   const hashedPassword = await bcrypt.hash(password, 10);
 
   const transporter = mailConfig();
@@ -2035,8 +2035,8 @@ app.post('/api/businessPartnerRegistration', async (req, res) => {
 
 
     // Insert into CC_Partners table with mobile as foreign key
-    const insertPartnerQuery = `INSERT INTO CC_Partners (pid, mobile, partner_type, availability,address,city,pincode) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-    const partnerValues = [pid, mobile, partnerType, availability,address,city,pincode];
+    const insertPartnerQuery = `INSERT INTO CC_Partners (pid, mobile, partner_type, availability,address,city,pincode,business_name,id_proof) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const partnerValues = [pid, mobile, partnerType, availability,address,city,pincode,businessName,aadharImageURL];
 
     await new Promise((resolve, reject) => {
       con.query(insertPartnerQuery, partnerValues, (err, results) => {
