@@ -2238,6 +2238,9 @@ app.post('/api/cc/service/booking', async (req, res) => {
       bookingStatus
   } = req.body;
 
+  console.log("ServiceId :" +serviceId);
+  console.log("VariantId :" +variantId);
+  console.log("Booking Status :" +bookingStatus)
   // GMT to IST Conversion
 
   const serviceDateUTC = new Date(appointmentDate);
