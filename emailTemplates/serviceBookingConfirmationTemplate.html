@@ -18,12 +18,11 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            background-image: url('https://example.com/diwali-background.jpg');
-            background-size: cover;
         }
         h1 {
             color: #FF9800;
             text-align: center;
+            margin-bottom: 20px;
         }
         p {
             font-size: 16px;
@@ -31,14 +30,18 @@
             line-height: 1.6;
         }
         .order-details {
-            background-color: rgba(255, 255, 255, 0.9);
-            padding: 10px;
+            background-color: #FFF3E0;
+            padding: 15px;
             margin-top: 20px;
             border-left: 4px solid #FF9800;
+            border-radius: 5px;
         }
         .order-details h3 {
             color: #FF9800;
             margin-top: 0;
+        }
+        .order-details p {
+            margin: 5px 0;
         }
         .footer {
             text-align: center;
@@ -50,17 +53,21 @@
             color: #FF9800;
             text-decoration: none;
         }
-        .diya-icon {
-            width: 100px;
-            height: auto;
-            display: block;
-            margin: 0 auto 20px auto;
+        .button {
+            display: inline-block;
+            background-color: #FF9800;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 16px;
+            margin-top: 20px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <img class="diya-icon" src="https://example.com/diya-icon.png" alt="Diwali Diya">
         <h1>Booking Confirmation</h1>
         <p>Dear {{userName}},</p>
 
@@ -81,7 +88,7 @@
 
         <div class="footer">
             <p>Warm regards, <br> Cotton Candy Team</p>
-            <p><a href="https://cottoncandy.com">Visit our website</a></p>
+            <p><a href="https://cottoncandy.com" class="button">Visit our website</a></p>
         </div>
     </div>
 </body>

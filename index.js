@@ -2303,7 +2303,7 @@ app.post('/api/cc/service/booking', async (req, res) => {
       const emailHtml = htmlTemplate.replace('{{userName}}', userName)
       .replace('{{orderId}}', orderId)
       .replace('{{userName}}', userName)
-      .replace('{{servicetDate}}' , serviceDateIST)
+      .replace('{{serviceDate}}' , serviceDateIST)
       .replace('{{userEmail}}',email)
       .replace('{{serviceTime}}' , serviceTime)
       .replace('{{serviceName}}' , 'Mehendi')
