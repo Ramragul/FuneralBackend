@@ -2221,6 +2221,113 @@ app.post('/api/service/upload', async (req, res) => {
 });
 
 
+app.post('/api/cc/serviceBooking', async (req, res) => {
+  const {
+      name,
+      email,
+      phoneNumber,
+      address,
+      city,
+      pincode,
+      serviceDate,
+      serviceTime,
+      orderNotes,
+      userId,
+      serviceId,
+      variantId,
+      booking_status
+  } = req.body;
+
+  // GMT to IST Conversion
+
+  const serviceDateUTC = new Date(serviceDate);
+
+  const serviceDateIST = new Date(serviceDateUTC);
+  serviceDateIST.setHours(serviceDateIST.getHours() + 5);
+  serviceDateIST.setMinutes(serviceDateIST.getMinutes() + 30);
+
+
+  const currentDate = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+
+  // Convert the formatted date to YYYY-MM-DD HH:MM:SS format
+  const [datePart, timePart] = currentDate.split(', ');
+  const [month, day, year] = datePart.split('/');
+  
+  // Format the date as YYYY-MM-DD HH:MM:SS
+  const bookingDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')} ${timePart}`;
+  
+
+  console.log("Appointment DateRECEIVED FROM FRONT END :" +JSON.stringify(req.body.servicetDate))
+  console.log("Appoinment date direct value " +serviceDate)
+
+  try
+  {
+  var con = dbConnection();
+  con.connect();
+  } catch (error) {
+    console.error('DB Connection Error', error);
+    res.status(500).json({ error: 'DB Connection Error' });
+  }
+
+  const transporter = mailConfig();
+
+
+
+  const query = 'INSERT INTO CC_Service_Bookings (name, contact_number, email, address, city, pincode,service_id,variant_id,service_date,service_time,user_id,booking_date,booking_status) VALUES (?, ?, ?, ?, ?, ?)';
+  con.query(query, [name, phoneNumber, email, address, city, pincode, serviceId, variantId, serviceDateIST, serviceTime, userId, bookingDate], (err, result) => {
+    if (err) {
+      console.error('Error inserting user:', err);
+      return res.status(205).json({ message: err });
+    }
+
+    orderId = result.insertId
+    con.end();
+    sendRegistrationEmail(email, name);
+    res.status(201).json({ message: 'Service Booked successfully' });
+  });
+
+      
+  // Function to send registration email
+  const sendRegistrationEmail = (userEmail, userName) => {
+    // Set the correct path to the HTML template
+    const templatePath = path.join(__dirname, 'emailTemplates', 'serviceBookingConfirmationTemplate.html');
+  
+    // Read the HTML template file
+    fs.readFile(templatePath, 'utf-8', (err, htmlTemplate) => {
+      if (err) {
+        console.error('Error reading the email template file:', err);
+        return;
+      }
+  
+      // Replace {{userName}} with the actual user's name
+      const emailHtml = htmlTemplate.replace('{{userName}}', userName);
+      .replace('{{orderId}}', orderId)
+      .replace('{{userName}}', userName)
+      .replace('{{appointmentDate}}' , serviceDateIST)
+      .replace('{{userEmail}}',email)
+      .replace('{{serviceTime}}' , serviceTime)
+      .replace('{{serviceName}}' , 'Mehendi')
+  
+      // Define email options
+      const mailOptions = {
+        from: '"Cotton Candy Support" <support@cottoncandy.co.in>',
+        to: userEmail,
+        subject: 'Welcome to Cotton Candy!',
+        html: emailHtml,
+      };
+  
+      // Send the email
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          res.status(500).json({ message: 'Failure in Email Delivery ' +error });
+        } else {
+          res.status(201).json({ message: 'Tailoring order placed successfully ' +info.response });
+        }
+      });
+    });
+  };
+
+});
 
 
 const options = {
