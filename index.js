@@ -2221,7 +2221,7 @@ app.post('/api/service/upload', async (req, res) => {
 });
 
 
-app.post('/api/cc/serviceBooking', async (req, res) => {
+app.post('/api/cc/service/booking', async (req, res) => {
   const {
       name,
       email,
@@ -2229,18 +2229,18 @@ app.post('/api/cc/serviceBooking', async (req, res) => {
       address,
       city,
       pincode,
-      serviceDate,
+      appointmentDate,
       serviceTime,
-      orderNotes,
+      remarks,
       userId,
       serviceId,
       variantId,
-      booking_status
+      bookingStatus
   } = req.body;
 
   // GMT to IST Conversion
 
-  const serviceDateUTC = new Date(serviceDate);
+  const serviceDateUTC = new Date(appointmentDate);
 
   const serviceDateIST = new Date(serviceDateUTC);
   serviceDateIST.setHours(serviceDateIST.getHours() + 5);
@@ -2273,8 +2273,8 @@ app.post('/api/cc/serviceBooking', async (req, res) => {
 
 
 
-  const query = 'INSERT INTO CC_Service_Bookings (name, contact_number, email, address, city, pincode,service_id,variant_id,service_date,service_time,user_id,booking_date,booking_status) VALUES (?, ?, ?, ?, ?, ?)';
-  con.query(query, [name, phoneNumber, email, address, city, pincode, serviceId, variantId, serviceDateIST, serviceTime, userId, bookingDate], (err, result) => {
+  const query = 'INSERT INTO CC_Service_Bookings (name, contact_number, email, address, city, pincode,service_id,variant_id,service_date,service_time,user_id,booking_date,booking_status,remarks) VALUES (?, ?, ?, ?, ?, ?)';
+  con.query(query, [name, phoneNumber, email, address, city, pincode, serviceId, variantId, serviceDateIST, serviceTime, userId, bookingDate,bookingStatus,remarks], (err, result) => {
     if (err) {
       console.error('Error inserting user:', err);
       return res.status(205).json({ message: err });
