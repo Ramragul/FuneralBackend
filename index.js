@@ -2300,7 +2300,7 @@ app.post('/api/cc/serviceBooking', async (req, res) => {
       }
   
       // Replace {{userName}} with the actual user's name
-      const emailHtml = htmlTemplate.replace('{{userName}}', userName);
+      const emailHtml = htmlTemplate.replace('{{userName}}', userName)
       .replace('{{orderId}}', orderId)
       .replace('{{userName}}', userName)
       .replace('{{appointmentDate}}' , serviceDateIST)
