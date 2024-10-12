@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Service Booking Confirmation</title>
+    <title>Mehendi Service Booking Confirmation - Diwali Special</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -18,9 +18,11 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            background-image: url('https://example.com/diwali-background.jpg');
+            background-size: cover;
         }
         h1 {
-            color: #FF4081;
+            color: #FF9800;
             text-align: center;
         }
         p {
@@ -29,13 +31,13 @@
             line-height: 1.6;
         }
         .order-details {
-            background-color: #f9f9f9;
+            background-color: rgba(255, 255, 255, 0.9);
             padding: 10px;
             margin-top: 20px;
-            border-left: 4px solid #FF4081;
+            border-left: 4px solid #FF9800;
         }
         .order-details h3 {
-            color: #FF4081;
+            color: #FF9800;
             margin-top: 0;
         }
         .footer {
@@ -45,33 +47,40 @@
             color: #888;
         }
         .footer a {
-            color: #FF4081;
+            color: #FF9800;
             text-decoration: none;
+        }
+        .diya-icon {
+            width: 100px;
+            height: auto;
+            display: block;
+            margin: 0 auto 20px auto;
         }
     </style>
 </head>
 <body>
     <div class="container">
+        <img class="diya-icon" src="https://example.com/diya-icon.png" alt="Diwali Diya">
         <h1>Booking Confirmation</h1>
         <p>Dear {{userName}},</p>
 
-        <p>Thank you for choosing our services! Your booking has been successfully confirmed.</p>
+        <p>Thank you for choosing our services during this Diwali festive season! Your booking has been confirmed, and we look forward to making your experience special.</p>
 
         <div class="order-details">
             <h3>Booking Details</h3>
             <p><strong>Order ID:</strong> {{orderId}}</p>
             <p><strong>Service:</strong> {{serviceName}}</p>
-            <p><strong>Variant:</strong> {{serviceVariant}}</p>
+            <p><strong>Variant:</strong> {{serviceVariantName}}</p>
             <p><strong>Service Date:</strong> {{serviceDate}} , {{serviceTime}}</p>
             <p><strong>Email:</strong> {{userEmail}}</p>
         </div>
 
-        <p>If you have any questions or need to make changes, please contact us at <a href="mailto:support@cottoncandy.com">support@cottoncandy.com</a>.</p>
+        <p>If you have any questions or need assistance, feel free to contact us at <a href="mailto:support@cottoncandy.com">support@cottoncandy.com</a>.</p>
 
-        <p>We look forward to serving you on your appointment date!</p>
+        <p>We wish you a joyous and prosperous Diwali and look forward to serving you on your appointment date!</p>
 
         <div class="footer">
-            <p>With regards, <br> Cotton Candy Team</p>
+            <p>Warm regards, <br> Cotton Candy Team</p>
             <p><a href="https://cottoncandy.com">Visit our website</a></p>
         </div>
     </div>

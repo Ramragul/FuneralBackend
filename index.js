@@ -2303,10 +2303,11 @@ app.post('/api/cc/service/booking', async (req, res) => {
       const emailHtml = htmlTemplate.replace('{{userName}}', userName)
       .replace('{{orderId}}', orderId)
       .replace('{{userName}}', userName)
-      .replace('{{appointmentDate}}' , serviceDateIST)
+      .replace('{{servicetDate}}' , serviceDateIST)
       .replace('{{userEmail}}',email)
       .replace('{{serviceTime}}' , serviceTime)
       .replace('{{serviceName}}' , 'Mehendi')
+      .replace('{{serviceVariantName}}' , 'Diwali Special')
   
       // Define email options
       const mailOptions = {
