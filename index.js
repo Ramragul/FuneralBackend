@@ -2238,9 +2238,7 @@ app.post('/api/cc/service/booking', async (req, res) => {
       bookingStatus
   } = req.body;
 
-  console.log("ServiceId :" +serviceId);
-  console.log("VariantId :" +variantId);
-  console.log("Booking Status :" +bookingStatus)
+
   // GMT to IST Conversion
 
   const serviceDateUTC = new Date(appointmentDate);
@@ -2260,8 +2258,7 @@ app.post('/api/cc/service/booking', async (req, res) => {
   const bookingDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')} ${timePart}`;
   
 
-  console.log("Appointment DateRECEIVED FROM FRONT END :" +JSON.stringify(req.body.servicetDate))
-  console.log("Appoinment date direct value " +serviceDate)
+
 
   try
   {
