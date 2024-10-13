@@ -2283,7 +2283,7 @@ app.post('/api/cc/service/booking', async (req, res) => {
     orderId = result.insertId
     con.end();
     sendRegistrationEmail(email, name);
-    res.status(201).json({ message: 'Service Booked successfully' , orderId: orderId});
+    res.status(201).json({ message: 'Service Booked successfully' });
   });
 
       
