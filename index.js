@@ -725,7 +725,7 @@ app.post("/api/cc/designcatalogue", (req, res) => {
 
   console.log("Received Request at Node End : "+JSON.stringify (req.body))
   var ProductName = req.body.productName;
-  var ProductImageURL = req.body.productImageURL;
+  var ProductImageURL = req.body.productImageURL.join(',');
   var ProductUsageGender = req.body.productUsageGender;
   //var ProductUsageOccasion = req.body.productUsageOccasion;
   var ProductUsageOccasion = req.body.productUsageOccasion.join(',');
