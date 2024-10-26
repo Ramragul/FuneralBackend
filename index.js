@@ -2331,7 +2331,7 @@ app.post('/api/cc/service/booking', async (req, res) => {
 
 });
 
-app.get('/api/cc/tailoring-orders', async (req, res) => {
+app.get('/api/cc/tailoring/orders', async (req, res) => {
   let con;
   try {
     // Establishing a DB connection
