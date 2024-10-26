@@ -1400,6 +1400,7 @@ app.get('/api/cc/user/orders', async (req, res) => {
 
   });
 
+
   
 
   app.post('/api/cc/luckydraw', async (req, res) => { 
@@ -2329,6 +2330,62 @@ app.post('/api/cc/service/booking', async (req, res) => {
   };
 
 });
+
+app.get('/api/cc/tailoring-orders', async (req, res) => {
+  let con;
+  try {
+    // Establishing a DB connection
+    con = dbConnection();
+    con.connect();
+  } catch (error) {
+    console.error('DB Connection Error', error);
+    return res.status(500).json({ error: 'DB Connection Error' });
+  }
+
+  try {
+    // Query to fetch details from CC_Tailoring_Orders and CC_Tailoring_Order_Details
+    const query = `
+      SELECT 
+        o.order_id,
+        o.order_date,
+        o.products_price,
+        o.security_deposit,
+        o.total_amount,
+        o.order_status,
+        o.user_id,
+        tod.tailoring_id,
+        tod.name,
+        tod.email,
+        tod.phone,
+        tod.stitch_option,
+        tod.custom_design_url,
+        tod.address,
+        tod.city,
+        tod.pincode,
+        tod.order_notes,
+        tod.appointment_date
+      FROM 
+        CC_Tailoring_Orders o
+      INNER JOIN 
+        CC_Tailoring_Order_Details tod ON o.tailoring_details_id = tod.tailoring_id;
+    `;
+
+    // Execute the query using the promise-based method
+    const [orders] = await con.promise().query(query);
+
+    // Release the connection back to the pool
+    con.end();
+
+    // Send the result as a response
+    res.status(200).json({ data: orders });
+
+  } catch (error) {
+    if (con) con.end();
+    console.error('Error fetching tailoring order details:', error);
+    res.status(500).json({ error: 'Error fetching tailoring order details' });
+  }
+});
+
 
 
 const options = {
