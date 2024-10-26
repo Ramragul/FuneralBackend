@@ -1974,7 +1974,7 @@ const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}
     updated_by = ?, 
     last_updated_date = ? 
   WHERE 
-    id = ?;
+    order_id = ?;
 `;
 
   con.query(query, [orderAssignment, orderStatus, updatedBy, formattedDate,orderId], (err, result) => {
