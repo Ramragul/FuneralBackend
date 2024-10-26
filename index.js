@@ -1559,6 +1559,7 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
       productId,
       productImageURL,
       owningAuthority,
+      productPrice,
   } = req.body;
 
   // GMT to IST Conversion
@@ -1629,8 +1630,8 @@ var orderId = ""
 
           // Insert order related to tailoring
           const orderQuery = `
-              INSERT INTO CC_Tailoring_Orders (tailoring_details_id, order_date, order_status, user_id, partner)
-              VALUES (?, ?, ?, ?, ?)
+              INSERT INTO CC_Tailoring_Orders (tailoring_details_id, order_date, order_status, user_id, partner,products_price)
+              VALUES (?, ?, ?, ?, ?,?)
           `;
 
           const orderValues = [
@@ -1638,7 +1639,8 @@ var orderId = ""
               orderDate,
               orderStatus,
               userId,
-              owningAuthority
+              owningAuthority,
+              productPrice
           ];
 
           con.query(orderQuery, orderValues, (err, orderResult) => {
@@ -2364,7 +2366,9 @@ app.get('/api/cc/tailoring/orders', async (req, res) => {
         tod.city,
         tod.pincode,
         tod.order_notes,
-        tod.appointment_date
+        tod.appointment_date,
+        tod.products_price,
+        tod.product_id
       FROM 
         CC_Tailoring_Orders o
       INNER JOIN 
