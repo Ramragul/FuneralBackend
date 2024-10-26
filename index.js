@@ -2367,7 +2367,6 @@ app.get('/api/cc/tailoring/orders', async (req, res) => {
         tod.pincode,
         tod.order_notes,
         tod.appointment_date,
-        tod.products_price,
         tod.product_id
       FROM 
         CC_Tailoring_Orders o
