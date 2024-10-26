@@ -2414,6 +2414,7 @@ app.get('/api/cc/tailoring/orders', async (req, res) => {
         o.total_amount,
         o.order_status,
         o.user_id,
+        o.order_assignment,
         tod.tailoring_id,
         tod.name,
         tod.email,
