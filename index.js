@@ -2478,6 +2478,8 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
     return res.status(400).send({ message: "No file uploaded" });
   }
 
+  console.log("Uploaded file:", req.file); 
+
   let con;
   try {
     // Establishing a DB connection
