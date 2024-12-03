@@ -2588,14 +2588,14 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
 
       // Step 1: Ensure the Test Exists
       let [testResult] = await dbPromise.query(
-        "SELECT id FROM IP_Tests WHERE test_name = ?",
+        "SELECT id FROM IP_Tests WHERE name = ?",
         [test_name]
       );
 
       let testId;
       if (testResult.length === 0) {
         const [insertTestResult] = await dbPromise.query(
-          "INSERT INTO IP_Tests (test_name, description) VALUES (?, ?)",
+          "INSERT INTO IP_Tests (name, description) VALUES (?, ?)",
           [test_name, test_description]
         );
         testId = insertTestResult.insertId;
