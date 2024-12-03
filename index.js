@@ -2585,6 +2585,8 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
   try {
     for (const row of data) {
       const { test_name, test_description, category, question_text, option_1, option_2, option_3, option_4, correct_option } = row;
+      console.log("Row Values" +JSON.stringify(row))
+      console.log("Test name : "+test_name)
 
       // Step 1: Ensure the Test Exists
       let [testResult] = await dbPromise.query(
