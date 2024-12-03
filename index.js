@@ -44,6 +44,19 @@ const PORT = process.env.PORT || 3003;
 
 const app = express();
 
+
+// Multer storage configuration
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/"); // Directory where files will be stored
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`); // Unique file naming
+  },
+});
+
+//const upload = multer({ storage });
+
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
@@ -2459,6 +2472,8 @@ app.get('/api/cc/tailoring/orders', async (req, res) => {
 
 
 app.post("/test/upload", upload.single("file"), async (req, res) => {
+
+
   if (!req.file) {
     return res.status(400).send({ message: "No file uploaded" });
   }
