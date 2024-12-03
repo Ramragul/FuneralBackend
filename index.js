@@ -16,6 +16,9 @@ const sharp = require('sharp');
 const nodemailer = require('nodemailer');
 
 
+const xlsx = require('xlsx');
+
+
 // Twilio Imports 
 // const twilio = require('twilio');
  const jwt = require('jsonwebtoken');
@@ -2448,6 +2451,85 @@ app.get('/api/cc/tailoring/orders', async (req, res) => {
     console.error('Error fetching tailoring order details:', error);
     res.status(500).json({ error: 'Error fetching tailoring order details' });
   }
+});
+
+
+
+// Idea Park Application API's
+
+
+app.post("/test/upload", upload.single("file"), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).send({ message: "No file uploaded" });
+  }
+
+  let con;
+  try {
+    // Establishing a DB connection
+    con = dbConnection();
+    con.connect();
+  } catch (error) {
+    console.error('DB Connection Error', error);
+    return res.status(500).json({ error: 'DB Connection Error' });
+  }
+
+
+
+  const workbook = xlsx.readFile(req.file.path);
+  const sheetName = workbook.SheetNames[0];
+  const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+  const dbPromise = db.promise();
+
+  try {
+    for (const row of data) {
+      const { test_name, test_description, category, question_text, option_1, option_2, option_3, option_4, correct_option } = row;
+
+      // Step 1: Ensure the Test Exists
+      let [testResult] = await dbPromise.query(
+        "SELECT id FROM IP_Tests WHERE test_name = ?",
+        [test_name]
+      );
+
+      let testId;
+      if (testResult.length === 0) {
+        const [insertTestResult] = await dbPromise.query(
+          "INSERT INTO IP_Tests (test_name, description) VALUES (?, ?)",
+          [test_name, test_description]
+        );
+        testId = insertTestResult.insertId;
+      } else {
+        testId = testResult[0].id;
+      }
+
+      // Step 2: Insert the Question
+      const [questionResult] = await dbPromise.query(
+        "INSERT INTO IP_Questions (test_id, category, question_text) VALUES (?, ?, ?)",
+        [testId, category, question_text]
+      );
+      const questionId = questionResult.insertId;
+
+      // Step 3: Insert the Options
+      for (let i = 1; i <= 4; i++) {
+        await dbPromise.query(
+          "INSERT INTO IP_Options (question_id, option_text) VALUES (?, ?)",
+          [questionId, row[`option_${i}`]]
+        );
+      }
+
+      // Step 4: Insert the Correct Answer
+      await dbPromise.query(
+        "INSERT INTO IP_Answers (question_id, correct_option) VALUES (?, ?)",
+        [questionId, correct_option]
+      );
+    }
+
+    res.send({ message: "File processed and data inserted successfully!" });
+  } catch (error) {
+    console.error("Error processing file:", error);
+    res.status(500).send({ message: "An error occurred while processing the file." });
+  }
+
 });
 
 
