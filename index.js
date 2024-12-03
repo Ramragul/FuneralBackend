@@ -2557,15 +2557,18 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
 
   console.log("Uploaded file:", req.file); // Log the file object
 
-  let con;
-  try {
-    // Establishing a DB connection
-    con = dbConnection().promise();
-    con.connect();
+
+
+
+  try
+  {
+  var con = dbConnection();
+  con.connect();
   } catch (error) {
-    console.error("DB Connection Error", error);
-    return res.status(500).json({ error: "DB Connection Error" });
+    console.error('DB Connection Error', error);
+    res.status(500).json({ error: 'DB Connection Error' });
   }
+
 
   // Ensure the file buffer is available
   if (!req.file.buffer) {
