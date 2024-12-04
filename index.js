@@ -2640,36 +2640,26 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
     return res.status(400).send({ message: "No file uploaded" });
   }
 
-  console.log("Uploaded file:", req.file);
+  console.log("Uploaded file:", req.file); // Log the file object
 
   try {
-    var con = dbConnection();
+    const con = dbConnection();
     con.connect();
-  } catch (error) {
-    console.error("DB Connection Error", error);
-    return res.status(500).json({ error: "DB Connection Error" });
-  }
 
-  // Reading and processing the Excel file directly from the buffer
-  const workbook = xlsx.read(req.file.buffer, { type: "buffer" });
-  const sheetName = workbook.SheetNames[0];
-  const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+    // Ensure the file buffer is available
+    if (!req.file.buffer) {
+      return res.status(400).send({ message: "File buffer is missing" });
+    }
 
-  const dbPromise = con.promise();
+    // Reading and processing the Excel file directly from the buffer
+    const workbook = xlsx.read(req.file.buffer, { type: "buffer" }); // Use buffer here
+    const sheetName = workbook.SheetNames[0];
+    const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
-  try {
+    const dbPromise = con.promise();
+
     for (const row of data) {
-      const {
-        test_name,
-        test_description,
-        category,
-        question_text,
-        option_1,
-        option_2,
-        option_3,
-        option_4,
-        correct_option,
-      } = row;
+      const { test_name, test_description, category, question_text, option_1, option_2, option_3, option_4, correct_option } = row;
 
       console.log("Processing row:", row);
 
@@ -2697,26 +2687,31 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
       );
       const questionId = questionResult.insertId;
 
-      // Step 3: Insert the Options
+      // Step 3: Insert the Options and Collect Their IDs
       const optionIds = [];
       for (let i = 1; i <= 4; i++) {
         const [optionResult] = await dbPromise.query(
           "INSERT INTO IP_Options (question_id, option_text) VALUES (?, ?)",
           [questionId, row[`option_${i}`]]
         );
-        optionIds.push({ id: optionResult.insertId, text: row[`option_${i}`] });
+        optionIds.push(optionResult.insertId);
       }
 
       // Step 4: Identify the Correct Option
-      const correctOption = optionIds.find((opt) => opt.text === correct_option);
-      if (!correctOption) {
+      const correctOptionIndex = correct_option.split("_")[1]; // Extract the index (e.g., "2" from "option_2")
+      if (!correctOptionIndex || isNaN(correctOptionIndex)) {
+        throw new Error(`Invalid correct_option format: "${correct_option}"`);
+      }
+
+      const correctOptionId = optionIds[parseInt(correctOptionIndex) - 1]; // Map to option array (1-based index)
+      if (!correctOptionId) {
         throw new Error(`Correct option "${correct_option}" not found in options.`);
       }
 
       // Step 5: Insert the Correct Answer
       await dbPromise.query(
         "INSERT INTO IP_Answers (question_id, correct_option_id) VALUES (?, ?)",
-        [questionId, correctOption.id]
+        [questionId, correctOptionId]
       );
     }
 
