@@ -2550,33 +2550,108 @@ app.get('/api/cc/tailoring/orders', async (req, res) => {
 // });
 
 
+// app.post("/test/upload", upload.single("file"), async (req, res) => {
+//   if (!req.file) {
+//     return res.status(400).send({ message: "No file uploaded" });
+//   }
+
+//   console.log("Uploaded file:", req.file); // Log the file object
+
+
+
+
+//   try
+//   {
+//   var con = dbConnection();
+//   con.connect();
+//   } catch (error) {
+//     console.error('DB Connection Error', error);
+//     res.status(500).json({ error: 'DB Connection Error' });
+//   }
+
+
+//   // Ensure the file buffer is available
+//   if (!req.file.buffer) {
+//     return res.status(400).send({ message: "File buffer is missing" });
+//   }
+
+//   // Reading and processing the Excel file directly from the buffer
+//   const workbook = xlsx.read(req.file.buffer, { type: 'buffer' }); // Use buffer here
+//   const sheetName = workbook.SheetNames[0];
+//   const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+//   const dbPromise = con.promise();
+
+//   try {
+//     for (const row of data) {
+//       const { test_name test_description, category, question_text, option_1, option_2, option_3, option_4, correct_option } = row;
+//       console.log("Row Values" +JSON.stringify(row))
+//       console.log("Test name : "+test_name)
+
+//       // Step 1: Ensure the Test Exists
+//       let [testResult] = await dbPromise.query(
+//         "SELECT id FROM IP_Tests WHERE name = ?",
+//         [test_name]
+//       );
+
+//       let testId;
+//       if (testResult.length === 0) {
+//         const [insertTestResult] = await dbPromise.query(
+//           "INSERT INTO IP_Tests (name, description) VALUES (?, ?)",
+//           [test_name, test_description]
+//         );
+//         testId = insertTestResult.insertId;
+//       } else {
+//         testId = testResult[0].id;
+//       }
+
+//       // Step 2: Insert the Question
+//       const [questionResult] = await dbPromise.query(
+//         "INSERT INTO IP_Questions (test_id, category, question_text) VALUES (?, ?, ?)",
+//         [testId, category, question_text]
+//       );
+//       const questionId = questionResult.insertId;
+
+//       // Step 3: Insert the Options
+//       for (let i = 1; i <= 4; i++) {
+//         await dbPromise.query(
+//           "INSERT INTO IP_Options (question_id, option_text) VALUES (?, ?)",
+//           [questionId, row[`option_${i}`]]
+//         );
+//       }
+
+//       // Step 4: Insert the Correct Answer
+//       await dbPromise.query(
+//         "INSERT INTO IP_Answers (question_id, correct_option) VALUES (?, ?)",
+//         [questionId, correct_option]
+//       );
+//     }
+
+//     res.send({ message: "File processed and data inserted successfully!" });
+//   } catch (error) {
+//     console.error("Error processing file:", error);
+//     res.status(500).send({ message: "An error occurred while processing the file." });
+//   }
+// });
+
+
 app.post("/test/upload", upload.single("file"), async (req, res) => {
   if (!req.file) {
     return res.status(400).send({ message: "No file uploaded" });
   }
 
-  console.log("Uploaded file:", req.file); // Log the file object
+  console.log("Uploaded file:", req.file);
 
-
-
-
-  try
-  {
-  var con = dbConnection();
-  con.connect();
+  try {
+    var con = dbConnection();
+    con.connect();
   } catch (error) {
-    console.error('DB Connection Error', error);
-    res.status(500).json({ error: 'DB Connection Error' });
-  }
-
-
-  // Ensure the file buffer is available
-  if (!req.file.buffer) {
-    return res.status(400).send({ message: "File buffer is missing" });
+    console.error("DB Connection Error", error);
+    return res.status(500).json({ error: "DB Connection Error" });
   }
 
   // Reading and processing the Excel file directly from the buffer
-  const workbook = xlsx.read(req.file.buffer, { type: 'buffer' }); // Use buffer here
+  const workbook = xlsx.read(req.file.buffer, { type: "buffer" });
   const sheetName = workbook.SheetNames[0];
   const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
@@ -2584,9 +2659,19 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
 
   try {
     for (const row of data) {
-      const { test_name, test_description, category, question_text, option_1, option_2, option_3, option_4, correct_option } = row;
-      console.log("Row Values" +JSON.stringify(row))
-      console.log("Test name : "+test_name)
+      const {
+        test_name,
+        test_description,
+        category,
+        question_text,
+        option_1,
+        option_2,
+        option_3,
+        option_4,
+        correct_option,
+      } = row;
+
+      console.log("Processing row:", row);
 
       // Step 1: Ensure the Test Exists
       let [testResult] = await dbPromise.query(
@@ -2613,17 +2698,25 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
       const questionId = questionResult.insertId;
 
       // Step 3: Insert the Options
+      const optionIds = [];
       for (let i = 1; i <= 4; i++) {
-        await dbPromise.query(
+        const [optionResult] = await dbPromise.query(
           "INSERT INTO IP_Options (question_id, option_text) VALUES (?, ?)",
           [questionId, row[`option_${i}`]]
         );
+        optionIds.push({ id: optionResult.insertId, text: row[`option_${i}`] });
       }
 
-      // Step 4: Insert the Correct Answer
+      // Step 4: Identify the Correct Option
+      const correctOption = optionIds.find((opt) => opt.text === correct_option);
+      if (!correctOption) {
+        throw new Error(`Correct option "${correct_option}" not found in options.`);
+      }
+
+      // Step 5: Insert the Correct Answer
       await dbPromise.query(
-        "INSERT INTO IP_Answers (question_id, correct_option) VALUES (?, ?)",
-        [questionId, correct_option]
+        "INSERT INTO IP_Answers (question_id, correct_option_id) VALUES (?, ?)",
+        [questionId, correctOption.id]
       );
     }
 
@@ -2633,6 +2726,7 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
     res.status(500).send({ message: "An error occurred while processing the file." });
   }
 });
+
 
 
 
