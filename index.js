@@ -2760,6 +2760,70 @@ app.get('/api/ip/tests', (req, res) => {
 });
 
 
+app.get('/api/ip/testDetails/:testId', (req, res) => {
+  const { testId } = req.params;
+  let con;
+
+  try {
+      // Establish database connection
+      con = dbConnection();
+      con.connect();
+      console.log('Connected to database.');
+  } catch (error) {
+      console.error('DB Connection Error', error);
+      res.status(500).json({ error: 'DB Connection Error' });
+      return; // Exit after sending error response
+  }
+
+  // Fetch questions for the test
+  const questionsQuery = `SELECT id AS questionId, category, question_text FROM IP_Questions WHERE test_id = ?`;
+  con.query(questionsQuery, [testId], (err, questions) => {
+      if (err) {
+          console.error('Error fetching questions:', err);
+          res.status(500).json({ error: 'Error fetching questions' });
+          con.end();
+          return;
+      }
+
+      if (questions.length === 0) {
+          res.status(404).json({ message: 'No questions found for this test.' });
+          con.end();
+          return;
+      }
+
+      // Extract question IDs
+      const questionIds = questions.map(q => q.questionId);
+
+      // Fetch options for the questions
+      const optionsQuery = `
+          SELECT id AS optionId, question_id AS questionId, option_text, is_correct
+          FROM IP_Options
+          WHERE question_id IN (?);
+      `;
+      con.query(optionsQuery, [questionIds], (err, options) => {
+          if (err) {
+              console.error('Error fetching options:', err);
+              res.status(500).json({ error: 'Error fetching options' });
+              con.end();
+              return;
+          }
+
+          // Map options to their respective questions
+          const questionsWithOptions = questions.map(question => ({
+              questionId: question.questionId,
+              category: question.category,
+              questionText: question.question_text,
+              options: options.filter(option => option.questionId === question.questionId),
+          }));
+
+          res.status(200).json({ testId, questions: questionsWithOptions });
+          con.end();
+          console.log('Connection Ended');
+      });
+  });
+});
+
+
 
 
 const options = {
