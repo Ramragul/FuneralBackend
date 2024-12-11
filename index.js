@@ -2723,6 +2723,42 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
 });
 
 
+app.get('/api/ip/tests', (req, res) => {
+  let con;
+
+  try {
+      con = dbConnection();
+      con.connect();
+  } catch (error) {
+      console.error('DB Connection Error', error);
+      res.status(500).json({ error: 'DB Connection Error' });
+      return; // Exit the function after sending the error response
+  }
+
+  //const userId = req.params.userId; // Get the userId from the URL parameter
+
+  console.log('Connected to database.');
+
+  // Define the query to check if the user has won
+  let query = "SELECT * FROM IP_Tests"; // Using parameterized query to prevent SQL injection
+
+  con.query(query, (err, data) => {
+      // if (err) {
+      //     console.error("Error executing query", err);
+      //     res.status(500).json({ error: 'Internal Server Error' });
+      //     return;
+      // }
+      if(err) throw err;
+      res.json({data})
+
+ 
+  });
+
+  // End the connection
+  con.end();
+  console.log("Connection Ended ");
+});
+
 
 
 
