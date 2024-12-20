@@ -2639,7 +2639,7 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
   if (!req.file) {
     return res.status(400).send({ message: "No file uploaded" });
   }
-
+console.log("Request received from front end" +JSON.stringify(req))
   console.log("Uploaded file:", req.file); // Log the file object
 
   try {
