@@ -2642,7 +2642,7 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
 console.log("Request received from front end" +req)
   console.log("Uploaded file:", req.file); // Log the file object
 
-  const { testName, testCategory } = req.body;
+  const { testName, testCategory, testDescription, testTimings, testValidity, testStudents } = req.body;
 
   console.log("Test name :" +testName +"Test Category:" +testCategory)
 
@@ -2665,19 +2665,20 @@ console.log("Request received from front end" +req)
     for (const row of data) {
       const { test_name, test_description, category, question_text, option_1, option_2, option_3, option_4, correct_option } = row;
 
-      console.log("Processing row:", row);
+      console.log("Processing row:", testResult);
+      console.log("TestName Inside row logic " +testName);
 
       // Step 1: Ensure the Test Exists
       let [testResult] = await dbPromise.query(
         "SELECT id FROM IP_Tests WHERE name = ?",
-        [test_name]
+        [testName]
       );
 
       let testId;
       if (testResult.length === 0) {
         const [insertTestResult] = await dbPromise.query(
-          "INSERT INTO IP_Tests (name, description) VALUES (?, ?)",
-          [test_name, test_description]
+          "INSERT INTO IP_Tests (name, description, category, timings, validity, users) VALUES (?, ?, ?, ?, ?, ?)",
+          [testName, testDescription, testCategory, testTimings, testValidity, testStudents]
         );
         testId = insertTestResult.insertId;
       } else {
