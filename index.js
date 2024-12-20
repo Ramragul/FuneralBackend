@@ -2642,6 +2642,10 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
 console.log("Request received from front end" +req)
   console.log("Uploaded file:", req.file); // Log the file object
 
+  const { testName, testCategory } = req.body;
+
+  console.log("Test name :" +testName +"Test Category:" +testCategory)
+
   try {
     const con = dbConnection();
     con.connect();
