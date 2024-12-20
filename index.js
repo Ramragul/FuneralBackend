@@ -2665,8 +2665,8 @@ console.log("Request received from front end" +req)
     for (const row of data) {
       const { test_name, test_description, category, question_text, option_1, option_2, option_3, option_4, correct_option } = row;
 
-      console.log("Processing row:", testResult);
-      console.log("TestName Inside row logic " +testName);
+      console.log("Processing row:", row);
+      console.log("TestName inside row block :" +testName);
 
       // Step 1: Ensure the Test Exists
       let [testResult] = await dbPromise.query(
