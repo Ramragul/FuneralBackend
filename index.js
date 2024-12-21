@@ -2828,6 +2828,88 @@ app.get('/api/ip/testDetails/:testId', (req, res) => {
   });
 });
 
+app.post('/api/ip/register', async (req, res) => {
+  console.log("Request received from registration page");
+  
+  const { name, mobile, email, address, city, password, userType, businessName, trainingsProvided,institute,qualifications } = req.body;
+
+  try {
+    // Establish DB connection
+    var con = dbConnection();
+    con.connect();
+
+    // Hash the password before saving
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Insert basic user data into CC_Users table
+    const userQuery = 'INSERT INTO IP_Users (name, mobile, email, address, city, password, userType,institute,qualifications) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+    con.query(userQuery, [name, mobile, email, address, city, hashedPassword, userType, institute, qualifications], (err, result) => {
+      if (err) {
+        console.error('Error inserting user:', err);
+        return res.status(500).json({ message: 'Error inserting user' });
+      }
+
+      // If the user is a Business Partner, insert additional info into CC_Business_Partners
+      if (userType === 'Business Partner') {
+        const userId = result.insertId; // Get the inserted user ID
+        const businessQuery = 'INSERT INTO IP_Business_Partners (user_id, businessName, trainingsProvided) VALUES (?, ?, ?)';
+        
+        con.query(businessQuery, [userId, businessName, JSON.stringify(trainingsProvided)], (err, result) => {
+          if (err) {
+            console.error('Error inserting business partner:', err);
+            return res.status(500).json({ message: 'Error inserting business partner' });
+          }
+
+          // Send registration email to the business partner
+          sendRegistrationEmail(email, name);
+
+          // Respond with success
+          res.status(201).json({ message: 'Business Partner registered successfully' });
+        });
+      } else {
+        // If it's a candidate, just respond with success
+        sendRegistrationEmail(email, name);
+        res.status(201).json({ message: 'User registered successfully' });
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'An error occurred during registration' });
+  }
+});
+
+// Function to send registration email
+const sendRegistrationEmail = (userEmail, userName) => {
+  const templatePath = path.join(__dirname, 'emailTemplates', 'registrationEmailTemplate.html');
+  
+  fs.readFile(templatePath, 'utf-8', (err, htmlTemplate) => {
+    if (err) {
+      console.error('Error reading the email template file:', err);
+      return;
+    }
+
+    // Replace {{userName}} with the actual user's name
+    const emailHtml = htmlTemplate.replace('{{userName}}', userName);
+
+    const mailOptions = {
+      from: '"Cotton Candy Support" <support@cottoncandy.co.in>',
+      to: userEmail,
+      subject: 'Welcome to Idea Park!',
+      html: emailHtml,
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error('Error sending email:', error);
+        res.status(500).json({ message: 'Failure in Email Delivery ' + error });
+      } else {
+        console.log('Email sent:', info.response);
+      }
+    });
+  });
+};
+
 
 
 
