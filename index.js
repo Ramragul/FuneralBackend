@@ -2842,7 +2842,7 @@ app.post('/api/ip/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Insert basic user data into CC_Users table
-    const userQuery = 'INSERT INTO IP_Users (name, mobile, email, address, city, password, userType,institute,qualifications, businessType, pincode) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+    const userQuery = 'INSERT INTO IP_Users (name, mobile, email, address, city, password, userType,institute,qualifications, pincode) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
     con.query(userQuery, [name, mobile, email, address, city, hashedPassword, userType, institute, qualifications, businessType, pincode], (err, result) => {
       if (err) {
         console.error('Error inserting user:', err);
@@ -2852,7 +2852,7 @@ app.post('/api/ip/register', async (req, res) => {
       // If the user is a Business Partner, insert additional info into CC_Business_Partners
       if (userType === 'Business Partner') {
         const userId = result.insertId; // Get the inserted user ID
-        const businessQuery = 'INSERT INTO IP_Business_Partners (user_id,mobile, businessName, trainingsProvided) VALUES (?, ?, ?,?)';
+        const businessQuery = 'INSERT INTO IP_Business_Partners (user_id,mobile, businessName, businessType, trainingsProvided) VALUES (?, ?, ?, ?, ?)';
         
         con.query(businessQuery, [userId, mobile, businessName, JSON.stringify(trainingsProvided)], (err, result) => {
           if (err) {
