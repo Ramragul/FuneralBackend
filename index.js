@@ -2831,7 +2831,7 @@ app.get('/api/ip/testDetails/:testId', (req, res) => {
 app.post('/api/ip/register', async (req, res) => {
   console.log("Request received from registration page");
   
-  const { name, mobile, email, address, city, password, userType, businessName, trainingsProvided,institute,qualifications } = req.body;
+  const { name, mobile, email, address, city, password, userType, businessName, trainingsProvided,institute,qualifications,businessType,pincode } = req.body;
 
   try {
     // Establish DB connection
@@ -2842,8 +2842,8 @@ app.post('/api/ip/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Insert basic user data into CC_Users table
-    const userQuery = 'INSERT INTO IP_Users (name, mobile, email, address, city, password, userType,institute,qualifications) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
-    con.query(userQuery, [name, mobile, email, address, city, hashedPassword, userType, institute, qualifications], (err, result) => {
+    const userQuery = 'INSERT INTO IP_Users (name, mobile, email, address, city, password, userType,institute,qualifications, businessType, pincode) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+    con.query(userQuery, [name, mobile, email, address, city, hashedPassword, userType, institute, qualifications, businessType, pincode], (err, result) => {
       if (err) {
         console.error('Error inserting user:', err);
         return res.status(500).json({ message: 'Error inserting user' });
@@ -2852,9 +2852,9 @@ app.post('/api/ip/register', async (req, res) => {
       // If the user is a Business Partner, insert additional info into CC_Business_Partners
       if (userType === 'Business Partner') {
         const userId = result.insertId; // Get the inserted user ID
-        const businessQuery = 'INSERT INTO IP_Business_Partners (user_id, businessName, trainingsProvided) VALUES (?, ?, ?)';
+        const businessQuery = 'INSERT INTO IP_Business_Partners (user_id,mobile, businessName, trainingsProvided) VALUES (?, ?, ?,?)';
         
-        con.query(businessQuery, [userId, businessName, JSON.stringify(trainingsProvided)], (err, result) => {
+        con.query(businessQuery, [userId, mobile, businessName, JSON.stringify(trainingsProvided)], (err, result) => {
           if (err) {
             console.error('Error inserting business partner:', err);
             return res.status(500).json({ message: 'Error inserting business partner' });
@@ -2877,6 +2877,70 @@ app.post('/api/ip/register', async (req, res) => {
     console.error('Error:', error);
     res.status(500).json({ error: 'An error occurred during registration' });
   }
+});
+
+app.post('/ip/login', (req, res) => {
+
+  try
+  {
+  var con = dbConnection();
+  con.connect();
+  } catch (error) {
+    console.error('DB Connection Error', error);
+    res.status(500).json({ error: 'DB Connection Error' });
+  }
+  const { username, password } = req.body;
+
+  console.log("Mobile Number :" +username)
+  console.log("Passowrd : " +password);
+
+  const query = 'SELECT * FROM IP_Users WHERE mobile = ?';
+  con.query(query, [username], async (err, results) => {
+    if (err) {
+      console.error('Error fetching user:', err);
+      return res.status(500).json({ message: 'Server error' });
+    }
+
+    if (results.length === 0) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    const user = results[0];
+    console.log("Password from User:" +password)
+    console.log("Password from `DB:" +user.password)
+    const isMatch = await bcrypt.compare(password, user.password);
+    console.log("Comparison Results" +await bcrypt.compare(password, user.password))
+
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+    
+    const token = jwt.sign({ id: user.id, mobile: user.mobile}, 'your-secret-key', { expiresIn: '1h' });
+
+    // CC Partners Partner id fetch logic begins
+
+    const pidQuery = "SELECT id FROM IP_Business_Partners WHERE mobile = ?";
+    const mobile = user.mobile; // Example mobile number
+    
+    const pId = await new Promise((resolve, reject) => {
+      con.query(pidQuery, [mobile], (err, results) => {
+        if (err) {
+          reject(err); // Handle query error
+        } else if (results.length > 0) {
+          resolve(results[0].pid); // Return the pid if found
+        } else {
+          resolve(null); // Return null if no matching record
+        }
+      });
+    });
+
+    console.log("Pid value is " +pId);
+
+    // Partners Table parther id fetch logic ends
+    con.end();
+    res.json({ token, userName: user.name,userId: user.mobile,userEmail: user.email , pId : pId , userRole : user.role});
+
+  });
 });
 
 // Function to send registration email
