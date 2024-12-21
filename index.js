@@ -2854,7 +2854,7 @@ app.post('/api/ip/register', async (req, res) => {
         const userId = result.insertId; // Get the inserted user ID
         const businessQuery = 'INSERT INTO IP_Business_Partners (user_id,mobile, businessName, businessType, trainingsProvided) VALUES (?, ?, ?, ?, ?)';
         
-        con.query(businessQuery, [userId, mobile, businessName, JSON.stringify(trainingsProvided)], (err, result) => {
+        con.query(businessQuery, [userId, mobile, businessName,businessType, JSON.stringify(trainingsProvided)], (err, result) => {
           if (err) {
             console.error('Error inserting business partner:', err);
             return res.status(500).json({ message: 'Error inserting business partner' });
