@@ -2843,7 +2843,7 @@ app.post('/api/ip/register', async (req, res) => {
 
     // Insert basic user data into CC_Users table
     const userQuery = 'INSERT INTO IP_Users (name, mobile, email, address, city, password, userType,institute,qualifications, pincode) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-    con.query(userQuery, [name, mobile, email, address, city, hashedPassword, userType, institute, qualifications, businessType, pincode], (err, result) => {
+    con.query(userQuery, [name, mobile, email, address, city, hashedPassword, userType, institute, qualifications, pincode], (err, result) => {
       if (err) {
         console.error('Error inserting user:', err);
         return res.status(500).json({ message: 'Error inserting user' });
