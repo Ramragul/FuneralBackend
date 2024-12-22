@@ -2635,16 +2635,110 @@ app.get('/api/cc/tailoring/orders', async (req, res) => {
 // });
 
 
+// app.post("/test/upload", upload.single("file"), async (req, res) => {
+//   if (!req.file) {
+//     return res.status(400).send({ message: "No file uploaded" });
+//   }
+// console.log("Request received from front end" +req)
+//   console.log("Uploaded file:", req.file); // Log the file object
+
+//   const { testName, testCategory, testDescription, testTimings, testValidity, testStudents } = req.body;
+
+//   console.log("Test name :" +testName +"Test Category:" +testCategory)
+
+//   try {
+//     const con = dbConnection();
+//     con.connect();
+
+//     // Ensure the file buffer is available
+//     if (!req.file.buffer) {
+//       return res.status(400).send({ message: "File buffer is missing" });
+//     }
+
+//     // Reading and processing the Excel file directly from the buffer
+//     const workbook = xlsx.read(req.file.buffer, { type: "buffer" }); // Use buffer here
+//     const sheetName = workbook.SheetNames[0];
+//     const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+//     const dbPromise = con.promise();
+
+//     for (const row of data) {
+//       const { test_name, test_description, category, question_text, option_1, option_2, option_3, option_4, correct_option } = row;
+
+//       console.log("Processing row:", row);
+//       console.log("TestName inside row block :" +testName);
+
+//       // Step 1: Ensure the Test Exists
+//       let [testResult] = await dbPromise.query(
+//         "SELECT id FROM IP_Tests WHERE name = ?",
+//         [testName]
+//       );
+
+//       let testId;
+//       if (testResult.length === 0) {
+//         const [insertTestResult] = await dbPromise.query(
+//           "INSERT INTO IP_Tests (name, description, category, timings, validity, users) VALUES (?, ?, ?, ?, ?, ?)",
+//           [testName, testDescription, testCategory, testTimings, testValidity, testStudents]
+//         );
+//         testId = insertTestResult.insertId;
+//       } else {
+//         testId = testResult[0].id;
+//       }
+
+//       // Step 2: Insert the Question
+//       const [questionResult] = await dbPromise.query(
+//         "INSERT INTO IP_Questions (test_id, category, question_text) VALUES (?, ?, ?)",
+//         [testId, category, question_text]
+//       );
+//       const questionId = questionResult.insertId;
+
+//       // Step 3: Insert the Options and Collect Their IDs
+//       const optionIds = [];
+//       for (let i = 1; i <= 4; i++) {
+//         const [optionResult] = await dbPromise.query(
+//           "INSERT INTO IP_Options (question_id, option_text) VALUES (?, ?)",
+//           [questionId, row[`option_${i}`]]
+//         );
+//         optionIds.push(optionResult.insertId);
+//       }
+
+//       // Step 4: Identify the Correct Option
+//       const correctOptionIndex = correct_option.split("_")[1]; // Extract the index (e.g., "2" from "option_2")
+//       if (!correctOptionIndex || isNaN(correctOptionIndex)) {
+//         throw new Error(`Invalid correct_option format: "${correct_option}"`);
+//       }
+
+//       const correctOptionId = optionIds[parseInt(correctOptionIndex) - 1]; // Map to option array (1-based index)
+//       if (!correctOptionId) {
+//         throw new Error(`Correct option "${correct_option}" not found in options.`);
+//       }
+
+//       // Step 5: Insert the Correct Answer
+//       await dbPromise.query(
+//         "INSERT INTO IP_Answers (question_id, correct_option_id) VALUES (?, ?)",
+//         [questionId, correctOptionId]
+//       );
+//     }
+
+//     res.send({ message: "File processed and data inserted successfully!" });
+//   } catch (error) {
+//     console.error("Error processing file:", error);
+//     res.status(500).send({ message: "An error occurred while processing the file." });
+//   }
+// });
+
+
 app.post("/test/upload", upload.single("file"), async (req, res) => {
   if (!req.file) {
     return res.status(400).send({ message: "No file uploaded" });
   }
-console.log("Request received from front end" +req)
+
+  console.log("Request received from front end", req);
   console.log("Uploaded file:", req.file); // Log the file object
 
   const { testName, testCategory, testDescription, testTimings, testValidity, testStudents } = req.body;
 
-  console.log("Test name :" +testName +"Test Category:" +testCategory)
+  console.log("Test name:", testName, "Test Category:", testCategory);
 
   try {
     const con = dbConnection();
@@ -2656,34 +2750,34 @@ console.log("Request received from front end" +req)
     }
 
     // Reading and processing the Excel file directly from the buffer
-    const workbook = xlsx.read(req.file.buffer, { type: "buffer" }); // Use buffer here
+    const workbook = xlsx.read(req.file.buffer, { type: "buffer" });
     const sheetName = workbook.SheetNames[0];
     const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
     const dbPromise = con.promise();
 
+    // Step 1: Ensure the Test Exists
+    let [testResult] = await dbPromise.query(
+      "SELECT id FROM IP_Tests WHERE name = ?",
+      [testName]
+    );
+
+    let testId;
+    if (testResult.length === 0) {
+      const [insertTestResult] = await dbPromise.query(
+        "INSERT INTO IP_Tests (name, description, category, timings, validity, users) VALUES (?, ?, ?, ?, ?, ?)",
+        [testName, testDescription, testCategory, testTimings, testValidity, testStudents]
+      );
+      testId = insertTestResult.insertId;
+    } else {
+      testId = testResult[0].id;
+    }
+
     for (const row of data) {
-      const { test_name, test_description, category, question_text, option_1, option_2, option_3, option_4, correct_option } = row;
+      const { category, question_text, option_1, option_2, option_3, option_4, correct_option } = row;
 
       console.log("Processing row:", row);
-      console.log("TestName inside row block :" +testName);
-
-      // Step 1: Ensure the Test Exists
-      let [testResult] = await dbPromise.query(
-        "SELECT id FROM IP_Tests WHERE name = ?",
-        [testName]
-      );
-
-      let testId;
-      if (testResult.length === 0) {
-        const [insertTestResult] = await dbPromise.query(
-          "INSERT INTO IP_Tests (name, description, category, timings, validity, users) VALUES (?, ?, ?, ?, ?, ?)",
-          [testName, testDescription, testCategory, testTimings, testValidity, testStudents]
-        );
-        testId = insertTestResult.insertId;
-      } else {
-        testId = testResult[0].id;
-      }
+      console.log("TestName inside row block:", testName);
 
       // Step 2: Insert the Question
       const [questionResult] = await dbPromise.query(
@@ -2720,7 +2814,32 @@ console.log("Request received from front end" +req)
       );
     }
 
-    res.send({ message: "File processed and data inserted successfully!" });
+    // Step 6: Map Test to Eligible Users
+    const eligibleUsers = JSON.parse(testStudents); // Assuming testStudents is a JSON string with user IDs
+    for (const userId of eligibleUsers) {
+      const [userResult] = await dbPromise.query(
+        "SELECT id FROM IP_Users WHERE id = ?",
+        [userId]
+      );
+
+      if (userResult.length > 0) {
+        const [assignmentResult] = await dbPromise.query(
+          "SELECT id FROM IP_Test_Assignments WHERE test_id = ? AND user_id = ?",
+          [testId, userId]
+        );
+
+        if (assignmentResult.length === 0) {
+          await dbPromise.query(
+            "INSERT INTO IP_Test_Assignments (test_id, user_id) VALUES (?, ?)",
+            [testId, userId]
+          );
+        }
+      } else {
+        console.warn(`User with ID ${userId} not found in IP_Users table.`);
+      }
+    }
+
+    res.send({ message: "File processed and data inserted successfully, with eligible users mapped!" });
   } catch (error) {
     console.error("Error processing file:", error);
     res.status(500).send({ message: "An error occurred while processing the file." });
