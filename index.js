@@ -2937,11 +2937,11 @@ app.post('/ip/login', (req, res) => {
       });
     });
 
-    console.log("Pid value is " +pId);
+    console.log("UserType value is " +user.userType);
 
     // Partners Table parther id fetch logic ends
     con.end();
-    res.json({ token, userName: user.name,userId: user.mobile,userEmail: user.email , pId : pId , userRole : user.role});
+    res.json({ token, userName: user.name,userId: user.mobile,userEmail: user.email , pId : pId , userRole : user.userType});
 
   });
 });
