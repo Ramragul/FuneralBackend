@@ -2778,7 +2778,7 @@ app.get('/api/ip/tests/:id?/:created_by?', (req, res) => {
 
   console.log('Connected to database.');
 
-  // Extract path parameters
+  // Extract path parameterss
   const { id, created_by } = req.params;
   
   // Build the query dynamically
