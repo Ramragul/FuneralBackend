@@ -2823,7 +2823,7 @@ app.get('/api/ip/testDetails/:testId', (req, res) => {
   } catch (error) {
       console.error('DB Connection Error', error);
       res.status(500).json({ error: 'DB Connection Error' });
-      return; // Exit after sending error response
+      return; // Exit after sending error responses
   }
 
   // Fetch questions for the test
