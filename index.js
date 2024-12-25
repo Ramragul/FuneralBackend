@@ -3053,7 +3053,7 @@ app.post("/test/update", upload.single("file"), async (req, res) => {
    const { testID, testName, testCategory, testDescription, testTimings, testValidity, modifiedBy } = req.body; // Getting test details and createdBy from request body
   //const { id, name, category, description, timings, validity, users, created_by } = req.body; // Getting test details and createdBy from request body
 
-  console.log("Id received form Test Details Page :" +testID + "name :" +testName + "Created By" + createdBy );
+  console.log("Id received form Test Details Page :" +testID + "name :" +testName + "Modified By" + modifiedBy );
   //console.log("Data Received from Test Details Page : " +JSON.stringify(req.body))
   // if (!id || !created_by) {
   //   return res.status(400).send({ message: "TestID and createdBy are required" });
