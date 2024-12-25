@@ -3055,9 +3055,10 @@ app.post("/test/update", upload.single("file"), async (req, res) => {
   console.log("Request received from front end:", req);
   console.log("Uploaded file:", req.file); // Log the file object
 
-  const { testID, testName, testCategory, testDescription, testTimings, testValidity, testStudents, createdBy } = req.body; // Getting test details and createdBy from request body
+  // const { testID, testName, testCategory, testDescription, testTimings, testValidity, testStudents, createdBy } = req.body; // Getting test details and createdBy from request body
+  const { id, name, category, description, timings, validity, users, created_by } = req.body; // Getting test details and createdBy from request body
 
-  if (!testID || !createdBy) {
+  if (!id || !created_by) {
     return res.status(400).send({ message: "TestID and createdBy are required" });
   }
 
@@ -3080,7 +3081,7 @@ app.post("/test/update", upload.single("file"), async (req, res) => {
     // Step 1: Update Test Details in IP_Tests Table (if needed)
     const [existingTestResult] = await dbPromise.query(
       "SELECT id FROM IP_Tests WHERE id = ?",
-      [testID]
+      [id]
     );
 
     if (existingTestResult.length === 0) {
@@ -3090,9 +3091,9 @@ app.post("/test/update", upload.single("file"), async (req, res) => {
     // Update the IP_Tests table if test details have changed
     await dbPromise.query(
       "UPDATE IP_Tests SET name = ?, description = ?, category = ?, timings = ?, validity = ?, users = ?, created_by = ? WHERE id = ?",
-      [testName, testDescription, testCategory, testTimings, testValidity, testStudents, createdBy, testID]
+      [name, description, category, timings, validity, users, createdBy, id]
     );
-    console.log(`Test ID ${testID} details updated successfully.`);
+    console.log(`Test ID ${id} details updated successfully.`);
 
     // Step 2: Loop through the data and insert it into IP_Test_Assignments table
     for (const row of data) {
@@ -3114,10 +3115,10 @@ app.post("/test/update", upload.single("file"), async (req, res) => {
       // Step 3: Insert the user and test assignment into IP_Test_Assignments table
       await dbPromise.query(
         "INSERT INTO IP_Test_Assignments (UserID, TestID, AssignedBy) VALUES (?, ?, ?)",
-        [userId, testID, createdBy]
+        [userId, id, created_by]
       );
 
-      console.log(`Assigned test ${testID} to user ${userId} successfully.`);
+      console.log(`Assigned test ${id} to user ${userId} successfully.`);
     }
 
     res.send({ message: "File processed, test updated, and data inserted successfully!" });
