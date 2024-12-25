@@ -2811,7 +2811,7 @@ console.log("Request received from front end" +req)
 // });
 
 
-app.get('/api/ip/tests/:id?/:created_by?', (req, res) => {
+app.get('/api/ip/tests/:id?', (req, res) => {
   let con;
 
   try {
@@ -2820,15 +2820,16 @@ app.get('/api/ip/tests/:id?/:created_by?', (req, res) => {
   } catch (error) {
     console.error('DB Connection Error', error);
     res.status(500).json({ error: 'DB Connection Error' });
-    return; // Exit the function after sending the error response
+    return;
   }
 
   console.log('Connected to database.');
 
   // Extract path parameters
-  const { id, created_by } = req.params;
+  const { id } = req.params;
+  const { created_by } = req.query; // Getting created_by from query params
 
-  // Check if both parameters are provided, which is not allowed
+  // Validate that only one of id or created_by is present
   if (id && created_by) {
     res.status(400).json({ error: 'Cannot filter by both id and created_by at the same time.' });
     con.end();
@@ -2841,12 +2842,12 @@ app.get('/api/ip/tests/:id?/:created_by?', (req, res) => {
 
   if (id) {
     query += " AND id = ?";
-    queryParams.push(id); // Add id to query parameters
+    queryParams.push(id);
   }
 
   if (created_by) {
     query += " AND created_by = ?";
-    queryParams.push(created_by); // Add created_by to query parameters
+    queryParams.push(created_by);
   }
 
   // Execute the query
