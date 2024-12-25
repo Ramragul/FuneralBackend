@@ -3049,11 +3049,6 @@ app.post('/ip/login', (req, res) => {
 
 
 app.post("/test/update", upload.single("file"), async (req, res) => {
-  // if (!req.file) {
-  //   return res.status(400).send({ message: "No file uploaded" });
-  // }
-  //console.log("Request received from front end:", req);
-  //console.log("Uploaded file:", req.file); // Log the file object
 
    const { testID, testName, testCategory, testDescription, testTimings, testValidity, testStudents, createdBy } = req.body; // Getting test details and createdBy from request body
   //const { id, name, category, description, timings, validity, users, created_by } = req.body; // Getting test details and createdBy from request body
@@ -3068,15 +3063,6 @@ app.post("/test/update", upload.single("file"), async (req, res) => {
     const con = dbConnection();
     con.connect();
 
-    // Ensure the file buffer is available
-    // if (!req.file.buffer) {
-    //   return res.status(400).send({ message: "File buffer is missing" });
-    // }
-
-    // Reading and processing the Excel file directly from the buffer
-    const workbook = xlsx.read(req.file.buffer, { type: "buffer" });
-    const sheetName = workbook.SheetNames[0]; // First sheet
-    const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
     const dbPromise = con.promise();
 
@@ -3096,37 +3082,10 @@ app.post("/test/update", upload.single("file"), async (req, res) => {
       [testName, testDescription, testCategory, testTimings, testValidity, testStudents, createdBy, testId]
     );
     console.log(`Test ID ${testID} details updated successfully.`);
-
-    // Step 2: Loop through the data and insert it into IP_Test_Assignments table
-    for (const row of data) {
-      const { userId, Name } = row; // Extract userId and Name from Excel file
-
-      console.log("Processing row:", row);
-
-      // Check if the user exists in the IP_Users table
-      const [userResult] = await dbPromise.query(
-        "SELECT id FROM IP_Users WHERE id = ?",
-        [userId]
-      );
-
-      if (userResult.length === 0) {
-        console.log(`User with ID ${userId} does not exist. Skipping...`);
-        continue; // Skip this row if the user doesn't exist
-      }
-
-      // Step 3: Insert the user and test assignment into IP_Test_Assignments table
-      await dbPromise.query(
-        "INSERT INTO IP_Test_Assignments (UserID, TestID, AssignedBy) VALUES (?, ?, ?)",
-        [userId, id, created_by]
-      );
-
-      console.log(`Assigned test ${id} to user ${userId} successfully.`);
-    }
-
-    res.send({ message: "File processed, test updated, and data inserted successfully!" });
+    res.send({ message: "Test updated successfully!" });
   } catch (error) {
-    console.error("Error processing file:", error);
-    res.status(500).send({ message: "An error occurred while processing the file." });
+    console.error("Error updated test details:", error);
+    res.status(500).send({ message: "An error occurred while updating the test details." });
   }
 });
 
