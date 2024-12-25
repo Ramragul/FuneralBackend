@@ -3044,6 +3044,101 @@ app.post('/ip/login', (req, res) => {
   });
 });
 
+
+// Test Edit and Test User Assignment API
+
+const express = require('express');
+const multer = require('multer');
+const xlsx = require('xlsx');
+const dbConnection = require('./dbConnection'); // assuming you have this utility for DB connection
+
+const upload = multer({ storage: multer.memoryStorage() }); // Use memory storage for handling file buffers
+const app = express();
+
+app.use(express.json());
+
+app.post("/test/upload", upload.single("file"), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).send({ message: "No file uploaded" });
+  }
+  console.log("Request received from front end:", req);
+  console.log("Uploaded file:", req.file); // Log the file object
+
+  const { testID, testName, testCategory, testDescription, testTimings, testValidity, testStudents, createdBy } = req.body; // Getting test details and createdBy from request body
+
+  if (!testID || !createdBy) {
+    return res.status(400).send({ message: "TestID and createdBy are required" });
+  }
+
+  try {
+    const con = dbConnection();
+    con.connect();
+
+    // Ensure the file buffer is available
+    if (!req.file.buffer) {
+      return res.status(400).send({ message: "File buffer is missing" });
+    }
+
+    // Reading and processing the Excel file directly from the buffer
+    const workbook = xlsx.read(req.file.buffer, { type: "buffer" });
+    const sheetName = workbook.SheetNames[0]; // First sheet
+    const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+    const dbPromise = con.promise();
+
+    // Step 1: Update Test Details in IP_Tests Table (if needed)
+    const [existingTestResult] = await dbPromise.query(
+      "SELECT id FROM IP_Tests WHERE id = ?",
+      [testID]
+    );
+
+    if (existingTestResult.length === 0) {
+      return res.status(404).send({ message: "Test not found" });
+    }
+
+    // Update the IP_Tests table if test details have changed
+    await dbPromise.query(
+      "UPDATE IP_Tests SET name = ?, description = ?, category = ?, timings = ?, validity = ?, users = ?, created_by = ? WHERE id = ?",
+      [testName, testDescription, testCategory, testTimings, testValidity, testStudents, createdBy, testID]
+    );
+    console.log(`Test ID ${testID} details updated successfully.`);
+
+    // Step 2: Loop through the data and insert it into IP_Test_Assignments table
+    for (const row of data) {
+      const { userId, Name } = row; // Extract userId and Name from Excel file
+
+      console.log("Processing row:", row);
+
+      // Check if the user exists in the IP_Users table
+      const [userResult] = await dbPromise.query(
+        "SELECT id FROM IP_Users WHERE id = ?",
+        [userId]
+      );
+
+      if (userResult.length === 0) {
+        console.log(`User with ID ${userId} does not exist. Skipping...`);
+        continue; // Skip this row if the user doesn't exist
+      }
+
+      // Step 3: Insert the user and test assignment into IP_Test_Assignments table
+      await dbPromise.query(
+        "INSERT INTO IP_Test_Assignments (UserID, TestID, AssignedBy) VALUES (?, ?, ?)",
+        [userId, testID, createdBy]
+      );
+
+      console.log(`Assigned test ${testID} to user ${userId} successfully.`);
+    }
+
+    res.send({ message: "File processed, test updated, and data inserted successfully!" });
+  } catch (error) {
+    console.error("Error processing file:", error);
+    res.status(500).send({ message: "An error occurred while processing the file." });
+  }
+});
+
+module.exports = app;
+
+
 // Function to send registration email
 const sendRegistrationEmail = (userEmail, userName) => {
   const templatePath = path.join(__dirname, 'emailTemplates', 'registrationEmailTemplate.html');
