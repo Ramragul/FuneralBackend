@@ -3052,8 +3052,8 @@ app.post("/test/update", upload.single("file"), async (req, res) => {
   // if (!req.file) {
   //   return res.status(400).send({ message: "No file uploaded" });
   // }
-  console.log("Request received from front end:", req);
-  console.log("Uploaded file:", req.file); // Log the file object
+  //console.log("Request received from front end:", req);
+  //console.log("Uploaded file:", req.file); // Log the file object
 
   // const { testID, testName, testCategory, testDescription, testTimings, testValidity, testStudents, createdBy } = req.body; // Getting test details and createdBy from request body
   const { id, name, category, description, timings, validity, users, created_by } = req.body; // Getting test details and createdBy from request body
