@@ -3047,17 +3047,8 @@ app.post('/ip/login', (req, res) => {
 
 // Test Edit and Test User Assignment API
 
-const express = require('express');
-const multer = require('multer');
-const xlsx = require('xlsx');
-const dbConnection = require('./dbConnection'); // assuming you have this utility for DB connection
 
-const upload = multer({ storage: multer.memoryStorage() }); // Use memory storage for handling file buffers
-const app = express();
-
-app.use(express.json());
-
-app.post("/test/upload", upload.single("file"), async (req, res) => {
+app.post("/test/update", upload.single("file"), async (req, res) => {
   if (!req.file) {
     return res.status(400).send({ message: "No file uploaded" });
   }
