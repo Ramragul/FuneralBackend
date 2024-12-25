@@ -3050,7 +3050,7 @@ app.post('/ip/login', (req, res) => {
 
 app.post("/test/update", upload.single("file"), async (req, res) => {
 
-   const { testID, testName, testCategory, testDescription, testTimings, testValidity, testStudents, createdBy } = req.body; // Getting test details and createdBy from request body
+   const { testID, testName, testCategory, testDescription, testTimings, testValidity, modifiedBy } = req.body; // Getting test details and createdBy from request body
   //const { id, name, category, description, timings, validity, users, created_by } = req.body; // Getting test details and createdBy from request body
 
   console.log("Id received form Test Details Page :" +testID + "name :" +testName + "Created By" + createdBy );
@@ -3076,10 +3076,19 @@ app.post("/test/update", upload.single("file"), async (req, res) => {
       return res.status(404).send({ message: "Test not found" });
     }
 
+    const getCurrentISTDateTime = () => {
+      const now = new Date();
+      const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
+      const istDate = new Date(now.getTime() + istOffset);
+      return istDate.toISOString().slice(0, 19).replace('T', ' '); // Format: YYYY-MM-DD HH:mm:ss
+  };
+  
+  const modifiedDate = getCurrentISTDateTime();
+
     // Update the IP_Tests table if test details have changed
     await dbPromise.query(
-      "UPDATE IP_Tests SET name = ?, description = ?, category = ?, timings = ?, validity = ?, users = ?, created_by = ? WHERE id = ?",
-      [testName, testDescription, testCategory, testTimings, testValidity, testStudents, createdBy, testID]
+      "UPDATE IP_Tests SET name = ?, description = ?, category = ?, timings = ?, validity = ?, users = ?, modified_by = ? modified_date = ? ,WHERE id = ?",
+      [testName, testDescription, testCategory, testTimings, testValidity, testStudents, modifiedBy,modifiedDate, testID]
     );
     console.log(`Test ID ${testID} details updated successfully.`);
     res.send({ message: "Test updated successfully!" });
