@@ -3069,9 +3069,9 @@ app.post("/test/update", upload.single("file"), async (req, res) => {
     con.connect();
 
     // Ensure the file buffer is available
-    if (!req.file.buffer) {
-      return res.status(400).send({ message: "File buffer is missing" });
-    }
+    // if (!req.file.buffer) {
+    //   return res.status(400).send({ message: "File buffer is missing" });
+    // }
 
     // Reading and processing the Excel file directly from the buffer
     const workbook = xlsx.read(req.file.buffer, { type: "buffer" });
