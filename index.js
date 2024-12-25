@@ -3087,7 +3087,7 @@ app.post("/test/update", upload.single("file"), async (req, res) => {
 
     // Update the IP_Tests table if test details have changed
     await dbPromise.query(
-      "UPDATE IP_Tests SET name = ?, description = ?, category = ?, timings = ?, validity = ?,modified_by = ? modified_date = ? ,WHERE id = ?",
+      "UPDATE IP_Tests SET name = ?, description = ?, category = ?, timings = ?, validity = ?,modified_by = ?, modified_date = ? ,WHERE id = ?",
       [testName, testDescription, testCategory, testTimings, testValidity, modifiedBy,modifiedDate, testID]
     );
     console.log(`Test ID ${testID} details updated successfully.`);
