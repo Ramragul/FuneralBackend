@@ -3055,11 +3055,11 @@ app.post("/test/update", upload.single("file"), async (req, res) => {
   //console.log("Request received from front end:", req);
   //console.log("Uploaded file:", req.file); // Log the file object
 
-  // const { testID, testName, testCategory, testDescription, testTimings, testValidity, testStudents, createdBy } = req.body; // Getting test details and createdBy from request body
-  const { id, name, category, description, timings, validity, users, created_by } = req.body; // Getting test details and createdBy from request body
+   const { testID, testName, testCategory, testDescription, testTimings, testValidity, testStudents, createdBy } = req.body; // Getting test details and createdBy from request body
+  //const { id, name, category, description, timings, validity, users, created_by } = req.body; // Getting test details and createdBy from request body
 
-  console.log("Id received form Test Details Page :" +id + "Name :" +name)
-  console.log("Data Received from Test Details Page : " +JSON.stringify(req.body))
+  console.log("Id received form Test Details Page :" +testID + "Name :" +testName)
+  //console.log("Data Received from Test Details Page : " +JSON.stringify(req.body))
   // if (!id || !created_by) {
   //   return res.status(400).send({ message: "TestID and createdBy are required" });
   // }
@@ -3093,9 +3093,9 @@ app.post("/test/update", upload.single("file"), async (req, res) => {
     // Update the IP_Tests table if test details have changed
     await dbPromise.query(
       "UPDATE IP_Tests SET name = ?, description = ?, category = ?, timings = ?, validity = ?, users = ?, created_by = ? WHERE id = ?",
-      [name, description, category, timings, validity, users, createdBy, id]
+      [testName, testDescription, testCategory, testTimings, testValidity, testStudents, createdBy, testId]
     );
-    console.log(`Test ID ${id} details updated successfully.`);
+    console.log(`Test ID ${testID} details updated successfully.`);
 
     // Step 2: Loop through the data and insert it into IP_Test_Assignments table
     for (const row of data) {
