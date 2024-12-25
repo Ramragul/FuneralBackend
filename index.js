@@ -3069,7 +3069,7 @@ app.post("/test/update", upload.single("file"), async (req, res) => {
     // Step 1: Update Test Details in IP_Tests Table (if needed)
     const [existingTestResult] = await dbPromise.query(
       "SELECT id FROM IP_Tests WHERE id = ?",
-      [id]
+      [testID]
     );
 
     if (existingTestResult.length === 0) {
@@ -3079,7 +3079,7 @@ app.post("/test/update", upload.single("file"), async (req, res) => {
     // Update the IP_Tests table if test details have changed
     await dbPromise.query(
       "UPDATE IP_Tests SET name = ?, description = ?, category = ?, timings = ?, validity = ?, users = ?, created_by = ? WHERE id = ?",
-      [testName, testDescription, testCategory, testTimings, testValidity, testStudents, createdBy, testId]
+      [testName, testDescription, testCategory, testTimings, testValidity, testStudents, createdBy, testID]
     );
     console.log(`Test ID ${testID} details updated successfully.`);
     res.send({ message: "Test updated successfully!" });
