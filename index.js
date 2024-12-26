@@ -3152,7 +3152,7 @@ app.post("/ip/test/eligible/users", upload.single("file"), async (req, res) => {
       );
 
       let testId;
-      if (testResult.length === 0) {
+      if (testResult.length > 0) {
         const [insertTestResult] = await dbPromise.query(
           "INSERT INTO IP_Test_Assignment (userID, CandidateName, TestID, AssignedBy, EligibleAttempts,ModifiedDate) VALUES (?, ?, ?, ?, ?, ?)",
           [candidateId, candidateName, testID, updatedBy, eligibleAttempts, modifiedDate]
