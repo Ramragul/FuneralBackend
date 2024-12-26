@@ -2731,6 +2731,8 @@ console.log("Request received from front end" +req)
 
 
 
+
+
 // app.get('/api/ip/tests', (req, res) => {
 //   let con;
 
@@ -3097,6 +3099,77 @@ app.post("/test/update", upload.single("file"), async (req, res) => {
     res.status(500).send({ message: "An error occurred while updating the test details." });
   }
 });
+
+
+// Test User Mapping Api
+
+app.post("/test/eligible/users", upload.single("file"), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).send({ message: "No file uploaded" });
+  }
+
+  console.log("Uploaded file:", req.file); // Log the file object
+
+  const { testID, updatedBy  } = req.body;
+
+  console.log("Test ID :" +testID +"Upadted By:" +updatedBy)
+
+  try {
+    const con = dbConnection();
+    con.connect();
+
+    // Ensure the file buffer is available
+    if (!req.file.buffer) {
+      return res.status(400).send({ message: "File buffer is missing" });
+    }
+
+    // Reading and processing the Excel file directly from the buffer
+    const workbook = xlsx.read(req.file.buffer, { type: "buffer" }); // Use buffer here
+    const sheetName = workbook.SheetNames[0];
+    const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+    const dbPromise = con.promise();
+
+    const getCurrentISTDateTime = () => {
+      const now = new Date();
+      const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
+      const istDate = new Date(now.getTime() + istOffset);
+      return istDate.toISOString().slice(0, 19).replace('T', ' '); // Format: YYYY-MM-DD HH:mm:ss
+  };
+  
+  const modifiedDate = getCurrentISTDateTime();
+
+    for (const row of data) {
+      const { candidateID, candidateName, eligibleAttempts, institute } = row;
+
+      console.log("Processing row:", row);
+      
+
+      // Step 1: Ensure the Test Exists
+      let [testResult] = await dbPromise.query(
+        "SELECT id FROM IP_Tests WHERE id = ?",
+        [testID]
+      );
+
+      let testId;
+      if (testResult.length === 0) {
+        const [insertTestResult] = await dbPromise.query(
+          "INSERT INTO IP_Test_Assignment (userID, CandidateName, TestID, AssignedBy, EligibleAttempts,ModifiedDate) VALUES (?, ?, ?, ?, ?, ?)",
+          [candidateId, candidateName, testID, updatedBy, eligibleAttempts, modifiedDate]
+        );
+       
+      } else {
+        return res.status(400).send({ message: "Invalid Test ID" });
+      }
+    }
+
+    res.send({ message: "File processed and candidated mapped to the test successfully!" });
+  } catch (error) {
+    console.error("Error processing file:", error);
+    res.status(500).send({ message: "An error occurred while processing the file." });
+  }
+});
+
 
 module.exports = app;
 
