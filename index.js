@@ -3103,7 +3103,7 @@ app.post("/test/update", upload.single("file"), async (req, res) => {
 
 // Test User Mapping Api
 
-app.post("/test/eligible/users", upload.single("file"), async (req, res) => {
+app.post("/ip/test/eligible/users", upload.single("file"), async (req, res) => {
   if (!req.file) {
     return res.status(400).send({ message: "No file uploaded" });
   }
