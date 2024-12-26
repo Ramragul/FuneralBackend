@@ -3108,7 +3108,7 @@ app.post("/test/eligible/users", upload.single("file"), async (req, res) => {
     return res.status(400).send({ message: "No file uploaded" });
   }
 
-  console.log("Uploaded file:", req.file); // Log the file object
+  console.log("Uploaded file:", req.file); // Log the file objects
 
   const { testID, updatedBy  } = req.body;
 
