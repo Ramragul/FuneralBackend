@@ -3103,6 +3103,74 @@ app.post("/test/update", upload.single("file"), async (req, res) => {
 
 // Test User Mapping Api
 
+// app.post("/ip/test/eligible/users", upload.single("file"), async (req, res) => {
+//   if (!req.file) {
+//     return res.status(400).send({ message: "No file uploaded" });
+//   }
+
+//   console.log("Uploaded file:", req.file); // Log the file objects
+
+//   const { testID, updatedBy  } = req.body;
+
+//   console.log("Test ID :" +testID +"Upadted By:" +updatedBy)
+
+//   try {
+//     const con = dbConnection();
+//     con.connect();
+
+//     // Ensure the file buffer is available
+//     if (!req.file.buffer) {
+//       return res.status(400).send({ message: "File buffer is missing" });
+//     }
+
+//     // Reading and processing the Excel file directly from the buffer
+//     const workbook = xlsx.read(req.file.buffer, { type: "buffer" }); // Use buffer here
+//     const sheetName = workbook.SheetNames[0];
+//     const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+//     const dbPromise = con.promise();
+
+//     const getCurrentISTDateTime = () => {
+//       const now = new Date();
+//       const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
+//       const istDate = new Date(now.getTime() + istOffset);
+//       return istDate.toISOString().slice(0, 19).replace('T', ' '); // Format: YYYY-MM-DD HH:mm:ss
+//   };
+  
+//   const modifiedDate = getCurrentISTDateTime();
+
+//     for (const row of data) {
+//       const { candidateID, candidateName, eligibleAttempts, institute } = row;
+
+//       console.log("Processing row:", row);
+      
+
+//       // Step 1: Ensure the Test Exists
+//       let [testResult] = await dbPromise.query(
+//         "SELECT id FROM IP_Tests WHERE id = ?",
+//         [testID]
+//       );
+
+//       let testId;
+//       if (testResult.length > 0) {
+//         const [insertTestResult] = await dbPromise.query(
+//           "INSERT INTO IP_Test_Assignments (userID, CandidateName, TestID, Institute, AssignedBy, EligibleAttempts,ModifiedDate) VALUES (?, ?, ?, ?, ?, ?, ?)",
+//           [candidateID, candidateName, testID, institute, updatedBy, eligibleAttempts, modifiedDate]
+//         );
+       
+//       } else {
+//         return res.status(400).send({ message: "Invalid Test ID" });
+//       }
+//     }
+
+//     res.send({ message: "File processed and candidated mapped to the test successfully!" });
+//   } catch (error) {
+//     console.error("Error processing file:", error);
+//     res.status(500).send({ message: "An error occurred while processing the file." });
+//   }
+// });
+
+
 app.post("/ip/test/eligible/users", upload.single("file"), async (req, res) => {
   if (!req.file) {
     return res.status(400).send({ message: "No file uploaded" });
@@ -3110,9 +3178,9 @@ app.post("/ip/test/eligible/users", upload.single("file"), async (req, res) => {
 
   console.log("Uploaded file:", req.file); // Log the file objects
 
-  const { testID, updatedBy  } = req.body;
+  const { testID, updatedBy } = req.body;
 
-  console.log("Test ID :" +testID +"Upadted By:" +updatedBy)
+  console.log("Test ID: " + testID + " Updated By: " + updatedBy);
 
   try {
     const con = dbConnection();
@@ -3134,16 +3202,15 @@ app.post("/ip/test/eligible/users", upload.single("file"), async (req, res) => {
       const now = new Date();
       const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
       const istDate = new Date(now.getTime() + istOffset);
-      return istDate.toISOString().slice(0, 19).replace('T', ' '); // Format: YYYY-MM-DD HH:mm:ss
-  };
-  
-  const modifiedDate = getCurrentISTDateTime();
+      return istDate.toISOString().slice(0, 19).replace("T", " "); // Format: YYYY-MM-DD HH:mm:ss
+    };
+
+    const modifiedDate = getCurrentISTDateTime();
 
     for (const row of data) {
       const { candidateID, candidateName, eligibleAttempts, institute } = row;
 
       console.log("Processing row:", row);
-      
 
       // Step 1: Ensure the Test Exists
       let [testResult] = await dbPromise.query(
@@ -3151,24 +3218,42 @@ app.post("/ip/test/eligible/users", upload.single("file"), async (req, res) => {
         [testID]
       );
 
-      let testId;
       if (testResult.length > 0) {
-        const [insertTestResult] = await dbPromise.query(
-          "INSERT INTO IP_Test_Assignments (userID, CandidateName, TestID, Institute, AssignedBy, EligibleAttempts,ModifiedDate) VALUES (?, ?, ?, ?, ?, ?, ?)",
-          [candidateID, candidateName, testID, institute, updatedBy, eligibleAttempts, modifiedDate]
-        );
-       
+        // Use ON DUPLICATE KEY UPDATE
+        const query = `
+          INSERT INTO IP_Test_Assignments (userID, CandidateName, TestID, Institute, AssignedBy, EligibleAttempts, ModifiedDate)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+          ON DUPLICATE KEY UPDATE
+          CandidateName = VALUES(CandidateName),
+          Institute = VALUES(Institute),
+          AssignedBy = VALUES(AssignedBy),
+          EligibleAttempts = VALUES(EligibleAttempts),
+          ModifiedDate = VALUES(ModifiedDate)
+        `;
+
+        await dbPromise.query(query, [
+          candidateID,
+          candidateName,
+          testID,
+          institute,
+          updatedBy,
+          eligibleAttempts,
+          modifiedDate
+        ]);
       } else {
         return res.status(400).send({ message: "Invalid Test ID" });
       }
     }
 
-    res.send({ message: "File processed and candidated mapped to the test successfully!" });
+    res.send({
+      message: "File processed and candidates mapped to the test successfully!"
+    });
   } catch (error) {
     console.error("Error processing file:", error);
     res.status(500).send({ message: "An error occurred while processing the file." });
   }
 });
+
 
 
 module.exports = app;
