@@ -3259,6 +3259,10 @@ app.post("/ip/test/eligible/users", upload.single("file"), async (req, res) => {
 app.post("/ip/test/submit", async (req, res) => {
   const { userID, testID, selectedAnswers } = req.body;
 
+  console.log("UserID" +userID);
+  console.log("TestID" +testID);
+  console.log("Selected Answers" +JSON.stringify(selectedAnswers));
+
   if (!userID || !testID || !selectedAnswers || typeof selectedAnswers !== "object") {
     return res.status(400).send({ message: "Invalid request payload" });
   }
