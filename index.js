@@ -3401,7 +3401,10 @@ app.get('/api/ip/users/:id/tests', (req, res) => {
 
     con.end();
     console.log('Connection Ended');
-    return res.status(200).json({ activeTests, expiredTests });
+    // return res.status(200).json({ activeTests, expiredTests });
+
+    return res.status(200).json({ data: { activeTests, expiredTests } });
+
   });
 });
 
