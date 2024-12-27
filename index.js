@@ -2924,7 +2924,8 @@ app.get('/api/ip/testDetails/:testId', (req, res) => {
               options: options.filter(option => option.questionId === question.questionId),
           }));
 
-          res.status(200).json({ testId, questions: questionsWithOptions });
+         // res.status(200).json({ testId, questions: questionsWithOptions });
+          res.status(200).json({data:{ testId, questions: questionsWithOptions }});
           con.end();
           console.log('Connection Ended');
       });
