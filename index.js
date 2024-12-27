@@ -3321,6 +3321,98 @@ app.post("/ip/test/submit", async (req, res) => {
 });
 
 
+// API To Find what are the tests Assigned to the user
+
+
+// app.get('/api/ip/assigned/tests/:id?', (req, res) => {
+//   let con;
+
+//   try {
+//     con = dbConnection();
+//     con.connect();
+//   } catch (error) {
+//     console.error('DB Connection Error', error);
+//     res.status(500).json({ error: 'DB Connection Error' });
+//     return;
+//   }
+
+//   console.log('Connected to database.');
+
+//   // Extract path parameters
+//   const { id } = req.params;
+ 
+
+//   // End the connection
+//   con.end();
+//   console.log("Connection Ended");
+// });
+
+const express = require('express');
+const mysql = require('mysql2');
+const app = express();
+
+app.get('/api/ip/assigned/tests/:id', (req, res) => {
+  let con;
+
+  try {
+    con = dbConnection();
+    con.connect();
+  } catch (error) {
+    console.error('DB Connection Error', error);
+    res.status(500).json({ error: 'DB Connection Error' });
+    return;
+  }
+
+  console.log('Connected to database.');
+
+  const { id: userId } = req.params;
+
+  if (!userId) {
+    con.end();
+    return res.status(400).json({ error: 'UserID is required' });
+  }
+
+  const query = `
+    SELECT 
+      t.id, t.name, t.description, t.created_by, t.created_at, 
+      t.users, t.validity, t.timings, t.category, t.modified_by, t.modified_date
+    FROM IP_Test_Assignments a
+    INNER JOIN IP_Tests t ON a.TestID = t.id
+    WHERE a.UserID = ?
+    ORDER BY t.created_at DESC
+  `;
+
+  con.query(query, [userId], (err, results) => {
+    if (err) {
+      console.error('Query Error', err);
+      con.end();
+      return res.status(500).json({ error: 'Error fetching tests' });
+    }
+
+    const currentDate = new Date();
+    const activeTests = [];
+    const expiredTests = [];
+
+    results.forEach(test => {
+      if (new Date(test.validity) >= currentDate) {
+        activeTests.push(test);
+      } else {
+        expiredTests.push(test);
+      }
+    });
+
+    con.end();
+    console.log('Connection Ended');
+    return res.status(200).json({ activeTests, expiredTests });
+  });
+});
+
+app.listen(3000, () => {
+  console.log('Server is running on port 3000');
+});
+
+
+
 
 
 module.exports = app;
