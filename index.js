@@ -3349,7 +3349,7 @@ app.post("/ip/test/submit", async (req, res) => {
 
 
 
-app.get('/api/ip/assigned/tests/:id', (req, res) => {
+app.get('/api/ip/users/{id}/tests', (req, res) => {
   let con;
 
   try {
