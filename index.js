@@ -3256,6 +3256,69 @@ app.post("/ip/test/eligible/users", upload.single("file"), async (req, res) => {
 
 
 
+app.post("/ip/test/submit", async (req, res) => {
+  const { userID, testID, selectedAnswers } = req.body;
+
+  if (!userID || !testID || !selectedAnswers || typeof selectedAnswers !== "object") {
+    return res.status(400).send({ message: "Invalid request payload" });
+  }
+
+  try {
+    const con = dbConnection(); // Replace with your DB connection function
+    con.connect();
+
+    const dbPromise = con.promise();
+
+    // Step 1: Determine the next attempt_id for this user and test
+    let [existingAttempts] = await dbPromise.query(
+      "SELECT MAX(attempt_id) AS last_attempt FROM IP_Responses WHERE candidate_id = ? AND test_id = ?",
+      [userID, testID]
+    );
+
+    let attemptID = existingAttempts[0]?.last_attempt ? existingAttempts[0].last_attempt + 1 : 1;
+
+    const getCurrentISTDateTime = () => {
+      const now = new Date();
+      const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
+      const istDate = new Date(now.getTime() + istOffset);
+      return istDate.toISOString().slice(0, 19).replace("T", " "); // Format: YYYY-MM-DD HH:mm:ss
+    };
+
+    const modifiedDate = getCurrentISTDateTime();
+
+    // Step 2: Insert each response with the calculated attempt_id
+    const responses = Object.entries(selectedAnswers).map(([questionID, selectedOption]) => [
+      testID,
+      userID,
+      questionID,
+      selectedOption,
+      attemptID,
+      modifiedDate,
+    ]);
+
+
+
+    await dbPromise.query(
+      `INSERT INTO IP_Responses (test_id, candidate_id, question_id, selected_option, attempt_id,created_at)
+       VALUES ?`,
+      [responses]
+    );
+
+    res.status(201).send({
+      message: "Test Submitted Successfully",
+      attemptID: attemptID,
+    });
+
+    con.end();
+  } catch (error) {
+    console.error("Error processing test submission:", error);
+    res.status(500).send({ message: "An error occurred while processing the test submission" });
+  }
+});
+
+
+
+
 module.exports = app;
 
 
