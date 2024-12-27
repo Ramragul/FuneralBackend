@@ -2720,7 +2720,7 @@ console.log("Request received from front end" +req)
       );
     }
 
-    res.send({ message: "File processed and data inserted successfully!" });
+    res.status(201).send({ message: "File processed and data inserted successfully!" });
   } catch (error) {
     console.error("Error processing file:", error);
     res.status(500).send({ message: "An error occurred while processing the file." });
