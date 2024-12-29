@@ -3257,12 +3257,77 @@ app.post("/ip/test/eligible/users", upload.single("file"), async (req, res) => {
 
 
 
+// app.post("/ip/test/submit", async (req, res) => {
+//   const { userID, testID, selectedAnswers } = req.body;
+
+//   console.log("UserID" +userID);
+//   console.log("TestID" +testID);
+//   console.log("Selected Answers" +JSON.stringify(selectedAnswers));
+
+//   if (!userID || !testID || !selectedAnswers || typeof selectedAnswers !== "object") {
+//     return res.status(400).send({ message: "Invalid request payload" });
+//   }
+
+//   try {
+//     const con = dbConnection(); // Replace with your DB connection function
+//     con.connect();
+
+//     const dbPromise = con.promise();
+
+//     // Step 1: Determine the next attempt_id for this user and test
+//     let [existingAttempts] = await dbPromise.query(
+//       "SELECT MAX(attempt_id) AS last_attempt FROM IP_Responses WHERE candidate_id = ? AND test_id = ?",
+//       [userID, testID]
+//     );
+
+//     let attemptID = existingAttempts[0]?.last_attempt ? existingAttempts[0].last_attempt + 1 : 1;
+
+//     const getCurrentISTDateTime = () => {
+//       const now = new Date();
+//       const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
+//       const istDate = new Date(now.getTime() + istOffset);
+//       return istDate.toISOString().slice(0, 19).replace("T", " "); // Format: YYYY-MM-DD HH:mm:ss
+//     };
+
+//     const modifiedDate = getCurrentISTDateTime();
+
+//     // Step 2: Insert each response with the calculated attempt_id
+//     const responses = Object.entries(selectedAnswers).map(([questionID, selectedOption]) => [
+//       testID,
+//       userID,
+//       questionID,
+//       selectedOption,
+//       attemptID,
+//       modifiedDate,
+//     ]);
+
+
+
+//     await dbPromise.query(
+//       `INSERT INTO IP_Responses (test_id, candidate_id, question_id, selected_option, attempt_id,created_at)
+//        VALUES ?`,
+//       [responses]
+//     );
+
+//     res.status(201).send({
+//       message: "Test Submitted Successfully",
+//       attemptID: attemptID,
+//     });
+
+//     con.end();
+//   } catch (error) {
+//     console.error("Error processing test submission:", error);
+//     res.status(500).send({ message: "An error occurred while processing the test submission" });
+//   }
+// });
+
+
 app.post("/ip/test/submit", async (req, res) => {
   const { userID, testID, selectedAnswers } = req.body;
 
-  console.log("UserID" +userID);
-  console.log("TestID" +testID);
-  console.log("Selected Answers" +JSON.stringify(selectedAnswers));
+  console.log("UserID: " + userID);
+  console.log("TestID: " + testID);
+  console.log("Selected Answers: " + JSON.stringify(selectedAnswers));
 
   if (!userID || !testID || !selectedAnswers || typeof selectedAnswers !== "object") {
     return res.status(400).send({ message: "Invalid request payload" });
@@ -3301,17 +3366,43 @@ app.post("/ip/test/submit", async (req, res) => {
       modifiedDate,
     ]);
 
-
-
     await dbPromise.query(
-      `INSERT INTO IP_Responses (test_id, candidate_id, question_id, selected_option, attempt_id,created_at)
+      `INSERT INTO IP_Responses (test_id, candidate_id, question_id, selected_option, attempt_id, created_at)
        VALUES ?`,
       [responses]
     );
 
+    // Step 3: Fetch the total marks and evaluate the responses
+    const [answers] = await dbPromise.query(
+      "SELECT r.question_id, r.selected_option, a.correct_option_id, a.rewarded_marks " +
+        "FROM IP_Responses r " +
+        "JOIN IP_Answers a ON r.question_id = a.question_id " +
+        "WHERE r.test_id = ? AND r.candidate_id = ? AND r.attempt_id = ?",
+      [testID, userID, attemptID]
+    );
+
+    let totalMarks = 0;
+    let marksScored = 0;
+
+    answers.forEach((answer) => {
+      totalMarks += parseInt(answer.rewarded_marks || "0", 10); // Add the maximum possible marks
+      if (answer.selected_option === answer.correct_option_id) {
+        marksScored += parseInt(answer.rewarded_marks || "0", 10); // Add the marks for correct answers
+      }
+    });
+
+    // Step 4: Insert the result into the IP_Results table
+    await dbPromise.query(
+      `INSERT INTO IP_Test_Results (test_id, candidate_id, total_marks, marks_scored, created_at)
+       VALUES (?, ?, ?, ?, ?)`,
+      [testID, userID, totalMarks, marksScored, modifiedDate]
+    );
+
     res.status(201).send({
-      message: "Test Submitted Successfully",
+      message: "Test Submitted and Evaluated Successfully",
       attemptID: attemptID,
+      totalMarks,
+      marksScored,
     });
 
     con.end();
@@ -3320,6 +3411,7 @@ app.post("/ip/test/submit", async (req, res) => {
     res.status(500).send({ message: "An error occurred while processing the test submission" });
   }
 });
+
 
 
 // API To Find what are the tests Assigned to the user
