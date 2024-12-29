@@ -2663,7 +2663,7 @@ console.log("Request received from front end" +req)
     const dbPromise = con.promise();
 
     for (const row of data) {
-      const { test_name, test_description, category, question_text, option_1, option_2, option_3, option_4, correct_option } = row;
+      const { test_name, test_description, category, question_text, option_1, option_2, option_3, option_4, correct_option,rewarded_marks } = row;
 
       console.log("Processing row:", row);
       console.log("TestName inside row block :" +testName);
@@ -2715,8 +2715,8 @@ console.log("Request received from front end" +req)
 
       // Step 5: Insert the Correct Answer
       await dbPromise.query(
-        "INSERT INTO IP_Answers (question_id, correct_option_id) VALUES (?, ?)",
-        [questionId, correctOptionId]
+        "INSERT INTO IP_Answers (question_id, correct_option_id,rewarded_marks) VALUES (?, ?,?)",
+        [questionId, correctOptionId,rewarded_marks]
       );
     }
 
