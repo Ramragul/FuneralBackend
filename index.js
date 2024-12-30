@@ -3393,9 +3393,9 @@ app.post("/ip/test/submit", async (req, res) => {
 
     // Step 4: Insert the result into the IP_Results table
     await dbPromise.query(
-      `INSERT INTO IP_Test_Results (test_id, candidate_id, total_marks, marks_scored, created_at)
-       VALUES (?, ?, ?, ?, ?)`,
-      [testID, userID, totalMarks, marksScored, modifiedDate]
+      `INSERT INTO IP_Test_Results (test_id, candidate_id, total_marks, marks_scored, created_at,attempt_id)
+       VALUES (?, ?, ?, ?, ?,?)`,
+      [testID, userID, totalMarks, marksScored, modifiedDate,attemptID]
     );
 
     res.status(201).send({
