@@ -3502,48 +3502,126 @@ app.get('/api/ip/users/:id/tests', (req, res) => {
 });
 
 
-app.get('/api/ip/users/:id/results', (req, res) => {
+// app.get('/api/ip/users/:id/results', async (req, res) => {
+//   let con;
+
+//   try {
+//     // Establish the DB connection
+//     con = dbConnection();
+//     con.connect();
+//   } catch (error) {
+//     console.error('DB Connection Error:', error);
+//     return res.status(500).json({ error: 'DB Connection Error' });
+//   }
+
+//   console.log('Connected to database.');
+
+//   const { id: candidateId } = req.params;
+
+//   if (!candidateId) {
+//     con.end();
+//     return res.status(400).json({ error: 'Candidate ID is required' });
+//   }
+
+//   const query = `
+//     SELECT 
+//       r.test_id AS testId,
+//       t.name AS testName,
+//       MIN(resp.created_at) AS testTakenDate, -- Getting the earliest attempt time
+//       r.total_marks AS totalMarks,
+//       r.marks_scored AS marksScored
+//     FROM IP_Test_Results r
+//     INNER JOIN IP_Tests t ON r.test_id = t.id
+//     INNER JOIN IP_Responses resp 
+//       ON resp.test_id = r.test_id 
+//       AND resp.candidate_id = r.candidate_id
+//       AND resp.attempt_id = r.attempt_id
+//     WHERE r.candidate_id = ?
+//     GROUP BY r.test_id, r.total_marks, r.marks_scored, t.name
+//     ORDER BY testTakenDate DESC;
+//   `;
+
+//   try {
+//     const results = await con.promise().query(query, [candidateId]);
+
+//     if (results[0].length === 0) {
+//       con.end();
+//       return res.status(404).json({ error: 'No test results found for this candidate.' });
+//     }
+
+//     const testResults = results[0];
+
+//     con.end();
+//     console.log('Connection Ended');
+//     return res.status(200).json({ data: { testResults } });
+//   } catch (error) {
+//     console.error('Query Error:', error);
+//     con.end();
+//     return res.status(500).json({ error: 'Error fetching test results' });
+//   }
+// });
+
+app.get('/api/ip/users/:id/results', async (req, res) => {
   let con;
 
   try {
+    // Establish the DB connection
     con = dbConnection();
     con.connect();
   } catch (error) {
-    console.error('DB Connection Error', error);
-    res.status(500).json({ error: 'DB Connection Error' });
-    return;
+    console.error('DB Connection Error:', error);
+    return res.status(500).json({ error: 'DB Connection Error' });
   }
 
   console.log('Connected to database.');
 
-  const { id: userId } = req.params;
+  const { id: candidateId } = req.params;
 
-  if (!userId) {
+  if (!candidateId) {
     con.end();
-    return res.status(400).json({ error: 'UserID is required' });
+    return res.status(400).json({ error: 'Candidate ID is required' });
   }
 
+  // SQL Query
   const query = `
     SELECT 
-
+      r.test_id AS testId,
+      t.name AS testName,
+      MIN(resp.created_at) AS testTakenDate, -- Getting the earliest attempt time
+      r.total_marks AS totalMarks,
+      r.marks_scored AS marksScored
+    FROM IP_Test_Results r
+    INNER JOIN IP_Tests t ON r.test_id = t.id
+    INNER JOIN IP_Responses resp 
+      ON resp.test_id = r.test_id 
+      AND resp.candidate_id = r.candidate_id
+      AND resp.attempt_id = r.attempt_id
+    WHERE r.candidate_id = ?
+    GROUP BY r.test_id, r.total_marks, r.marks_scored, t.name
+    ORDER BY testTakenDate DESC;
   `;
 
-  con.query(query, [userId], (err, results) => {
-    if (err) {
-      console.error('Query Error', err);
-      con.end();
-      return res.status(500).json({ error: 'Error fetching test results' });
-    }
+  console.log('Generated Query:', query); // Log the query for debugging
 
+  try {
+    const [results] = await con.promise().query(query, [candidateId]);
+
+    if (results.length === 0) {
+      con.end();
+      return res.status(404).json({ error: 'No test results found for this candidate.' });
+    }
 
     con.end();
     console.log('Connection Ended');
-    // return res.status(200).json({ activeTests, expiredTests });
-
-    return res.status(200).json({ data: { testResults } });
-
-  });
+    return res.status(200).json({ data: { testResults: results } });
+  } catch (error) {
+    console.error('Query Error:', error);
+    con.end();
+    return res.status(500).json({ error: 'Error fetching test results' });
+  }
 });
+
+
 
 app.listen(3000, () => {
   console.log('Server is running on port 3000');
