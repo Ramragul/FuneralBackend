@@ -3501,6 +3501,50 @@ app.get('/api/ip/users/:id/tests', (req, res) => {
   });
 });
 
+
+app.get('/api/ip/users/:id/results', (req, res) => {
+  let con;
+
+  try {
+    con = dbConnection();
+    con.connect();
+  } catch (error) {
+    console.error('DB Connection Error', error);
+    res.status(500).json({ error: 'DB Connection Error' });
+    return;
+  }
+
+  console.log('Connected to database.');
+
+  const { id: userId } = req.params;
+
+  if (!userId) {
+    con.end();
+    return res.status(400).json({ error: 'UserID is required' });
+  }
+
+  const query = `
+    SELECT 
+
+  `;
+
+  con.query(query, [userId], (err, results) => {
+    if (err) {
+      console.error('Query Error', err);
+      con.end();
+      return res.status(500).json({ error: 'Error fetching test results' });
+    }
+
+
+    con.end();
+    console.log('Connection Ended');
+    // return res.status(200).json({ activeTests, expiredTests });
+
+    return res.status(200).json({ data: { testResults } });
+
+  });
+});
+
 app.listen(3000, () => {
   console.log('Server is running on port 3000');
 });
