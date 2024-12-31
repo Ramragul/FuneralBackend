@@ -2677,8 +2677,8 @@ console.log("Request received from front end" +req)
       let testId;
       if (testResult.length === 0) {
         const [insertTestResult] = await dbPromise.query(
-          "INSERT INTO IP_Tests (name, description, category, timings, validity, users,created_by) VALUES (?, ?, ?, ?, ?, ?, ?)",
-          [testName, testDescription, testCategory, testTimings, testValidity, testStudents,createdBy]
+          "INSERT INTO IP_Tests (name, description, category, timings, validity, status,created_by) VALUES (?, ?, ?, ?, ?, ?, ?)",
+          [testName, testDescription, testCategory, testTimings, testValidity, 'active',createdBy]
         );
         testId = insertTestResult.insertId;
       } else {
@@ -3466,7 +3466,7 @@ app.get('/api/ip/users/:id/tests', (req, res) => {
   const query = `
     SELECT 
       t.id, t.name, t.description, t.created_by, t.created_at, 
-      t.users, t.validity, t.timings, t.category, t.modified_by, t.modified_date
+      t.status, t.validity, t.timings, t.category, t.modified_by, t.modified_date
     FROM IP_Test_Assignments a
     INNER JOIN IP_Tests t ON a.TestID = t.id
     WHERE a.UserID = ?
