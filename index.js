@@ -3623,7 +3623,94 @@ app.get('/api/ip/users/:id/results', async (req, res) => {
 
 
 
-app.get('/api/ip/partner/:id/test/stats', async (req, res) => {
+// app.get('/api/ip/partner/:id/test/stats', async (req, res) => {
+//   let con;
+
+//   try {
+//     // Establish the DB connection
+//     con = dbConnection();
+//     con.connect();
+//   } catch (error) {
+//     console.error('DB Connection Error:', error);
+//     return res.status(500).json({ error: 'DB Connection Error' });
+//   }
+
+//   console.log('Connected to database.');
+
+//   const { id: partnerId } = req.params;
+
+//   if (!partnerId) {
+//     con.end();
+//     return res.status(400).json({ error: 'Partner ID is required' });
+//   }
+
+//   try {
+//     // Query for assigned candidates
+//     const assignedQuery = `
+//       SELECT 
+//         IP_Test_Assignments.UserID AS candidateId,
+//         IP_Test_Assignments.CandidateName AS name,
+//         IP_Test_Assignments.DueDate AS dueDate,
+//         IP_Test_Assignments.EligibleAttempts AS eligibleAttempts,
+//         IP_Test_Assignments.Institute AS institute
+//       FROM IP_Test_Assignments
+//       WHERE IP_Test_Assignments.AssignedBy = ?
+//     `;
+
+//     const [assignedCandidates] = await con.promise().query(assignedQuery, [partnerId]);
+
+//     // Query for attended candidates
+//     const attendedQuery = `
+//       SELECT 
+//         IP_Test_Assignments.UserID AS candidateId,
+//         IP_Test_Assignments.CandidateName AS name,
+//         IP_Test_Results.marks_scored AS marksScored,
+//         IP_Test_Results.total_marks AS totalMarks,
+//         ROUND((IP_Test_Results.marks_scored / IP_Test_Results.total_marks) * 100, 2) AS percentage
+//       FROM IP_Test_Results
+//       JOIN IP_Test_Assignments 
+//         ON IP_Test_Assignments.UserID = IP_Test_Results.candidate_id
+//       WHERE IP_Test_Results.test_id IN (
+//         SELECT id FROM IP_Tests WHERE created_by = ?
+//       )
+//     `;
+
+//     const [attendedCandidates] = await con.promise().query(attendedQuery, [partnerId]);
+
+//     // Query for not attended candidates
+//     const notAttendedQuery = `
+//       SELECT 
+//         IP_Test_Assignments.UserID AS candidateId,
+//         IP_Test_Assignments.CandidateName AS name,
+//         IP_Test_Assignments.DueDate AS dueDate,
+//         IP_Test_Assignments.EligibleAttempts AS eligibleAttempts,
+//         IP_Test_Assignments.Institute AS institute
+//       FROM IP_Test_Assignments
+//       LEFT JOIN IP_Test_Results 
+//         ON IP_Test_Assignments.UserID = IP_Test_Results.candidate_id
+//       WHERE IP_Test_Assignments.AssignedBy = ? 
+//         AND IP_Test_Results.candidate_id IS NULL
+//     `;
+
+//     const [notAttendedCandidates] = await con.promise().query(notAttendedQuery, [partnerId]);
+
+//     con.end();
+//     console.log('Connection Ended');
+
+//     return res.status(200).json({
+//       assignedCandidates,
+//       attendedCandidates,
+//       notAttendedCandidates,
+//     });
+//   } catch (error) {
+//     console.error('Query Error:', error);
+//     con.end();
+//     return res.status(500).json({ error: 'Error fetching test stats' });
+//   }
+// });
+
+
+app.get('/api/ip/test/:testId/stats', async (req, res) => {
   let con;
 
   try {
@@ -3637,11 +3724,11 @@ app.get('/api/ip/partner/:id/test/stats', async (req, res) => {
 
   console.log('Connected to database.');
 
-  const { id: partnerId } = req.params;
+  const { testId } = req.params;
 
-  if (!partnerId) {
+  if (!testId) {
     con.end();
-    return res.status(400).json({ error: 'Partner ID is required' });
+    return res.status(400).json({ error: 'Test ID is required' });
   }
 
   try {
@@ -3654,10 +3741,10 @@ app.get('/api/ip/partner/:id/test/stats', async (req, res) => {
         IP_Test_Assignments.EligibleAttempts AS eligibleAttempts,
         IP_Test_Assignments.Institute AS institute
       FROM IP_Test_Assignments
-      WHERE IP_Test_Assignments.AssignedBy = ?
+      WHERE IP_Test_Assignments.TestID = ?
     `;
 
-    const [assignedCandidates] = await con.promise().query(assignedQuery, [partnerId]);
+    const [assignedCandidates] = await con.promise().query(assignedQuery, [testId]);
 
     // Query for attended candidates
     const attendedQuery = `
@@ -3670,12 +3757,10 @@ app.get('/api/ip/partner/:id/test/stats', async (req, res) => {
       FROM IP_Test_Results
       JOIN IP_Test_Assignments 
         ON IP_Test_Assignments.UserID = IP_Test_Results.candidate_id
-      WHERE IP_Test_Results.test_id IN (
-        SELECT id FROM IP_Tests WHERE created_by = ?
-      )
+      WHERE IP_Test_Results.test_id = ?
     `;
 
-    const [attendedCandidates] = await con.promise().query(attendedQuery, [partnerId]);
+    const [attendedCandidates] = await con.promise().query(attendedQuery, [testId]);
 
     // Query for not attended candidates
     const notAttendedQuery = `
@@ -3688,11 +3773,12 @@ app.get('/api/ip/partner/:id/test/stats', async (req, res) => {
       FROM IP_Test_Assignments
       LEFT JOIN IP_Test_Results 
         ON IP_Test_Assignments.UserID = IP_Test_Results.candidate_id
-      WHERE IP_Test_Assignments.AssignedBy = ? 
+        AND IP_Test_Results.test_id = ?
+      WHERE IP_Test_Assignments.TestID = ? 
         AND IP_Test_Results.candidate_id IS NULL
     `;
 
-    const [notAttendedCandidates] = await con.promise().query(notAttendedQuery, [partnerId]);
+    const [notAttendedCandidates] = await con.promise().query(notAttendedQuery, [testId, testId]);
 
     con.end();
     console.log('Connection Ended');
