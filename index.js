@@ -2021,6 +2021,8 @@ const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}
 
 // });
 
+// API TO REGISTER Business Partners
+
 app.post('/api/businessPartnerRegistration', async (req, res) => {
   const { email, name, businessName, address, city, pincode, aadharImageURL, password, role, user_type, mobile, partnerType, availability } = req.body;
   const hashedPassword = await bcrypt.hash(password, 10);
@@ -3710,6 +3712,8 @@ app.get('/api/ip/users/:id/results', async (req, res) => {
 // });
 
 
+// Business Partner api , to fetch all stat related to the test id passed 
+
 app.get('/api/ip/test/:testId/stats', async (req, res) => {
   let con;
 
@@ -3795,6 +3799,61 @@ app.get('/api/ip/test/:testId/stats', async (req, res) => {
   }
 });
 
+
+// API to fetch All Candidates under the business partner - Business Related API
+
+
+app.get('/api/ip/partner/:partnerId/students', async (req, res) => {
+  let con;
+
+  try {
+    // Establish the DB connection
+    con = dbConnection();
+    con.connect();
+  } catch (error) {
+    console.error('DB Connection Error:', error);
+    return res.status(500).json({ error: 'DB Connection Error' });
+  }
+
+  console.log('Connected to database.');
+
+  const { partnerId } = req.params;
+
+  if (!partnerId) {
+    con.end();
+    return res.status(400).json({ error: 'Partner ID is required' });
+  }
+
+  try {
+    // Define the SQL query
+    const query = `
+      SELECT 
+        id, name, mobile, email, city
+      FROM 
+        IP_Users
+      WHERE 
+        institute = ? 
+        AND userType = 'Candidate';
+    `;
+
+    // Execute the query
+    con.query(query, [partnerId], (err, results) => {
+      if (err) {
+        console.error('Query Error:', err);
+        con.end();
+        return res.status(500).json({ error: 'Error fetching students list' });
+      }
+
+      // Respond with the results
+      res.status(200).json({ students: results });
+      con.end();
+    });
+  } catch (error) {
+    console.error('Query Error:', error);
+    con.end();
+    return res.status(500).json({ error: 'Error fetching students list' });
+  }
+});
 
 
 
