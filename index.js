@@ -3623,13 +3623,6 @@ app.get('/api/ip/users/:id/results', async (req, res) => {
 
 
 
-app.listen(3000, () => {
-  console.log('Server is running on port 3000');
-});
-
-
-
-
 app.get('/api/ip/partner/:id/test/stats', async (req, res) => {
   let con;
 
@@ -3715,6 +3708,11 @@ app.get('/api/ip/partner/:id/test/stats', async (req, res) => {
     return res.status(500).json({ error: 'Error fetching test stats' });
   }
 });
+
+
+
+
+
 
 
 
