@@ -3845,7 +3845,7 @@ app.get('/api/ip/partner/:partnerId/students', async (req, res) => {
       }
 
       // Respond with the results
-      res.status(200).json({ students: results });
+      res.status(200).json({data:{ student: results }});
       con.end();
     });
   } catch (error) {
