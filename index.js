@@ -2673,7 +2673,7 @@ console.log("Request received from front end" +req)
 const formatDateForMySQL = (date) => {
   if (!date || isNaN(new Date(date).getTime())) {
     // If the date is invalid, return an empty string
-    return '';
+    return '2099-12-31';
   }
   const isoString = new Date(date).toISOString();
   return isoString.split('T')[0]; // Returns only the 'YYYY-MM-DD' part
