@@ -3585,11 +3585,29 @@ app.get('/api/ip/users/:id/results', async (req, res) => {
   }
 
   // SQL Query
+  // const query = `
+  //   SELECT 
+  //     r.test_id AS testId,
+  //     t.name AS testName,
+  //     MIN(resp.created_at) AS testTakenDate, -- Getting the earliest attempt time
+  //     r.total_marks AS totalMarks,
+  //     r.marks_scored AS marksScored
+  //   FROM IP_Test_Results r
+  //   INNER JOIN IP_Tests t ON r.test_id = t.id
+  //   INNER JOIN IP_Responses resp 
+  //     ON resp.test_id = r.test_id 
+  //     AND resp.candidate_id = r.candidate_id
+  //     AND resp.attempt_id = r.attempt_id
+  //   WHERE r.candidate_id = ?
+  //   GROUP BY r.test_id, r.total_marks, r.marks_scored, t.name
+  //   ORDER BY testTakenDate DESC;
+  // `;
+
   const query = `
     SELECT 
       r.test_id AS testId,
       t.name AS testName,
-      MIN(resp.created_at) AS testTakenDate, -- Getting the earliest attempt time
+      resp.created_at AS testTakenDate, -- Getting the earliest attempt time
       r.total_marks AS totalMarks,
       r.marks_scored AS marksScored
     FROM IP_Test_Results r
