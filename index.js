@@ -2652,7 +2652,7 @@ console.log("Request received from front end" +req)
     return isoString.split('T')[0]; // Returns only the 'YYYY-MM-DD' part
   };
 var formattedDate = ''
-  if(testValidity!==null && testValidity !== undefined && testValidity! =="")
+  if(testValidity!==null && testValidity !== undefined && testValidity !== "")
     {
    formattedTestValidity = formatDateForMySQL(testValidity);
     }
