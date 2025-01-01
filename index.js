@@ -2645,19 +2645,19 @@ console.log("Request received from front end" +req)
   console.log("Uploaded file:", req.file); // Log the file object
 
   const { testName, testCategory, testDescription, testTimings, testValidity, testStudents,createdBy } = req.body;
-
+  console.log("Test name :" +testName +"Test Validity:" +testValidity)
 
   const formatDateForMySQL = (date) => {
     const isoString = new Date(date).toISOString();
     return isoString.split('T')[0]; // Returns only the 'YYYY-MM-DD' part
   };
 var formattedDate = ''
-  if(testValidity)
+  if(testValidity!==null && testValidity !== undefined && testValidity! =="")
     {
    formattedTestValidity = formatDateForMySQL(testValidity);
     }
 
-  console.log("Test name :" +testName +"Test Validity:" +testValidity)
+  
 
   try {
     const con = dbConnection();
