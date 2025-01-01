@@ -3607,7 +3607,7 @@ app.get('/api/ip/users/:id/results', async (req, res) => {
     SELECT 
       r.test_id AS testId,
       t.name AS testName,
-      resp.created_at AS testTakenDate, -- Getting the earliest attempt time
+       MIN(resp.created_at) AS testTakenDate, -- Getting the earliest attempt time
       r.total_marks AS totalMarks,
       r.marks_scored AS marksScored
     FROM IP_Test_Results r
@@ -3617,7 +3617,7 @@ app.get('/api/ip/users/:id/results', async (req, res) => {
       AND resp.candidate_id = r.candidate_id
       AND resp.attempt_id = r.attempt_id
     WHERE r.candidate_id = ?
-    GROUP BY r.test_id, r.total_marks, r.marks_scored, t.name
+    
     ORDER BY testTakenDate DESC;
   `;
 
@@ -3625,6 +3625,8 @@ app.get('/api/ip/users/:id/results', async (req, res) => {
 
   try {
     const [results] = await con.promise().query(query, [candidateId]);
+
+
 
     if (results.length === 0) {
       con.end();
