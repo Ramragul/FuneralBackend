@@ -2647,28 +2647,44 @@ console.log("Request received from front end" +req)
   const { testName, testCategory, testDescription, testTimings, testValidity, testStudents,createdBy } = req.body;
   console.log("Test name :" +testName +"Test Validity:" +testValidity)
 
-  const formatDateForMySQL = (date) => {
-    const isoString = new Date(date).toISOString();
-    return isoString.split('T')[0]; // Returns only the 'YYYY-MM-DD' part
-  };
-// var formattedDate = ''
-//   if(testValidity!=null)
-//     {
-//    formattedTestValidity = formatDateForMySQL(testValidity);
-//     }
+//   const formatDateForMySQL = (date) => {
+//     const isoString = new Date(date).toISOString();
+//     return isoString.split('T')[0]; // Returns only the 'YYYY-MM-DD' part
+//   };
+// // var formattedDate = ''
+// //   if(testValidity!=null)
+// //     {
+// //    formattedTestValidity = formatDateForMySQL(testValidity);
+// //     }
+
+// let formattedTestValidity = '';
+
+// if (testValidity) { // Check if testValidity is not null, undefined, or empty
+//   try {
+//     formattedTestValidity = formatDateForMySQL(testValidity);
+//   } catch (error) {
+//     console.error("Error formatting date:", error);
+//     formattedTestValidity = ''; // Ensure a fallback value
+//   }
+// } else {
+//   formattedTestValidity = ''; // Assign an empty string for null/undefined/empty cases
+// }
+
+const formatDateForMySQL = (date) => {
+  if (!date || isNaN(new Date(date).getTime())) {
+    // If the date is invalid, return an empty string
+    return '';
+  }
+  const isoString = new Date(date).toISOString();
+  return isoString.split('T')[0]; // Returns only the 'YYYY-MM-DD' part
+};
 
 let formattedTestValidity = '';
 
-if (testValidity) { // Check if testValidity is not null, undefined, or empty
-  try {
-    formattedTestValidity = formatDateForMySQL(testValidity);
-  } catch (error) {
-    console.error("Error formatting date:", error);
-    formattedTestValidity = ''; // Ensure a fallback value
-  }
-} else {
-  formattedTestValidity = ''; // Assign an empty string for null/undefined/empty cases
+if (testValidity) {
+  formattedTestValidity = formatDateForMySQL(testValidity);
 }
+
   
 
   try {
