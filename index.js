@@ -2646,7 +2646,9 @@ console.log("Request received from front end" +req)
 
   const { testName, testCategory, testDescription, testTimings, testValidity, testStudents,createdBy } = req.body;
 
-  console.log("Test name :" +testName +"Test Category:" +testCategory)
+
+
+  console.log("Test name :" +testName +"Test Validity:" +testValidity)
 
   try {
     const con = dbConnection();
