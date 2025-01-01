@@ -2651,12 +2651,24 @@ console.log("Request received from front end" +req)
     const isoString = new Date(date).toISOString();
     return isoString.split('T')[0]; // Returns only the 'YYYY-MM-DD' part
   };
-var formattedDate = ''
-  if(testValidity!=null)
-    {
-   formattedTestValidity = formatDateForMySQL(testValidity);
-    }
+// var formattedDate = ''
+//   if(testValidity!=null)
+//     {
+//    formattedTestValidity = formatDateForMySQL(testValidity);
+//     }
 
+let formattedTestValidity = '';
+
+if (testValidity) { // Check if testValidity is not null, undefined, or empty
+  try {
+    formattedTestValidity = formatDateForMySQL(testValidity);
+  } catch (error) {
+    console.error("Error formatting date:", error);
+    formattedTestValidity = ''; // Ensure a fallback value
+  }
+} else {
+  formattedTestValidity = ''; // Assign an empty string for null/undefined/empty cases
+}
   
 
   try {
