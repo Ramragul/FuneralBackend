@@ -2647,6 +2647,15 @@ console.log("Request received from front end" +req)
   const { testName, testCategory, testDescription, testTimings, testValidity, testStudents,createdBy } = req.body;
 
 
+  const formatDateForMySQL = (date) => {
+    const isoString = new Date(date).toISOString();
+    return isoString.split('T')[0]; // Returns only the 'YYYY-MM-DD' part
+  };
+var formattedDate = ''
+  if(testValidity)
+    {
+   formattedTestValidity = formatDateForMySQL(testValidity);
+    }
 
   console.log("Test name :" +testName +"Test Validity:" +testValidity)
 
@@ -2682,7 +2691,7 @@ console.log("Request received from front end" +req)
       if (testResult.length === 0) {
         const [insertTestResult] = await dbPromise.query(
           "INSERT INTO IP_Tests (name, description, category, timings, validity, status,created_by) VALUES (?, ?, ?, ?, ?, ?, ?)",
-          [testName, testDescription, testCategory, testTimings, testValidity, 'active',createdBy]
+          [testName, testDescription, testCategory, testTimings, formattedTestValidity, 'active',createdBy]
         );
         testId = insertTestResult.insertId;
       } else {
