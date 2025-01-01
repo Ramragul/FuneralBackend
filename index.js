@@ -3617,7 +3617,7 @@ app.get('/api/ip/users/:id/results', async (req, res) => {
       AND resp.candidate_id = r.candidate_id
       AND resp.attempt_id = r.attempt_id
     WHERE r.candidate_id = ?
-    
+    GROUP BY r.test_id, r.attempt_id
     ORDER BY testTakenDate DESC;
   `;
 
