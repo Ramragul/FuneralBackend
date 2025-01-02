@@ -106,7 +106,7 @@ const processMathQuestion = (questionText) => {
 
 //const katex = require('katex'); // Importing KaTeX for MathML conversion
 
-// const processMathQuestionToMathML = (questionText) => {
+// const processedQuestionTextToMathML = (questionText) => {
 //   try {
 //     console.log("Processing Question for MathML Conversion: " + questionText);
     
@@ -2893,9 +2893,9 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
       //  ? convert(processMathQuestionToMathML(question_text), { wordwrap: false })
       //  : question_text;
 
-      const processedQuestionText = subject === "maths"
-      ? processMathQuestionToMathML(question_text)
-      : question_text;
+      // const processedQuestionText = subject === "maths"
+      // ? processMathQuestionToMathML(question_text)
+      // : question_text;
 
       // Insert test details if not exists
       let [testResult] = await dbPromise.query(
