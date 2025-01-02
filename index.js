@@ -21,7 +21,7 @@ const xlsx = require('xlsx');
 // Maths Conversion Lib
 
 const katex = require("katex");
-
+const { convert } = require('html-to-text');
 
 // Twilio Imports 
 // const twilio = require('twilio');
@@ -2982,9 +2982,13 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
       } = row;
 
       // Process question_text if subject is math
+      // const processedQuestionText = subject === "maths"
+      //   ? processMathQuestionToMathML(question_text)
+      //   : question_text;
+
       const processedQuestionText = subject === "maths"
-        ? processMathQuestionToMathML(question_text)
-        : question_text;
+      ? convert(processMathQuestionToMathML(question_text), { wordwrap: false })
+      : question_text;
 
       // Insert test details if not exists
       let [testResult] = await dbPromise.query(
