@@ -2981,20 +2981,20 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
         subject,
       } = row;
 
-      // Process question_text if subject is math
-      // const processedQuestionText = subject === "maths"
-      //   ? processMathQuestionToMathML(question_text)
-      //   : question_text;
+      Process question_text if subject is math
+      const processedQuestionText = subject === "maths"
+        ? processMathQuestionToMathML(question_text)
+        : question_text;
 
       // const processedQuestionText = subject === "maths"
       // ? convert(processMathQuestionToMathML(question_text), { wordwrap: false })
       // : question_text;
 
-      const stripHtmlTags = (html) => html.replace(/<\/?[^>]+(>|$)/g, "");
+      // const stripHtmlTags = (html) => html.replace(/<\/?[^>]+(>|$)/g, "");
 
-      const processedQuestionText = subject === "maths"
-        ? stripHtmlTags(processMathQuestionToMathML(question_text))
-        : question_text;
+      // const processedQuestionText = subject === "maths"
+      //   ? stripHtmlTags(processMathQuestionToMathML(question_text))
+      //   : question_text;
 
       // Insert test details if not exists
       let [testResult] = await dbPromise.query(
