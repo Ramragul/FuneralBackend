@@ -2881,10 +2881,14 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
       } = row;
 
       // Process question_text if subject is math
-      const processedQuestionText = subject === "maths"
-        ? processMathQuestion(question_text)
-        : question_text;
+      // const processedQuestionText = subject === "maths"
+      //   ? processMathQuestion(question_text)
+      //   : question_text;
 
+      const processedQuestionText = subject === "maths"
+      ?convert(processMathQuestion(question_text),{wordwrap: false})
+      : question_text;
+      
       // const processedQuestionText = subject === "maths"
       // ? convert(processMathQuestion(question_text),{wordwrap:false})
       // : question_text;
