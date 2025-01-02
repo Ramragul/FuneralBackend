@@ -2986,9 +2986,15 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
       //   ? processMathQuestionToMathML(question_text)
       //   : question_text;
 
+      // const processedQuestionText = subject === "maths"
+      // ? convert(processMathQuestionToMathML(question_text), { wordwrap: false })
+      // : question_text;
+
+      const stripHtmlTags = (html) => html.replace(/<\/?[^>]+(>|$)/g, "");
+
       const processedQuestionText = subject === "maths"
-      ? convert(processMathQuestionToMathML(question_text), { wordwrap: false })
-      : question_text;
+        ? stripHtmlTags(processMathQuestionToMathML(question_text))
+        : question_text;
 
       // Insert test details if not exists
       let [testResult] = await dbPromise.query(
