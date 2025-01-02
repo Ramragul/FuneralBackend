@@ -104,7 +104,7 @@ const storage = multer.diskStorage({
 // };
 
 
-const katex = require('katex'); // Importing KaTeX for MathML conversion
+//const katex = require('katex'); // Importing KaTeX for MathML conversion
 
 const processMathQuestionToMathML = (questionText) => {
   try {
