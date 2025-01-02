@@ -80,62 +80,62 @@ const storage = multer.diskStorage({
 //   }
 // };
 
-// const processMathQuestionToMathML = (questionText) => {
-//   try {
-//     // Look for LaTeX pattern
-//     console.log("Question Text for Latex Conversion" +questionText);
-//     const latexPattern = /\\[a-zA-Z]+\{[^\}]*\}/g;
-//     const matches = questionText.match(latexPattern);
-
-//     if (matches) {
-//       // Process only LaTeX portions
-//       let processedText = questionText;
-//       matches.forEach((match) => {
-//         const renderedLatex = katex.renderToString(match, { throwOnError: false });
-//         processedText = processedText.replace(match, renderedLatex);
-//       });
-//       return processedText;
-//     }
-//     return questionText; // Return as is if no LaTeX
-//   } catch (err) {
-//     console.error("Error parsing LaTeX question:", err);
-//     return questionText; // Fallback to the original text
-//   }
-// };
-
-
-//const katex = require('katex'); // Importing KaTeX for MathML conversion
-
 const processMathQuestionToMathML = (questionText) => {
   try {
-    console.log("Processing Question for MathML Conversion: " + questionText);
-    
-    // LaTeX Pattern to match
+    // Look for LaTeX pattern
+    console.log("Question Text for Latex Conversion" +questionText);
     const latexPattern = /\\[a-zA-Z]+\{[^\}]*\}/g;
     const matches = questionText.match(latexPattern);
 
     if (matches) {
+      // Process only LaTeX portions
       let processedText = questionText;
       matches.forEach((match) => {
-        // Convert LaTeX to MathML
-        const mathml = katex.renderToString(match, {
-          throwOnError: false,
-          displayMode: true,
-          output: "mathml" // Specify that the output should be MathML
-        });
-
-        // Replace LaTeX with MathML in the original text
-        processedText = processedText.replace(match, mathml);
+        const renderedLatex = katex.renderToString(match, { throwOnError: false });
+        processedText = processedText.replace(match, renderedLatex);
       });
-
-      return processedText; // Return MathML replaced text
+      return processedText;
     }
-    return questionText; // Return as is if no LaTeX match
+    return questionText; // Return as is if no LaTeX
   } catch (err) {
-    console.error("Error processing LaTeX to MathML:", err);
-    return questionText; // Fallback to the original text if error occurs
+    console.error("Error parsing LaTeX question:", err);
+    return questionText; // Fallback to the original text
   }
 };
+
+
+//const katex = require('katex'); // Importing KaTeX for MathML conversion
+
+// const processMathQuestionToMathML = (questionText) => {
+//   try {
+//     console.log("Processing Question for MathML Conversion: " + questionText);
+    
+//     // LaTeX Pattern to match
+//     const latexPattern = /\\[a-zA-Z]+\{[^\}]*\}/g;
+//     const matches = questionText.match(latexPattern);
+
+//     if (matches) {
+//       let processedText = questionText;
+//       matches.forEach((match) => {
+//         // Convert LaTeX to MathML
+//         const mathml = katex.renderToString(match, {
+//           throwOnError: false,
+//           displayMode: true,
+//           output: "mathml" // Specify that the output should be MathML
+//         });
+
+//         // Replace LaTeX with MathML in the original text
+//         processedText = processedText.replace(match, mathml);
+//       });
+
+//       return processedText; // Return MathML replaced text
+//     }
+//     return questionText; // Return as is if no LaTeX match
+//   } catch (err) {
+//     console.error("Error processing LaTeX to MathML:", err);
+//     return questionText; // Fallback to the original text if error occurs
+//   }
+// };
 
 
 
@@ -2885,13 +2885,17 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
       //   ? processMathQuestion(question_text)
       //   : question_text;
 
-      //  const processedQuestionText = subject === "maths"
-      //  ? convert(processMathQuestionToMathML(question_text), { wordwrap: false })
-      //  : question_text;
+      // const processedQuestionText = subject === "maths"
+      // ? convert(processMathQuestion(question_text),{wordwrap:false})
+      // : question_text;
 
-      const processedQuestionText = subject === "maths"
-      ? processMathQuestionToMathML(question_text)
-      : question_text;
+       const processedQuestionText = subject === "maths"
+       ? convert(processMathQuestionToMathML(question_text), { wordwrap: false })
+       : question_text;
+
+      // const processedQuestionText = subject === "maths"
+      // ? processMathQuestionToMathML(question_text)
+      // : question_text;
 
       // Insert test details if not exists
       let [testResult] = await dbPromise.query(
