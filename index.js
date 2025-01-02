@@ -18,6 +18,10 @@ const nodemailer = require('nodemailer');
 
 const xlsx = require('xlsx');
 
+// Maths Conversion Lib
+
+const katex = require("katex");
+
 
 // Twilio Imports 
 // const twilio = require('twilio');
@@ -54,6 +58,29 @@ const storage = multer.diskStorage({
     cb(null, `${Date.now()}-${file.originalname}`); // Unique file naming
   },
 });
+
+
+
+
+// Helper function to parse LaTeX or handle plain text - Maths
+const processMathQuestion = (questionText) => {
+  try {
+    if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
+      // LaTeX-like input detected
+      return katex.renderToString(questionText, {
+        throwOnError: false,
+      });
+    } else {
+      // Plain math question, return as is
+      return questionText;
+    }
+  } catch (err) {
+    console.error("Error parsing LaTeX question:", err);
+    return questionText; // Fallback to the original text
+  }
+};
+
+
 
 //const upload = multer({ storage });
 
@@ -2637,79 +2664,168 @@ app.get('/api/cc/tailoring/orders', async (req, res) => {
 // });
 
 
+// Test Upload WOrking version  commented for latex enhancement
+
+// app.post("/test/upload", upload.single("file"), async (req, res) => {
+//   if (!req.file) {
+//     return res.status(400).send({ message: "No file uploaded" });
+//   }
+// console.log("Request received from front end" +req)
+//   console.log("Uploaded file:", req.file); // Log the file object
+
+//   const { testName, testCategory, testDescription, testTimings, testValidity, testStudents,createdBy } = req.body;
+//   console.log("Test name :" +testName +"Test Validity:" +testValidity)
+
+
+
+// const formatDateForMySQL = (date) => {
+//   if (!date || isNaN(new Date(date).getTime())) {
+//     // If the date is invalid, return an empty string
+//     return '2099-12-31';
+//   }
+//   const isoString = new Date(date).toISOString();
+//   return isoString.split('T')[0]; // Returns only the 'YYYY-MM-DD' part
+// };
+
+// let formattedTestValidity = '';
+
+// if (testValidity) {
+//   formattedTestValidity = formatDateForMySQL(testValidity);
+// }
+
+  
+
+//   try {
+//     const con = dbConnection();
+//     con.connect();
+
+//     // Ensure the file buffer is available
+//     if (!req.file.buffer) {
+//       return res.status(400).send({ message: "File buffer is missing" });
+//     }
+
+//     // Reading and processing the Excel file directly from the buffer
+//     const workbook = xlsx.read(req.file.buffer, { type: "buffer" }); // Use buffer here
+//     const sheetName = workbook.SheetNames[0];
+//     const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+//     const dbPromise = con.promise();
+
+//     for (const row of data) {
+//       const { test_name, test_description, category, question_text, option_1, option_2, option_3, option_4, correct_option,rewarded_marks } = row;
+
+//       console.log("Processing row:", row);
+//       console.log("TestName inside row block :" +testName);
+
+//       // Step 1: Ensure the Test Exists
+//       let [testResult] = await dbPromise.query(
+//         "SELECT id FROM IP_Tests WHERE name = ?",
+//         [testName]
+//       );
+
+//       let testId;
+//       if (testResult.length === 0) {
+//         const [insertTestResult] = await dbPromise.query(
+//           "INSERT INTO IP_Tests (name, description, category, timings, validity, status,created_by) VALUES (?, ?, ?, ?, ?, ?, ?)",
+//           [testName, testDescription, testCategory, testTimings, formattedTestValidity, 'active',createdBy]
+//         );
+//         testId = insertTestResult.insertId;
+//       } else {
+//         testId = testResult[0].id;
+//       }
+
+//       // Step 2: Insert the Question
+//       const [questionResult] = await dbPromise.query(
+//         "INSERT INTO IP_Questions (test_id, category, question_text) VALUES (?, ?, ?)",
+//         [testId, category, question_text]
+//       );
+//       const questionId = questionResult.insertId;
+
+//       // Step 3: Insert the Options and Collect Their IDs
+//       const optionIds = [];
+//       for (let i = 1; i <= 4; i++) {
+//         const [optionResult] = await dbPromise.query(
+//           "INSERT INTO IP_Options (question_id, option_text) VALUES (?, ?)",
+//           [questionId, row[`option_${i}`]]
+//         );
+//         optionIds.push(optionResult.insertId);
+//       }
+
+//       // Step 4: Identify the Correct Option
+//       const correctOptionIndex = correct_option.split("_")[1]; // Extract the index (e.g., "2" from "option_2")
+//       if (!correctOptionIndex || isNaN(correctOptionIndex)) {
+//         throw new Error(`Invalid correct_option format: "${correct_option}"`);
+//       }
+
+//       const correctOptionId = optionIds[parseInt(correctOptionIndex) - 1]; // Map to option array (1-based index)
+//       if (!correctOptionId) {
+//         throw new Error(`Correct option "${correct_option}" not found in options.`);
+//       }
+
+//       // Step 5: Insert the Correct Answer
+//       await dbPromise.query(
+//         "INSERT INTO IP_Answers (question_id, correct_option_id,rewarded_marks) VALUES (?, ?,?)",
+//         [questionId, correctOptionId,rewarded_marks]
+//       );
+//     }
+
+//     res.status(201).send({ message: "File processed and data inserted successfully!" });
+//   } catch (error) {
+//     console.error("Error processing file:", error);
+//     res.status(500).send({ message: "An error occurred while processing the file." });
+//   }
+// });
+
+
+
 app.post("/test/upload", upload.single("file"), async (req, res) => {
   if (!req.file) {
     return res.status(400).send({ message: "No file uploaded" });
   }
-console.log("Request received from front end" +req)
-  console.log("Uploaded file:", req.file); // Log the file object
-
-  const { testName, testCategory, testDescription, testTimings, testValidity, testStudents,createdBy } = req.body;
-  console.log("Test name :" +testName +"Test Validity:" +testValidity)
-
-//   const formatDateForMySQL = (date) => {
-//     const isoString = new Date(date).toISOString();
-//     return isoString.split('T')[0]; // Returns only the 'YYYY-MM-DD' part
-//   };
-// // var formattedDate = ''
-// //   if(testValidity!=null)
-// //     {
-// //    formattedTestValidity = formatDateForMySQL(testValidity);
-// //     }
-
-// let formattedTestValidity = '';
-
-// if (testValidity) { // Check if testValidity is not null, undefined, or empty
-//   try {
-//     formattedTestValidity = formatDateForMySQL(testValidity);
-//   } catch (error) {
-//     console.error("Error formatting date:", error);
-//     formattedTestValidity = ''; // Ensure a fallback value
-//   }
-// } else {
-//   formattedTestValidity = ''; // Assign an empty string for null/undefined/empty cases
-// }
-
-const formatDateForMySQL = (date) => {
-  if (!date || isNaN(new Date(date).getTime())) {
-    // If the date is invalid, return an empty string
-    return '2099-12-31';
-  }
-  const isoString = new Date(date).toISOString();
-  return isoString.split('T')[0]; // Returns only the 'YYYY-MM-DD' part
-};
-
-let formattedTestValidity = '';
-
-if (testValidity) {
-  formattedTestValidity = formatDateForMySQL(testValidity);
-}
-
   
+  const { testName, testCategory, testDescription, testTimings, testValidity, testStudents, createdBy } = req.body;
+
+  const formatDateForMySQL = (date) => {
+    if (!date || isNaN(new Date(date).getTime())) {
+      return "2099-12-31";
+    }
+    const isoString = new Date(date).toISOString();
+    return isoString.split("T")[0];
+  };
+
+  let formattedTestValidity = testValidity ? formatDateForMySQL(testValidity) : "";
 
   try {
     const con = dbConnection();
     con.connect();
 
-    // Ensure the file buffer is available
-    if (!req.file.buffer) {
-      return res.status(400).send({ message: "File buffer is missing" });
-    }
-
-    // Reading and processing the Excel file directly from the buffer
-    const workbook = xlsx.read(req.file.buffer, { type: "buffer" }); // Use buffer here
+    const workbook = xlsx.read(req.file.buffer, { type: "buffer" });
     const sheetName = workbook.SheetNames[0];
     const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
     const dbPromise = con.promise();
 
     for (const row of data) {
-      const { test_name, test_description, category, question_text, option_1, option_2, option_3, option_4, correct_option,rewarded_marks } = row;
+      const {
+        test_name,
+        test_description,
+        category,
+        question_text,
+        option_1,
+        option_2,
+        option_3,
+        option_4,
+        correct_option,
+        rewarded_marks,
+        subject,
+      } = row;
 
-      console.log("Processing row:", row);
-      console.log("TestName inside row block :" +testName);
+      // Process question_text if subject is math
+      const processedQuestionText = subject === "maths"
+        ? processMathQuestion(question_text)
+        : question_text;
 
-      // Step 1: Ensure the Test Exists
+      // Insert test details if not exists
       let [testResult] = await dbPromise.query(
         "SELECT id FROM IP_Tests WHERE name = ?",
         [testName]
@@ -2718,22 +2834,22 @@ if (testValidity) {
       let testId;
       if (testResult.length === 0) {
         const [insertTestResult] = await dbPromise.query(
-          "INSERT INTO IP_Tests (name, description, category, timings, validity, status,created_by) VALUES (?, ?, ?, ?, ?, ?, ?)",
-          [testName, testDescription, testCategory, testTimings, formattedTestValidity, 'active',createdBy]
+          "INSERT INTO IP_Tests (name, description, category, timings, validity, status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)",
+          [testName, testDescription, testCategory, testTimings, formattedTestValidity, "active", createdBy]
         );
         testId = insertTestResult.insertId;
       } else {
         testId = testResult[0].id;
       }
 
-      // Step 2: Insert the Question
+      // Insert the question
       const [questionResult] = await dbPromise.query(
         "INSERT INTO IP_Questions (test_id, category, question_text) VALUES (?, ?, ?)",
-        [testId, category, question_text]
+        [testId, category, processedQuestionText]
       );
       const questionId = questionResult.insertId;
 
-      // Step 3: Insert the Options and Collect Their IDs
+      // Insert options and identify the correct one
       const optionIds = [];
       for (let i = 1; i <= 4; i++) {
         const [optionResult] = await dbPromise.query(
@@ -2743,21 +2859,12 @@ if (testValidity) {
         optionIds.push(optionResult.insertId);
       }
 
-      // Step 4: Identify the Correct Option
-      const correctOptionIndex = correct_option.split("_")[1]; // Extract the index (e.g., "2" from "option_2")
-      if (!correctOptionIndex || isNaN(correctOptionIndex)) {
-        throw new Error(`Invalid correct_option format: "${correct_option}"`);
-      }
+      const correctOptionIndex = correct_option.split("_")[1];
+      const correctOptionId = optionIds[parseInt(correctOptionIndex) - 1];
 
-      const correctOptionId = optionIds[parseInt(correctOptionIndex) - 1]; // Map to option array (1-based index)
-      if (!correctOptionId) {
-        throw new Error(`Correct option "${correct_option}" not found in options.`);
-      }
-
-      // Step 5: Insert the Correct Answer
       await dbPromise.query(
-        "INSERT INTO IP_Answers (question_id, correct_option_id,rewarded_marks) VALUES (?, ?,?)",
-        [questionId, correctOptionId,rewarded_marks]
+        "INSERT INTO IP_Answers (question_id, correct_option_id, rewarded_marks) VALUES (?, ?, ?)",
+        [questionId, correctOptionId, rewarded_marks]
       );
     }
 
@@ -2767,7 +2874,6 @@ if (testValidity) {
     res.status(500).send({ message: "An error occurred while processing the file." });
   }
 });
-
 
 
 
