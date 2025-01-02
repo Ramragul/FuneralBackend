@@ -80,28 +80,63 @@ const storage = multer.diskStorage({
 //   }
 // };
 
-const processMathQuestion = (questionText) => {
+// const processMathQuestion = (questionText) => {
+//   try {
+//     // Look for LaTeX pattern
+//     console.log("Question Text for Latex Conversion" +questionText);
+//     const latexPattern = /\\[a-zA-Z]+\{[^\}]*\}/g;
+//     const matches = questionText.match(latexPattern);
+
+//     if (matches) {
+//       // Process only LaTeX portions
+//       let processedText = questionText;
+//       matches.forEach((match) => {
+//         const renderedLatex = katex.renderToString(match, { throwOnError: false });
+//         processedText = processedText.replace(match, renderedLatex);
+//       });
+//       return processedText;
+//     }
+//     return questionText; // Return as is if no LaTeX
+//   } catch (err) {
+//     console.error("Error parsing LaTeX question:", err);
+//     return questionText; // Fallback to the original text
+//   }
+// };
+
+
+const katex = require('katex'); // Importing KaTeX for MathML conversion
+
+const processMathQuestionToMathML = (questionText) => {
   try {
-    // Look for LaTeX pattern
-    console.log("Question Text for Latex Conversion" +questionText);
+    console.log("Processing Question for MathML Conversion: " + questionText);
+    
+    // LaTeX Pattern to match
     const latexPattern = /\\[a-zA-Z]+\{[^\}]*\}/g;
     const matches = questionText.match(latexPattern);
 
     if (matches) {
-      // Process only LaTeX portions
       let processedText = questionText;
       matches.forEach((match) => {
-        const renderedLatex = katex.renderToString(match, { throwOnError: false });
-        processedText = processedText.replace(match, renderedLatex);
+        // Convert LaTeX to MathML
+        const mathml = katex.renderToString(match, {
+          throwOnError: false,
+          displayMode: true,
+          output: "mathml" // Specify that the output should be MathML
+        });
+
+        // Replace LaTeX with MathML in the original text
+        processedText = processedText.replace(match, mathml);
       });
-      return processedText;
+
+      return processedText; // Return MathML replaced text
     }
-    return questionText; // Return as is if no LaTeX
+    return questionText; // Return as is if no LaTeX match
   } catch (err) {
-    console.error("Error parsing LaTeX question:", err);
-    return questionText; // Fallback to the original text
+    console.error("Error processing LaTeX to MathML:", err);
+    return questionText; // Fallback to the original text if error occurs
   }
 };
+
 
 
 
@@ -2688,7 +2723,7 @@ app.get('/api/cc/tailoring/orders', async (req, res) => {
 // });
 
 
-// Test Upload WOrking version  commented for latex enhancement
+// version 1 :Test Upload WOrking version  commented for latex enhancement 
 
 // app.post("/test/upload", upload.single("file"), async (req, res) => {
 //   if (!req.file) {
@@ -2801,6 +2836,108 @@ app.get('/api/cc/tailoring/orders', async (req, res) => {
 // });
 
 
+// Version 2 : This version stores the latex converted values as html in db
+
+// app.post("/test/upload", upload.single("file"), async (req, res) => {
+//   if (!req.file) {
+//     return res.status(400).send({ message: "No file uploaded" });
+//   }
+  
+//   const { testName, testCategory, testDescription, testTimings, testValidity, testStudents, createdBy } = req.body;
+
+//   const formatDateForMySQL = (date) => {
+//     if (!date || isNaN(new Date(date).getTime())) {
+//       return "2099-12-31";
+//     }
+//     const isoString = new Date(date).toISOString();
+//     return isoString.split("T")[0];
+//   };
+
+//   let formattedTestValidity = testValidity ? formatDateForMySQL(testValidity) : "";
+
+//   try {
+//     const con = dbConnection();
+//     con.connect();
+
+//     const workbook = xlsx.read(req.file.buffer, { type: "buffer" });
+//     const sheetName = workbook.SheetNames[0];
+//     const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+//     const dbPromise = con.promise();
+
+//     for (const row of data) {
+//       const {
+//         test_name,
+//         test_description,
+//         category,
+//         question_text,
+//         option_1,
+//         option_2,
+//         option_3,
+//         option_4,
+//         correct_option,
+//         rewarded_marks,
+//         subject,
+//       } = row;
+
+//       // Process question_text if subject is math
+//       const processedQuestionText = subject === "maths"
+//         ? processMathQuestion(question_text)
+//         : question_text;
+
+//       // Insert test details if not exists
+//       let [testResult] = await dbPromise.query(
+//         "SELECT id FROM IP_Tests WHERE name = ?",
+//         [testName]
+//       );
+
+//       let testId;
+//       if (testResult.length === 0) {
+//         const [insertTestResult] = await dbPromise.query(
+//           "INSERT INTO IP_Tests (name, description, category, timings, validity, status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)",
+//           [testName, testDescription, testCategory, testTimings, formattedTestValidity, "active", createdBy]
+//         );
+//         testId = insertTestResult.insertId;
+//       } else {
+//         testId = testResult[0].id;
+//       }
+
+//       // Insert the question
+//       const [questionResult] = await dbPromise.query(
+//         "INSERT INTO IP_Questions (test_id, category, question_text) VALUES (?, ?, ?)",
+//         [testId, category, processedQuestionText]
+//       );
+//       const questionId = questionResult.insertId;
+
+//       // Insert options and identify the correct one
+//       const optionIds = [];
+//       for (let i = 1; i <= 4; i++) {
+//         const [optionResult] = await dbPromise.query(
+//           "INSERT INTO IP_Options (question_id, option_text) VALUES (?, ?)",
+//           [questionId, row[`option_${i}`]]
+//         );
+//         optionIds.push(optionResult.insertId);
+//       }
+
+//       const correctOptionIndex = correct_option.split("_")[1];
+//       const correctOptionId = optionIds[parseInt(correctOptionIndex) - 1];
+
+//       await dbPromise.query(
+//         "INSERT INTO IP_Answers (question_id, correct_option_id, rewarded_marks) VALUES (?, ?, ?)",
+//         [questionId, correctOptionId, rewarded_marks]
+//       );
+//     }
+
+//     res.status(201).send({ message: "File processed and data inserted successfully!" });
+//   } catch (error) {
+//     console.error("Error processing file:", error);
+//     res.status(500).send({ message: "An error occurred while processing the file." });
+//   }
+// });
+
+
+
+// Version 3 : This version stores latex converted value as end output
 
 app.post("/test/upload", upload.single("file"), async (req, res) => {
   if (!req.file) {
@@ -2846,7 +2983,7 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
 
       // Process question_text if subject is math
       const processedQuestionText = subject === "maths"
-        ? processMathQuestion(question_text)
+        ? processMathQuestionToMathML(question_text)
         : question_text;
 
       // Insert test details if not exists
@@ -2866,7 +3003,7 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
         testId = testResult[0].id;
       }
 
-      // Insert the question
+      // Insert the question with MathML converted text
       const [questionResult] = await dbPromise.query(
         "INSERT INTO IP_Questions (test_id, category, question_text) VALUES (?, ?, ?)",
         [testId, category, processedQuestionText]
@@ -2898,7 +3035,6 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
     res.status(500).send({ message: "An error occurred while processing the file." });
   }
 });
-
 
 
 
