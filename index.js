@@ -63,45 +63,45 @@ const storage = multer.diskStorage({
 
 
 // Helper function to parse LaTeX or handle plain text - Maths
-// const processMathQuestion = (questionText) => {
-//   try {
-//     if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
-//       // LaTeX-like input detected
-//       return katex.renderToString(questionText, {
-//         throwOnError: false,
-//       });
-//     } else {
-//       // Plain math question, return as is
-//       return questionText;
-//     }
-//   } catch (err) {
-//     console.error("Error parsing LaTeX question:", err);
-//     return questionText; // Fallback to the original text
-//   }
-// };
-
-const processMathQuestionToMathML = (questionText) => {
+const processMathQuestion = (questionText) => {
   try {
-    // Look for LaTeX pattern
-    console.log("Question Text for Latex Conversion" +questionText);
-    const latexPattern = /\\[a-zA-Z]+\{[^\}]*\}/g;
-    const matches = questionText.match(latexPattern);
-
-    if (matches) {
-      // Process only LaTeX portions
-      let processedText = questionText;
-      matches.forEach((match) => {
-        const renderedLatex = katex.renderToString(match, { throwOnError: false });
-        processedText = processedText.replace(match, renderedLatex);
+    if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
+      // LaTeX-like input detected
+      return katex.renderToString(questionText, {
+        throwOnError: false,
       });
-      return processedText;
+    } else {
+      // Plain math question, return as is
+      return questionText;
     }
-    return questionText; // Return as is if no LaTeX
   } catch (err) {
     console.error("Error parsing LaTeX question:", err);
     return questionText; // Fallback to the original text
   }
 };
+
+// const processMathQuestionToMathML = (questionText) => {
+//   try {
+//     // Look for LaTeX pattern
+//     console.log("Question Text for Latex Conversion" +questionText);
+//     const latexPattern = /\\[a-zA-Z]+\{[^\}]*\}/g;
+//     const matches = questionText.match(latexPattern);
+
+//     if (matches) {
+//       // Process only LaTeX portions
+//       let processedText = questionText;
+//       matches.forEach((match) => {
+//         const renderedLatex = katex.renderToString(match, { throwOnError: false });
+//         processedText = processedText.replace(match, renderedLatex);
+//       });
+//       return processedText;
+//     }
+//     return questionText; // Return as is if no LaTeX
+//   } catch (err) {
+//     console.error("Error parsing LaTeX question:", err);
+//     return questionText; // Fallback to the original text
+//   }
+// };
 
 
 //const katex = require('katex'); // Importing KaTeX for MathML conversion
@@ -2881,9 +2881,9 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
       } = row;
 
       // Process question_text if subject is math
-      // const processedQuestionText = subject === "maths"
-      //   ? processMathQuestion(question_text)
-      //   : question_text;
+      const processedQuestionText = subject === "maths"
+        ? processMathQuestion(question_text)
+        : question_text;
 
       // const processedQuestionText = subject === "maths"
       // ? convert(processMathQuestion(question_text),{wordwrap:false})
