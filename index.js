@@ -437,12 +437,6 @@ const processMathQuestion = (questionText) => {
   }
 };
 
-// Example usage with LaTeX input for integral
-const latexInput = "\\int_{0}^{\\pi} \\sin(x) \\, dx";
-const result = processMathQuestion(latexInput);
-
-// Render the result correctly in your page, not the raw text
-console.log(result);
 
 
 
