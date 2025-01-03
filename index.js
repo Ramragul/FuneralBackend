@@ -283,14 +283,34 @@ const extractMathSymbols = (htmlString) => {
 // };
 
 
+// const processMathQuestion = (questionText) => {
+//   try {
+//     if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
+//       // LaTeX-like input detected, render using KaTeX without fallback
+//       const renderedHtml = katex.renderToString(questionText, {
+//         throwOnError: false, // Don't throw errors for invalid LaTeX
+//         displayMode: false, // Use inline math rendering
+//         strict: "error" // Prevent unnecessary fallback (MathML or LaTeX)
+//       });
+//       return renderedHtml; // Return the HTML output with math symbols
+//     } else {
+//       // Plain text question, return as is
+//       return questionText;
+//     }
+//   } catch (err) {
+//     console.error("Error parsing LaTeX question:", err);
+//     return questionText; // Fallback to the original text
+//   }
+// };
+
 const processMathQuestion = (questionText) => {
   try {
     if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
-      // LaTeX-like input detected, render using KaTeX without fallback
+      // LaTeX-like input detected, render using KaTeX without MathML and LaTeX annotations
       const renderedHtml = katex.renderToString(questionText, {
         throwOnError: false, // Don't throw errors for invalid LaTeX
         displayMode: false, // Use inline math rendering
-        strict: "error" // Prevent unnecessary fallback (MathML or LaTeX)
+        strict: "htmlAndMathml" // Prevent LaTeX annotation from being included
       });
       return renderedHtml; // Return the HTML output with math symbols
     } else {
