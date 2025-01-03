@@ -420,20 +420,21 @@ const extractMathSymbols = (htmlString) => {
 
 const processMathQuestion = (questionText) => {
   try {
-    // Only render LaTeX if it contains LaTeX syntax, otherwise return the original text
+    // Check for LaTeX-specific symbols to determine if the string is LaTeX-formatted
     if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
+      // Render the LaTeX string to HTML using KaTeX
       const renderedHtml = katex.renderToString(questionText, {
         throwOnError: false, // Don't throw errors for invalid LaTeX
-        displayMode: true, // Ensure block rendering for equations like integrals
+        displayMode: true, // Display the equation in block mode
       });
-      return renderedHtml; // Return the formatted HTML output with math symbols
+      return renderedHtml; // Return the rendered HTML output
     } else {
-      // If plain text, return it as is
+      // If it's just plain text, return the plain text as is (but this part should not be triggered for LaTeX inputs)
       return questionText;
     }
   } catch (err) {
     console.error("Error parsing LaTeX question:", err);
-    return questionText; // Fallback to the original text if error occurs
+    return questionText; // In case of error, just return the plain text question
   }
 };
 
