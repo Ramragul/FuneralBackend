@@ -493,10 +493,16 @@ const processMathQuestion = (questionText) => {
         displayMode: true,    // Use display mode (block-level rendering for equations)
       });
 
-      // Log the rendered HTML to verify correct output
-      console.log("Rendered HTML:", renderedHtml);
+      // Extract the rendered LaTeX from the generated HTML
+      const latexContent = renderedHtml.match(/<span class="katex-html"[^>]*>(.*?)<\/span>/s);
 
-      return renderedHtml;  // Return only the rendered HTML
+      // Check if the match was successful and return the rendered LaTeX content
+      if (latexContent && latexContent[1]) {
+        return latexContent[1];  // Return only the KaTeX rendered content (ignoring the question text)
+      }
+
+      // If no LaTeX was found, return the original question text (fallback)
+      return questionText;
 
     } else {
       // If no LaTeX syntax is found, return the raw text
@@ -508,6 +514,7 @@ const processMathQuestion = (questionText) => {
     return "";  // In case of error, return empty string
   }
 };
+
 
 
 
