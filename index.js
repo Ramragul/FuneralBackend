@@ -485,19 +485,19 @@ const processMathQuestion = (questionText) => {
     if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
       // Render the LaTeX string to HTML using KaTeX
       const renderedHtml = katex.renderToString(questionText, {
-        throwOnError: false, // Don't throw errors for invalid LaTeX
-        displayMode: true,    // Use display mode (block-level rendering for equations)
+        throwOnError: false,  // Don't throw errors for invalid LaTeX
+        displayMode: true,     // Block-level rendering for equations
       });
 
-      // Ensure we only return the rendered HTML, not LaTeX or multiple values
+      // Only return the HTML-rendered string, not MathML
       return renderedHtml;
     } else {
-      // If no LaTeX syntax found, return the raw text as is (no rendering needed)
+      // If no LaTeX syntax is found, return the raw text as is
       return questionText;
     }
   } catch (err) {
     console.error("Error parsing LaTeX question:", err);
-    return ""; // Return empty string in case of error
+    return "";  // Return empty string in case of error
   }
 };
 
