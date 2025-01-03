@@ -489,20 +489,17 @@ const processMathQuestion = (questionText) => {
         displayMode: true,     // Block-level rendering for equations
       });
 
-      // Ensure only the KaTeX-generated HTML (not MathML) is returned
-      return renderedHtml;  // Returning the correct rendered HTML, not MathML
+      // Return the rendered HTML only, not the LaTeX plain text
+      return renderedHtml;
     } else {
-      // If no LaTeX syntax found, don't process it. Return the raw text as is
-      return questionText; // Returning plain text as no LaTeX was found
+      // If no LaTeX syntax found, return the plain text as is
+      return questionText;  // Plain text if no LaTeX found
     }
   } catch (err) {
     console.error("Error parsing LaTeX question:", err);
     return "";  // Return empty string in case of error
   }
 };
-
-
-
 
 
 
