@@ -480,29 +480,28 @@ const extractMathSymbols = (htmlString) => {
 
 const processMathQuestion = (questionText) => {
   try {
-    // Check if the input contains LaTeX-like symbols, indicating it's a math expression
+    // Check if the input contains LaTeX-like symbols
     if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
-      // Render the LaTeX string to HTML using KaTeX
+      // Attempt to render the LaTeX string to HTML using KaTeX
       const renderedHtml = katex.renderToString(questionText, {
-        throwOnError: false,  // Don't throw errors for invalid LaTeX
-        displayMode: true,     // Block-level rendering for equations
+        throwOnError: false, // Don't throw errors for invalid LaTeX
+        displayMode: true,    // Use display mode (block-level rendering for equations)
       });
 
-      // If KaTeX returns invalid output (empty string), log it
-      if (!renderedHtml || renderedHtml === questionText) {
-        console.error("Invalid LaTeX input:", questionText);
-        return "Error: Invalid LaTeX input";  // Return error message or handle appropriately
+      // If rendering didn't change the text, return an error message.
+      if (renderedHtml === questionText) {
+        throw new Error('Invalid LaTeX input');
       }
 
-      // Return the rendered HTML only, not the LaTeX plain text
+      // Return the rendered HTML (the correct formatted output)
       return renderedHtml;
     } else {
-      // If no LaTeX syntax found, return the plain text as is
-      return questionText;  // Plain text if no LaTeX found
+      // If no LaTeX syntax is found, return the plain text as is
+      return questionText;
     }
   } catch (err) {
-    console.error("Error parsing LaTeX question:", err);
-    return "Error: Unable to process the LaTeX";  // Return error message
+    console.error("Error parsing LaTeX question:", err.message);
+    return `<span style="color:red;">Error: Invalid LaTeX input</span>`; // Return an error message if LaTeX is invalid
   }
 };
 
