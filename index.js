@@ -323,26 +323,50 @@ const extractMathSymbols = (htmlString) => {
 //   }
 // };
 
+// const processMathQuestion = (questionText) => {
+//   try {
+//     if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
+//       // LaTeX-like input detected, render using KaTeX without MathML and LaTeX annotations
+//       const renderedHtml = katex.renderToString(questionText, {
+//         throwOnError: false, // Don't throw errors for invalid LaTeX
+//         displayMode: false, // Use inline math rendering
+//         output: "html" // Ensure it outputs only HTML without MathML
+//       });
+//       return renderedHtml; // Return the HTML output with math symbols
+//     } else {
+//       // Plain text question, return as is
+//       return questionText;
+//     }
+//   } catch (err) {
+//     console.error("Error parsing LaTeX question:", err);
+//     return questionText; // Fallback to the original text
+//   }
+// };
+
+
+
 const processMathQuestion = (questionText) => {
   try {
+    // Check if the input contains LaTeX-like syntax (e.g., \, ^, _)
     if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
-      // LaTeX-like input detected, render using KaTeX without MathML and LaTeX annotations
+      // LaTeX-like input detected, render using KaTeX
       const renderedHtml = katex.renderToString(questionText, {
         throwOnError: false, // Don't throw errors for invalid LaTeX
         displayMode: false, // Use inline math rendering
         output: "html" // Ensure it outputs only HTML without MathML
       });
-      return renderedHtml; // Return the HTML output with math symbols
+      
+      // Return the rendered HTML output
+      return renderedHtml;
     } else {
-      // Plain text question, return as is
+      // For plain text questions, return as is
       return questionText;
     }
   } catch (err) {
     console.error("Error parsing LaTeX question:", err);
-    return questionText; // Fallback to the original text
+    return questionText; // Fallback to original text if there's an error
   }
 };
-
 
 
 
