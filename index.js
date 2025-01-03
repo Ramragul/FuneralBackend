@@ -488,6 +488,8 @@ const processMathQuestion = (questionText) => {
         displayMode: true,    // Use display mode (block-level rendering for equations)
       });
 
+      console.log("Rendered HTML after function" +renderedHtml)
+
       // If rendering didn't change the text, return an error message.
       if (renderedHtml === questionText) {
         throw new Error('Invalid LaTeX input');
