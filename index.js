@@ -481,9 +481,6 @@ const extractMathSymbols = (htmlString) => {
 
 const processMathQuestion = (questionText) => {
   try {
-    // Log the original question to inspect its contents
-    console.log("Original Question:", questionText);
-    
     // Check if the input contains LaTeX-like symbols, indicating it's a math expression
     if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
       
@@ -493,16 +490,8 @@ const processMathQuestion = (questionText) => {
         displayMode: true,    // Use display mode (block-level rendering for equations)
       });
 
-      // Extract the rendered LaTeX from the generated HTML
-      const latexContent = renderedHtml.match(/<span class="katex-html"[^>]*>(.*?)<\/span>/s);
-
-      // Check if the match was successful and return the rendered LaTeX content
-      if (latexContent && latexContent[1]) {
-        return latexContent[1];  // Return only the KaTeX rendered content (ignoring the question text)
-      }
-
-      // If no LaTeX was found, return the original question text (fallback)
-      return questionText;
+      // Return the entire rendered HTML (not just part of it)
+      return renderedHtml;
 
     } else {
       // If no LaTeX syntax is found, return the raw text
