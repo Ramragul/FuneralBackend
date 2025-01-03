@@ -480,35 +480,35 @@ const storage = multer.diskStorage({
 
 // worked version 
 
-// const processMathQuestion = (questionText) => {
-//   try {
-//     // Check if the input contains LaTeX-like symbols
-//     if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
-//       // Attempt to render the LaTeX string to HTML using KaTeX
-//       const renderedHtml = katex.renderToString(questionText, {
-//         throwOnError: false, // Don't throw errors for invalid LaTeX
-//         displayMode: true,    // Use display mode (block-level rendering for equations)
-//         output: "mathml",
-//       });
+const processMathQuestion = (questionText) => {
+  try {
+    // Check if the input contains LaTeX-like symbols
+    if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
+      // Attempt to render the LaTeX string to HTML using KaTeX
+      const renderedHtml = katex.renderToString(questionText, {
+        throwOnError: false, // Don't throw errors for invalid LaTeX
+        displayMode: true,    // Use display mode (block-level rendering for equations)
+        output: "mathml",
+      });
 
-//       console.log("Rendered HTML after function" +renderedHtml)
+      console.log("Rendered HTML after function" +renderedHtml)
 
-//       // If rendering didn't change the text, return an error message.
-//       if (renderedHtml === questionText) {
-//         throw new Error('Invalid LaTeX input');
-//       }
+      // If rendering didn't change the text, return an error message.
+      if (renderedHtml === questionText) {
+        throw new Error('Invalid LaTeX input');
+      }
 
-//       // Return the rendered HTML (the correct formatted output)
-//       return renderedHtml;
-//     } else {
-//       // If no LaTeX syntax is found, return the plain text as is
-//       return questionText;
-//     }
-//   } catch (err) {
-//     console.error("Error parsing LaTeX question:", err.message);
-//     return `<span style="color:red;">Error: Invalid LaTeX input</span>`; // Return an error message if LaTeX is invalid
-//   }
-// };
+      // Return the rendered HTML (the correct formatted output)
+      return renderedHtml;
+    } else {
+      // If no LaTeX syntax is found, return the plain text as is
+      return questionText;
+    }
+  } catch (err) {
+    console.error("Error parsing LaTeX question:", err.message);
+    return `<span style="color:red;">Error: Invalid LaTeX input</span>`; // Return an error message if LaTeX is invalid
+  }
+};
 
 
 
@@ -3304,7 +3304,7 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
 
       // console.log(processedQuestionText);
 
-      const processedQuestionText = subject === "maths1"
+      const processedQuestionText = subject === "maths"
       ? processMathQuestion(question_text) // Only return the MathML or rendered HTML 
       : question_text;
 
