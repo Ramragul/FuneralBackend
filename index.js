@@ -239,22 +239,22 @@ const storage = multer.diskStorage({
 //   }
 // };
 
-// const extractMathSymbols = (htmlString) => {
-//   try {
-//     const dom = new JSDOM(htmlString);
-//     const mathML = dom.window.document.querySelector("math"); // Extract MathML content
-//     if (mathML) {
-//       return mathML.textContent.trim(); // Return only MathML symbols
-//     }
+const extractMathSymbols = (htmlString) => {
+  try {
+    const dom = new JSDOM(htmlString);
+    const mathML = dom.window.document.querySelector("math"); // Extract MathML content
+    if (mathML) {
+      return mathML.textContent.trim(); // Return only MathML symbols
+    }
 
-//     // Fallback: Extract plain text, avoiding duplicates
-//     const textContent = dom.window.document.body.textContent || "";
-//     return [...new Set(textContent.split(/\s+/))].join(" "); // Deduplicate and join
-//   } catch (err) {
-//     console.error("Error extracting math symbols:", err);
-//     return ""; // Fallback to empty string on error
-//   }
-// };
+    // Fallback: Extract plain text, avoiding duplicates
+    const textContent = dom.window.document.body.textContent || "";
+    return [...new Set(textContent.split(/\s+/))].join(" "); // Deduplicate and join
+  } catch (err) {
+    console.error("Error extracting math symbols:", err);
+    return ""; // Fallback to empty string on error
+  }
+};
 
 
 const processMathQuestion = (questionText) => {
@@ -3063,7 +3063,7 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
       // console.log(processedQuestionText);
 
       const processedQuestionText = subject === "maths"
-      ? processMathQuestion(question_text) // Only return the MathML or rendered HTML
+      ? extractMathSymbols(processMathQuestion(question_text)) // Only return the MathML or rendered HTML Ramco
       : question_text;
 
     console.log(processedQuestionText);
