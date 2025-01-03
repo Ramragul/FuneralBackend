@@ -222,13 +222,56 @@ const storage = multer.diskStorage({
 //   }
 // };
 
+// const processMathQuestion = (questionText) => {
+//   try {
+//     if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
+//       // LaTeX-like input detected
+//       return katex.renderToString(questionText, {
+//         throwOnError: false,
+//       });
+//     } else {
+//       // Plain math question, return as is
+//       return questionText;
+//     }
+//   } catch (err) {
+//     console.error("Error parsing LaTeX question:", err);
+//     return questionText; // Fallback to the original text
+//   }
+// };
+
+// const extractMathSymbols = (htmlString) => {
+//   try {
+//     const dom = new JSDOM(htmlString);
+//     const mathML = dom.window.document.querySelector("math"); // Extract MathML content
+//     if (mathML) {
+//       return mathML.textContent.trim(); // Return only MathML symbols
+//     }
+
+//     // Fallback: Extract plain text, avoiding duplicates
+//     const textContent = dom.window.document.body.textContent || "";
+//     return [...new Set(textContent.split(/\s+/))].join(" "); // Deduplicate and join
+//   } catch (err) {
+//     console.error("Error extracting math symbols:", err);
+//     return ""; // Fallback to empty string on error
+//   }
+// };
+
+
 const processMathQuestion = (questionText) => {
   try {
     if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
       // LaTeX-like input detected
-      return katex.renderToString(questionText, {
+      const renderedHTML = katex.renderToString(questionText, {
         throwOnError: false,
       });
+
+      // Remove the LaTeX annotation from the rendered HTML
+      const mathMLContent = renderedHTML.match(/<math[^>]*>(.*?)<\/math>/);
+      if (mathMLContent) {
+        return mathMLContent[1]; // Return only the MathML content
+      }
+
+      return renderedHTML; // Fallback to the rendered HTML if MathML is not found
     } else {
       // Plain math question, return as is
       return questionText;
@@ -236,23 +279,6 @@ const processMathQuestion = (questionText) => {
   } catch (err) {
     console.error("Error parsing LaTeX question:", err);
     return questionText; // Fallback to the original text
-  }
-};
-
-const extractMathSymbols = (htmlString) => {
-  try {
-    const dom = new JSDOM(htmlString);
-    const mathML = dom.window.document.querySelector("math"); // Extract MathML content
-    if (mathML) {
-      return mathML.textContent.trim(); // Return only MathML symbols
-    }
-
-    // Fallback: Extract plain text, avoiding duplicates
-    const textContent = dom.window.document.body.textContent || "";
-    return [...new Set(textContent.split(/\s+/))].join(" "); // Deduplicate and join
-  } catch (err) {
-    console.error("Error extracting math symbols:", err);
-    return ""; // Fallback to empty string on error
   }
 };
 
@@ -3030,11 +3056,17 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
     //  : question_text;
       
      // Process question text
+      // const processedQuestionText = subject === "maths"
+      // ? extractMathSymbols(processMathQuestion(question_text))
+      // : question_text;
+
+      // console.log(processedQuestionText);
+
       const processedQuestionText = subject === "maths"
-      ? extractMathSymbols(processMathQuestion(question_text))
+      ? processMathQuestion(question_text) // Only return the MathML or rendered HTML
       : question_text;
 
-      console.log(processedQuestionText);
+    console.log(processedQuestionText);
 
       
       
