@@ -3122,7 +3122,7 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
       // console.log(processedQuestionText);
 
       const processedQuestionText = subject === "maths"
-      ? extractMathSymbols(processMathQuestion(question_text)) // Only return the MathML or rendered HTML 
+      ? processMathQuestion(question_text) // Only return the MathML or rendered HTML 
       : question_text;
 
     console.log(processedQuestionText);
