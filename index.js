@@ -458,25 +458,57 @@ const extractMathSymbols = (htmlString) => {
 //   }
 // };
 
+// const processMathQuestion = (questionText) => {
+//   try {
+//     // Check if the input contains LaTeX-like symbols, indicating it's a math expression
+//     if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
+//       // Render the LaTeX string to HTML using KaTeX
+//       const renderedHtml = katex.renderToString(questionText, {
+//         throwOnError: false, // Don't throw errors for invalid LaTeX
+//         displayMode: true,    // Use display mode (block-level rendering for equations)
+//       });
+//       return renderedHtml;  // Return only the rendered HTML
+//     } else {
+//       // If no LaTeX syntax found, don't process it. Return the raw text as is
+//       return questionText;
+//     }
+//   } catch (err) {
+//     console.error("Error parsing LaTeX question:", err);
+//     return ""; // In case of error, return empty string (you can adjust this to handle errors as per your needs)
+//   }
+// };
+
+
 const processMathQuestion = (questionText) => {
   try {
+    // Log the original question to inspect its contents
+    console.log("Original Question:", questionText);
+    
     // Check if the input contains LaTeX-like symbols, indicating it's a math expression
     if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
+      
       // Render the LaTeX string to HTML using KaTeX
       const renderedHtml = katex.renderToString(questionText, {
         throwOnError: false, // Don't throw errors for invalid LaTeX
         displayMode: true,    // Use display mode (block-level rendering for equations)
       });
+
+      // Log the rendered HTML to verify correct output
+      console.log("Rendered HTML:", renderedHtml);
+
       return renderedHtml;  // Return only the rendered HTML
+
     } else {
-      // If no LaTeX syntax found, don't process it. Return the raw text as is
-      return questionText;
+      // If no LaTeX syntax is found, return the raw text
+      return questionText;  // Return the raw text as it is
     }
+
   } catch (err) {
     console.error("Error parsing LaTeX question:", err);
-    return ""; // In case of error, return empty string (you can adjust this to handle errors as per your needs)
+    return "";  // In case of error, return empty string
   }
 };
+
 
 
 // const processMathQuestion = (questionText) => {
