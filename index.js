@@ -486,6 +486,7 @@ const processMathQuestion = (questionText) => {
       const renderedHtml = katex.renderToString(questionText, {
         throwOnError: false, // Don't throw errors for invalid LaTeX
         displayMode: true,    // Use display mode (block-level rendering for equations)
+        output: "mathml",
       });
 
       console.log("Rendered HTML after function" +renderedHtml)
