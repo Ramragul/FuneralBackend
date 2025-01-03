@@ -479,6 +479,51 @@ const processMathQuestion = (questionText) => {
 };
 
 
+// const processMathQuestion = (questionText) => {
+//   try {
+//     // Check if the input contains LaTeX-like symbols, indicating it's a math expression
+//     if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
+//       // Render the LaTeX string to HTML using KaTeX
+//       const renderedHtml = katex.renderToString(questionText, {
+//         throwOnError: false, // Don't throw errors for invalid LaTeX
+//         displayMode: true,    // Use display mode (block-level rendering for equations)
+//       });
+//       return renderedHtml;  // Return only the rendered HTML, no plain text
+//     } else {
+//       // If no LaTeX syntax found, return an empty string or a safe fallback (no rendering)
+//       return ''; // Ensure no raw text is returned
+//     }
+//   } catch (err) {
+//     console.error("Error parsing LaTeX question:", err);
+//     return ''; // Return an empty string in case of error, you can adjust this behavior
+//   }
+// };
+
+
+const katex = require('katex'); // Ensure KaTeX is imported
+
+const processMathQuestion = (questionText) => {
+  try {
+    // Check if the input contains LaTeX-like symbols, indicating it's a math expression
+    if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
+      // Render the LaTeX string to HTML using KaTeX
+      const renderedHtml = katex.renderToString(questionText, {
+        throwOnError: false,  // Don't throw errors for invalid LaTeX
+        displayMode: true,     // Use display mode (block-level rendering for equations)
+      });
+
+      // Only return the rendered HTML
+      return `<div class="math-rendered">${renderedHtml}</div>`;  // Wrap the result in a div for better control
+    } else {
+      // If it's not a LaTeX math expression, return it as plain text
+      return '';  // Return empty string to avoid raw text
+    }
+  } catch (err) {
+    console.error("Error parsing LaTeX question:", err);
+    return '';  // If there's an error, return an empty string
+  }
+};
+
 
 
 //const upload = multer({ storage });
