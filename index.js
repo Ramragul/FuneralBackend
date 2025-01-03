@@ -303,6 +303,26 @@ const extractMathSymbols = (htmlString) => {
 //   }
 // };
 
+// const processMathQuestion = (questionText) => {
+//   try {
+//     if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
+//       // LaTeX-like input detected, render using KaTeX without MathML and LaTeX annotations
+//       const renderedHtml = katex.renderToString(questionText, {
+//         throwOnError: false, // Don't throw errors for invalid LaTeX
+//         displayMode: false, // Use inline math rendering
+//         strict: "htmlAndMathml" // Prevent LaTeX annotation from being included
+//       });
+//       return renderedHtml; // Return the HTML output with math symbols
+//     } else {
+//       // Plain text question, return as is
+//       return questionText;
+//     }
+//   } catch (err) {
+//     console.error("Error parsing LaTeX question:", err);
+//     return questionText; // Fallback to the original text
+//   }
+// };
+
 const processMathQuestion = (questionText) => {
   try {
     if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
@@ -310,7 +330,7 @@ const processMathQuestion = (questionText) => {
       const renderedHtml = katex.renderToString(questionText, {
         throwOnError: false, // Don't throw errors for invalid LaTeX
         displayMode: false, // Use inline math rendering
-        strict: "htmlAndMathml" // Prevent LaTeX annotation from being included
+        output: "html" // Ensure it outputs only HTML without MathML
       });
       return renderedHtml; // Return the HTML output with math symbols
     } else {
@@ -322,8 +342,6 @@ const processMathQuestion = (questionText) => {
     return questionText; // Fallback to the original text
   }
 };
-
-
 
 
 
