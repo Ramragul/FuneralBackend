@@ -391,26 +391,59 @@ const extractMathSymbols = (htmlString) => {
 //   }
 // };
 
-const processMathQuestion = (questionText) => {
 
-  console.log("Question Text Received for Procession is : " +questionText)
+// This version is somewat working, only one problem is repeated unpleasant notation as second value, first value is totally fine
+
+// const processMathQuestion = (questionText) => {
+
+//   console.log("Question Text Received for Procession is : " +questionText)
+//   try {
+//     if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
+//       // LaTeX-like input detected, render using KaTeX
+//       const renderedHtml = katex.renderToString(questionText, {
+//         throwOnError: false, // Don't throw errors for invalid LaTeX
+//         displayMode: true, // Use block rendering for better visibility of equations like integrals
+//       });
+//       return renderedHtml; // Return the HTML output with math symbols
+//     } else {
+//       // Plain text question, return as is
+//       return questionText;
+//     }
+//   } catch (err) {
+//     console.error("Error parsing LaTeX question:", err);
+//     return questionText; // Fallback to the original text
+//   }
+// };
+
+
+
+
+const processMathQuestion = (questionText) => {
   try {
+    // Only render LaTeX if it contains LaTeX syntax, otherwise return the original text
     if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
-      // LaTeX-like input detected, render using KaTeX
       const renderedHtml = katex.renderToString(questionText, {
         throwOnError: false, // Don't throw errors for invalid LaTeX
-        displayMode: true, // Use block rendering for better visibility of equations like integrals
+        displayMode: true, // Ensure block rendering for equations like integrals
       });
-      return renderedHtml; // Return the HTML output with math symbols
+      return renderedHtml; // Return the formatted HTML output with math symbols
     } else {
-      // Plain text question, return as is
+      // If plain text, return it as is
       return questionText;
     }
   } catch (err) {
     console.error("Error parsing LaTeX question:", err);
-    return questionText; // Fallback to the original text
+    return questionText; // Fallback to the original text if error occurs
   }
 };
+
+// Example usage with LaTeX input for integral
+const latexInput = "\\int_{0}^{\\pi} \\sin(x) \\, dx";
+const result = processMathQuestion(latexInput);
+
+// Render the result correctly in your page, not the raw text
+console.log(result);
+
 
 
 
