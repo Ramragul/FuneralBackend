@@ -157,10 +157,24 @@ const processMathQuestion = (questionText) => {
   }
 };
 
+// const extractTextFromHTML = (htmlString) => {
+//   try {
+//     const dom = new JSDOM(htmlString);
+//     return dom.window.document.body.textContent || ""; // Extract plain text
+//   } catch (err) {
+//     console.error("Error extracting text from HTML:", err);
+//     return ""; // Fallback to empty string on error
+//   }
+// };
+
 const extractTextFromHTML = (htmlString) => {
   try {
     const dom = new JSDOM(htmlString);
-    return dom.window.document.body.textContent || ""; // Extract plain text
+    const textContent = dom.window.document.body.textContent || "";
+
+    // Remove duplicate entries by splitting into lines/words and deduplicating
+    const uniqueLines = [...new Set(textContent.split(/\s+/))].join(" ");
+    return uniqueLines;
   } catch (err) {
     console.error("Error extracting text from HTML:", err);
     return ""; // Fallback to empty string on error
