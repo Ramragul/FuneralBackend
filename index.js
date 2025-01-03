@@ -500,7 +500,7 @@ const processMathQuestion = (questionText) => {
 // };
 
 
-const katex = require('katex'); // Ensure KaTeX is imported
+
 
 const processMathQuestion = (questionText) => {
   try {
