@@ -22,6 +22,8 @@ const xlsx = require('xlsx');
 
 const katex = require("katex");
 const { convert } = require('html-to-text');
+const { JSDOM } = require("jsdom");
+
 
 // Twilio Imports 
 // const twilio = require('twilio');
@@ -156,9 +158,13 @@ const processMathQuestion = (questionText) => {
 };
 
 const extractTextFromHTML = (htmlString) => {
-  const tempDiv = document.createElement("div");
-  tempDiv.innerHTML = htmlString;
-  return tempDiv.textContent || tempDiv.innerText || ""; // Extract plain text
+  try {
+    const dom = new JSDOM(htmlString);
+    return dom.window.document.body.textContent || ""; // Extract plain text
+  } catch (err) {
+    console.error("Error extracting text from HTML:", err);
+    return ""; // Fallback to empty string on error
+  }
 };
 
 
