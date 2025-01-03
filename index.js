@@ -489,18 +489,19 @@ const processMathQuestion = (questionText) => {
         displayMode: true,     // Block-level rendering for equations
       });
 
-      // Ensure only the HTML output is returned, not MathML.
-      const cleanedHtml = renderedHtml.replace(/<math[\s\S]*?<\/math>/g, '');
-      return cleanedHtml; // Return only the cleaned HTML version, no MathML.
+      // Ensure only the KaTeX-generated HTML (not MathML) is returned
+      return renderedHtml;  // Returning the correct rendered HTML, not MathML
     } else {
       // If no LaTeX syntax found, don't process it. Return the raw text as is
-      return questionText;
+      return questionText; // Returning plain text as no LaTeX was found
     }
   } catch (err) {
     console.error("Error parsing LaTeX question:", err);
     return "";  // Return empty string in case of error
   }
 };
+
+
 
 
 
