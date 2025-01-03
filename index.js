@@ -257,23 +257,44 @@ const extractMathSymbols = (htmlString) => {
 };
 
 
+// const processMathQuestion = (questionText) => {
+//   try {
+//     if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
+//       // LaTeX-like input detected
+//       const renderedHTML = katex.renderToString(questionText, {
+//         throwOnError: false,
+//       });
+
+//       // Remove the LaTeX annotation from the rendered HTML
+//       const mathMLContent = renderedHTML.match(/<math[^>]*>(.*?)<\/math>/);
+//       if (mathMLContent) {
+//         return mathMLContent[1]; // Return only the MathML content
+//       }
+
+//       return renderedHTML; // Fallback to the rendered HTML if MathML is not found
+//     } else {
+//       // Plain math question, return as is
+//       return questionText;
+//     }
+//   } catch (err) {
+//     console.error("Error parsing LaTeX question:", err);
+//     return questionText; // Fallback to the original text
+//   }
+// };
+
+
 const processMathQuestion = (questionText) => {
   try {
     if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
-      // LaTeX-like input detected
-      const renderedHTML = katex.renderToString(questionText, {
-        throwOnError: false,
+      // LaTeX-like input detected, render using KaTeX without fallback
+      const renderedHtml = katex.renderToString(questionText, {
+        throwOnError: false, // Don't throw errors for invalid LaTeX
+        displayMode: false, // Use inline math rendering
+        strict: "error" // Prevent unnecessary fallback (MathML or LaTeX)
       });
-
-      // Remove the LaTeX annotation from the rendered HTML
-      const mathMLContent = renderedHTML.match(/<math[^>]*>(.*?)<\/math>/);
-      if (mathMLContent) {
-        return mathMLContent[1]; // Return only the MathML content
-      }
-
-      return renderedHTML; // Fallback to the rendered HTML if MathML is not found
+      return renderedHtml; // Return the HTML output with math symbols
     } else {
-      // Plain math question, return as is
+      // Plain text question, return as is
       return questionText;
     }
   } catch (err) {
