@@ -418,23 +418,43 @@ const extractMathSymbols = (htmlString) => {
 
 
 
+// const processMathQuestion = (questionText) => {
+//   try {
+//     // Check for LaTeX-specific symbols to determine if the string is LaTeX-formatted
+//     if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
+//       // Render the LaTeX string to HTML using KaTeX
+//       const renderedHtml = katex.renderToString(questionText, {
+//         throwOnError: false, // Don't throw errors for invalid LaTeX
+//         displayMode: true, // Display the equation in block mode
+//       });
+//       return renderedHtml; // Return the rendered HTML output
+//     } else {
+//       // If it's just plain text, return the plain text as is (but this part should not be triggered for LaTeX inputs)
+//       return questionText;
+//     }
+//   } catch (err) {
+//     console.error("Error parsing LaTeX question:", err);
+//     return questionText; // In case of error, just return the plain text question
+//   }
+// };
+
 const processMathQuestion = (questionText) => {
   try {
-    // Check for LaTeX-specific symbols to determine if the string is LaTeX-formatted
+    // Check if the input contains LaTeX-like symbols, indicating it's a math expression
     if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
       // Render the LaTeX string to HTML using KaTeX
       const renderedHtml = katex.renderToString(questionText, {
         throwOnError: false, // Don't throw errors for invalid LaTeX
-        displayMode: true, // Display the equation in block mode
+        displayMode: true, // Use display mode (block-level rendering for equations)
       });
-      return renderedHtml; // Return the rendered HTML output
+      return renderedHtml; // Return the rendered HTML
     } else {
-      // If it's just plain text, return the plain text as is (but this part should not be triggered for LaTeX inputs)
+      // For plain text (non-math questions), return the text as is
       return questionText;
     }
   } catch (err) {
     console.error("Error parsing LaTeX question:", err);
-    return questionText; // In case of error, just return the plain text question
+    return questionText; // In case of error, return the raw text
   }
 };
 
