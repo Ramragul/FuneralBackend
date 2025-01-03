@@ -369,7 +369,7 @@ const extractMathSymbols = (htmlString) => {
 // };
 
 
-const katex = require('katex');
+
 
 const processMathQuestion = (questionText) => {
   try {
