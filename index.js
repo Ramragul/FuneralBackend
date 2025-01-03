@@ -140,22 +140,22 @@ const storage = multer.diskStorage({
 // };
 
 
-const processMathQuestion = (questionText) => {
-  try {
-    if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
-      // LaTeX-like input detected
-      return katex.renderToString(questionText, {
-        throwOnError: false,
-      });
-    } else {
-      // Plain math question, return as is
-      return questionText;
-    }
-  } catch (err) {
-    console.error("Error parsing LaTeX question:", err);
-    return questionText; // Fallback to the original text
-  }
-};
+// const processMathQuestion = (questionText) => {
+//   try {
+//     if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
+//       // LaTeX-like input detected
+//       return katex.renderToString(questionText, {
+//         throwOnError: false,
+//       });
+//     } else {
+//       // Plain math question, return as is
+//       return questionText;
+//     }
+//   } catch (err) {
+//     console.error("Error parsing LaTeX question:", err);
+//     return questionText; // Fallback to the original text
+//   }
+// };
 
 // const extractTextFromHTML = (htmlString) => {
 //   try {
@@ -167,16 +167,57 @@ const processMathQuestion = (questionText) => {
 //   }
 // };
 
-const extractTextFromHTML = (htmlString) => {
+// const extractTextFromHTML = (htmlString) => {
+//   try {
+//     const dom = new JSDOM(htmlString);
+//     const textContent = dom.window.document.body.textContent || "";
+
+//     // Remove duplicate entries by splitting into lines/words and deduplicating
+//     const uniqueLines = [...new Set(textContent.split(/\s+/))].join(" ");
+//     return uniqueLines;
+//   } catch (err) {
+//     console.error("Error extracting text from HTML:", err);
+//     return ""; // Fallback to empty string on error
+//   }
+// };
+
+
+const processMathQuestion = (questionText) => {
+  try {
+    if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
+      // LaTeX-like input detected
+      const html = katex.renderToString(questionText, {
+        throwOnError: false,
+      });
+
+      // Extract meaningful mathematical content
+      return extractMathSymbols(html);
+    } else {
+      // Plain math question, return as is
+      return questionText;
+    }
+  } catch (err) {
+    console.error("Error parsing LaTeX question:", err);
+    return questionText; // Fallback to the original text
+  }
+};
+
+const extractMathSymbols = (htmlString) => {
   try {
     const dom = new JSDOM(htmlString);
-    const textContent = dom.window.document.body.textContent || "";
 
-    // Remove duplicate entries by splitting into lines/words and deduplicating
-    const uniqueLines = [...new Set(textContent.split(/\s+/))].join(" ");
-    return uniqueLines;
+    // Extract the MathML content
+    const mathML = dom.window.document.querySelector("math");
+    if (mathML) {
+      // Return the text content of MathML (which contains actual symbols)
+      return mathML.textContent.trim();
+    }
+
+    // Fallback: Extract plain text if MathML is not available
+    const textContent = dom.window.document.body.textContent || "";
+    return textContent.trim();
   } catch (err) {
-    console.error("Error extracting text from HTML:", err);
+    console.error("Error extracting math symbols from HTML:", err);
     return ""; // Fallback to empty string on error
   }
 };
@@ -2944,10 +2985,13 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
       // ? processMathQuestionToMathML(question_text)
       // : question_text;
 
-      const processedQuestionText = subject === "maths"
-        ? extractTextFromHTML(processMathQuestion(question_text))
-        : question_text;
+      // const processedQuestionText = subject === "maths"
+      //   ? extractTextFromHTML(processMathQuestion(question_text))
+      //   : question_text;
 
+      const processedQuestionText = subject === "maths"
+      ? processMathQuestion(question_text)
+     : question_text;
       
 
       
