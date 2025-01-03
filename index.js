@@ -478,7 +478,6 @@ const extractMathSymbols = (htmlString) => {
 //   }
 // };
 
-
 const processMathQuestion = (questionText) => {
   try {
     // Check if the input contains LaTeX-like symbols, indicating it's a math expression
@@ -489,6 +488,12 @@ const processMathQuestion = (questionText) => {
         displayMode: true,     // Block-level rendering for equations
       });
 
+      // If KaTeX returns invalid output (empty string), log it
+      if (!renderedHtml || renderedHtml === questionText) {
+        console.error("Invalid LaTeX input:", questionText);
+        return "Error: Invalid LaTeX input";  // Return error message or handle appropriately
+      }
+
       // Return the rendered HTML only, not the LaTeX plain text
       return renderedHtml;
     } else {
@@ -497,9 +502,11 @@ const processMathQuestion = (questionText) => {
     }
   } catch (err) {
     console.error("Error parsing LaTeX question:", err);
-    return "";  // Return empty string in case of error
+    return "Error: Unable to process the LaTeX";  // Return error message
   }
 };
+
+
 
 
 
