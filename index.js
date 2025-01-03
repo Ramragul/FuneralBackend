@@ -371,14 +371,35 @@ const extractMathSymbols = (htmlString) => {
 
 
 
+// const processMathQuestion = (questionText) => {
+//   try {
+//     if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
+//       // LaTeX-like input detected, render using KaTeX without MathML and LaTeX annotations
+//       const renderedHtml = katex.renderToString(questionText, {
+//         throwOnError: false, // Don't throw errors for invalid LaTeX
+//         displayMode: false, // Use inline math rendering
+//         output: "html" // Ensure it outputs only HTML without MathML
+//       });
+//       return renderedHtml; // Return the HTML output with math symbols
+//     } else {
+//       // Plain text question, return as is
+//       return questionText;
+//     }
+//   } catch (err) {
+//     console.error("Error parsing LaTeX question:", err);
+//     return questionText; // Fallback to the original text
+//   }
+// };
+
 const processMathQuestion = (questionText) => {
+
+  console.log("Question Text Received for Procession is : " +questionText)
   try {
     if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
-      // LaTeX-like input detected, render using KaTeX without MathML and LaTeX annotations
+      // LaTeX-like input detected, render using KaTeX
       const renderedHtml = katex.renderToString(questionText, {
         throwOnError: false, // Don't throw errors for invalid LaTeX
-        displayMode: false, // Use inline math rendering
-        output: "html" // Ensure it outputs only HTML without MathML
+        displayMode: true, // Use block rendering for better visibility of equations like integrals
       });
       return renderedHtml; // Return the HTML output with math symbols
     } else {
@@ -3172,7 +3193,7 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
       ? processMathQuestion(question_text) // Only return the MathML or rendered HTML 
       : question_text;
 
-    console.log(processedQuestionText);
+    //console.log(processedQuestionText);
 
       
       
