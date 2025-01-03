@@ -458,27 +458,6 @@ const extractMathSymbols = (htmlString) => {
 //   }
 // };
 
-// const processMathQuestion = (questionText) => {
-//   try {
-//     // Check if the input contains LaTeX-like symbols, indicating it's a math expression
-//     if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
-//       // Render the LaTeX string to HTML using KaTeX
-//       const renderedHtml = katex.renderToString(questionText, {
-//         throwOnError: false, // Don't throw errors for invalid LaTeX
-//         displayMode: true,    // Use display mode (block-level rendering for equations)
-//       });
-//       return renderedHtml;  // Return only the rendered HTML
-//     } else {
-//       // If no LaTeX syntax found, don't process it. Return the raw text as is
-//       return questionText;
-//     }
-//   } catch (err) {
-//     console.error("Error parsing LaTeX question:", err);
-//     return ""; // In case of error, return empty string (you can adjust this to handle errors as per your needs)
-//   }
-// };
-
-
 const processMathQuestion = (questionText) => {
   try {
     // Check if the input contains LaTeX-like symbols, indicating it's a math expression
@@ -488,16 +467,37 @@ const processMathQuestion = (questionText) => {
         throwOnError: false, // Don't throw errors for invalid LaTeX
         displayMode: true,    // Use display mode (block-level rendering for equations)
       });
-      return renderedHtml;  // Return only the rendered HTML, no plain text
+      return renderedHtml;  // Return only the rendered HTML
     } else {
-      // If no LaTeX syntax found, return an empty string or a safe fallback (no rendering)
-      return ''; // Ensure no raw text is returned
+      // If no LaTeX syntax found, don't process it. Return the raw text as is
+      return questionText;
     }
   } catch (err) {
     console.error("Error parsing LaTeX question:", err);
-    return ''; // Return an empty string in case of error, you can adjust this behavior
+    return ""; // In case of error, return empty string (you can adjust this to handle errors as per your needs)
   }
 };
+
+
+// const processMathQuestion = (questionText) => {
+//   try {
+//     // Check if the input contains LaTeX-like symbols, indicating it's a math expression
+//     if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
+//       // Render the LaTeX string to HTML using KaTeX
+//       const renderedHtml = katex.renderToString(questionText, {
+//         throwOnError: false, // Don't throw errors for invalid LaTeX
+//         displayMode: true,    // Use display mode (block-level rendering for equations)
+//       });
+//       return renderedHtml;  // Return only the rendered HTML, no plain text
+//     } else {
+//       // If no LaTeX syntax found, return an empty string or a safe fallback (no rendering)
+//       return ''; // Ensure no raw text is returned
+//     }
+//   } catch (err) {
+//     console.error("Error parsing LaTeX question:", err);
+//     return ''; // Return an empty string in case of error, you can adjust this behavior
+//   }
+// };
 
 
 
