@@ -63,22 +63,22 @@ const storage = multer.diskStorage({
 
 
 // Helper function to parse LaTeX or handle plain text - Maths
-const processMathQuestion = (questionText) => {
-  try {
-    if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
-      // LaTeX-like input detected
-      return katex.renderToString(questionText, {
-        throwOnError: false,
-      });
-    } else {
-      // Plain math question, return as is
-      return questionText;
-    }
-  } catch (err) {
-    console.error("Error parsing LaTeX question:", err);
-    return questionText; // Fallback to the original text
-  }
-};
+// const processMathQuestion = (questionText) => {
+//   try {
+//     if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
+//       // LaTeX-like input detected
+//       return katex.renderToString(questionText, {
+//         throwOnError: false,
+//       });
+//     } else {
+//       // Plain math question, return as is
+//       return questionText;
+//     }
+//   } catch (err) {
+//     console.error("Error parsing LaTeX question:", err);
+//     return questionText; // Fallback to the original text
+//   }
+// };
 
 // const processMathQuestionToMathML = (questionText) => {
 //   try {
@@ -137,6 +137,29 @@ const processMathQuestion = (questionText) => {
 //   }
 // };
 
+
+const processMathQuestion = (questionText) => {
+  try {
+    if (questionText.includes("\\") || questionText.includes("^") || questionText.includes("_")) {
+      // LaTeX-like input detected
+      return katex.renderToString(questionText, {
+        throwOnError: false,
+      });
+    } else {
+      // Plain math question, return as is
+      return questionText;
+    }
+  } catch (err) {
+    console.error("Error parsing LaTeX question:", err);
+    return questionText; // Fallback to the original text
+  }
+};
+
+const extractTextFromHTML = (htmlString) => {
+  const tempDiv = document.createElement("div");
+  tempDiv.innerHTML = htmlString;
+  return tempDiv.textContent || tempDiv.innerText || ""; // Extract plain text
+};
 
 
 
@@ -2885,9 +2908,9 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
       //   ? processMathQuestion(question_text)
       //   : question_text;
 
-      const processedQuestionText = subject === "maths"
-      ?convert(processMathQuestion(question_text))
-      : question_text;
+      // const processedQuestionText = subject === "maths"
+      // ?convert(processMathQuestion(question_text),{wordwrap:false})
+      // : question_text;
 
       // const processedQuestionText = subject === "maths"
       // ? convert(processMathQuestion(question_text),{wordwrap:false})
@@ -2900,6 +2923,13 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
       // const processedQuestionText = subject === "maths"
       // ? processMathQuestionToMathML(question_text)
       // : question_text;
+
+
+
+      
+
+      
+      
 
       // Insert test details if not exists
       let [testResult] = await dbPromise.query(
@@ -3011,6 +3041,11 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
 //       // const processedQuestionText = subject === "maths"
 //       //   ? stripHtmlTags(processMathQuestionToMathML(question_text))
 //       //   : question_text;
+
+    
+      const processedQuestionText = subject === "maths"
+        ? extractTextFromHTML(processMathQuestion(question_text))
+        : question_text;
 
 //       // Insert test details if not exists
 //       let [testResult] = await dbPromise.query(
