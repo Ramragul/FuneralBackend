@@ -478,7 +478,7 @@ const storage = multer.diskStorage({
 //   }
 // };
 
-// worked version
+// worked version 
 
 // const processMathQuestion = (questionText) => {
 //   try {
@@ -512,29 +512,7 @@ const storage = multer.diskStorage({
 
 
 
-const processMathQuestion = (questionText) => {
-  try {
-    // Render the question into KaTeX HTML with MathML
-    const renderedHtml = katex.renderToString(questionText, {
-      throwOnError: false, // Don't throw errors for invalid LaTeX
-      displayMode: true,   // Block-level rendering for equations
-      output: "html",      // Default: Include both HTML and MathML
-    });
 
-    // Parse the rendered HTML output
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(renderedHtml, "text/html");
-
-    // Extract only the MathML content
-    const mathmlContent = doc.querySelector("math");
-
-    // Convert MathML back to a serialized string for further processing
-    return mathmlContent ? mathmlContent.outerHTML : renderedHtml;
-  } catch (err) {
-    console.error("Error processing LaTeX:", err.message);
-    return `<span style="color:red;">Invalid Math Expression</span>`;
-  }
-};
 
 
 
@@ -3326,7 +3304,7 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
 
       // console.log(processedQuestionText);
 
-      const processedQuestionText = subject === "maths"
+      const processedQuestionText = subject === "maths1"
       ? processMathQuestion(question_text) // Only return the MathML or rendered HTML 
       : question_text;
 
