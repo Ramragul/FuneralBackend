@@ -2924,7 +2924,9 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
       // ? processMathQuestionToMathML(question_text)
       // : question_text;
 
-
+      const processedQuestionText = subject === "maths"
+        ? extractTextFromHTML(processMathQuestion(question_text))
+        : question_text;
 
       
 
@@ -3043,9 +3045,7 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
 //       //   : question_text;
 
     
-      const processedQuestionText = subject === "maths"
-        ? extractTextFromHTML(processMathQuestion(question_text))
-        : question_text;
+
 
 //       // Insert test details if not exists
 //       let [testResult] = await dbPromise.query(
