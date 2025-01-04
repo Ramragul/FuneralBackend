@@ -3723,12 +3723,49 @@ app.post('/api/ip/register', async (req, res) => {
         sendRegistrationEmail(email, name);
         res.status(201).json({ message: 'User registered successfully' });
       }
+
+      
     });
     
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({ error: 'An error occurred during registration' });
   }
+
+
+    // Function to send registration email
+    const sendRegistrationEmail = (userEmail, userName) => {
+      // Set the correct path to the HTML template
+      const templatePath = path.join(__dirname, 'emailTemplates', 'ipRegistrationEmailTemplate.html');
+    
+      // Read the HTML template file
+      fs.readFile(templatePath, 'utf-8', (err, htmlTemplate) => {
+        if (err) {
+          console.error('Error reading the email template file:', err);
+          return;
+        }
+    
+        // Replace {{userName}} with the actual user's name
+        const emailHtml = htmlTemplate.replace('{{userName}}', name);
+    
+        // Define email options
+        const mailOptions = {
+          from: '"Park Bench Team" <support@cottoncandy.co.in>',
+          to: email,
+          subject: 'Welcome to Park Bench !',
+          html: emailHtml,
+        };
+    
+        // Send the email
+        transporter.sendMail(mailOptions, (error, info) => {
+          if (error) {
+            res.status(500).json({ message: 'Failure in Email Delivery ' +error });
+          } else {
+            res.status(201).json({ message: 'Tailoring order placed successfully ' +info.response });
+          }
+        });
+      });
+    };
 });
 
 app.post('/ip/login', (req, res) => {
