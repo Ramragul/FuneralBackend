@@ -3684,7 +3684,7 @@ app.post('/api/ip/register', async (req, res) => {
   console.log("Request received from registration page");
   
   const { name, mobile, email, address, city, password, userType, businessName, trainingsProvided,institute,qualifications,businessType,pincode } = req.body;
-
+  const transporter = mailConfig();
   try {
     // Establish DB connection
     var con = dbConnection();
