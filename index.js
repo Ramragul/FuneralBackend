@@ -3840,7 +3840,15 @@ const otpExpirationTime = 10 * 60 * 1000; // 10 minutes expiration
 
 app.post('/api/ip/reset/password/send-otp', async (req, res) => {
   const { mobile } = req.body;
-  const con = dbConnection();
+  //const con = dbConnection();
+  try
+  {
+  var con = dbConnection();
+  con.connect();
+  } catch (error) {
+    console.error('DB Connection Error', error);
+    res.status(500).json({ error: 'DB Connection Error' });
+  }
 
   try {
     const query = 'SELECT email, name FROM IP_Users WHERE mobile = ?';
@@ -3884,7 +3892,14 @@ app.post('/api/ip/reset/password/send-otp', async (req, res) => {
 
 app.post('/api/ip/reset/password/verify-otp', (req, res) => {
   const { mobile, otp } = req.body;
-  const con = dbConnection();
+  try
+  {
+  var con = dbConnection();
+  con.connect();
+  } catch (error) {
+    console.error('DB Connection Error', error);
+    res.status(500).json({ error: 'DB Connection Error' });
+  }
 
   try {
     const query = 'SELECT * FROM IP_Users_OTP WHERE mobile = ? AND otp = ? AND expires_at > NOW()';
@@ -3903,7 +3918,14 @@ app.post('/api/ip/reset/password/verify-otp', (req, res) => {
 
 app.post('/api/ip/reset/password', async (req, res) => {
   const { mobile, password } = req.body;
-  const con = dbConnection();
+  try
+  {
+  var con = dbConnection();
+  con.connect();
+  } catch (error) {
+    console.error('DB Connection Error', error);
+    res.status(500).json({ error: 'DB Connection Error' });
+  }
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
