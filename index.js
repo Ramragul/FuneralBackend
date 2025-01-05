@@ -3865,6 +3865,7 @@ app.post('/api/ip/reset/password/send-otp', async (req, res) => {
       con.query(insertOtpQuery, [mobile, otp, expiresAt], (err, result) => {
         if (err) {
           console.log("Error "+err)
+          con.end();
           return res.status(500).json({ error: 'Failed to store OTP' });
         }
 
@@ -3879,15 +3880,15 @@ app.post('/api/ip/reset/password/send-otp', async (req, res) => {
 
         transporter.sendMail(mailOptions, (error) => {
           if (error) return res.status(500).json({ error: 'Failed to send OTP' });
+          con.end();
           res.status(200).json({ message: 'OTP sent successfully' });
         });
       });
     });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
-  } finally {
     con.end();
-  }
+  } 
 });
 
 app.post('/api/ip/reset/password/verify-otp', (req, res) => {
@@ -3897,6 +3898,7 @@ app.post('/api/ip/reset/password/verify-otp', (req, res) => {
   var con = dbConnection();
   con.connect();
   } catch (error) {
+    con.end();
     console.error('DB Connection Error', error);
     res.status(500).json({ error: 'DB Connection Error' });
   }
@@ -3907,13 +3909,16 @@ app.post('/api/ip/reset/password/verify-otp', (req, res) => {
       if (err || result.length === 0) {
         return res.status(400).json({ error: 'Invalid or expired OTP' });
       }
+      con.end();
       res.status(200).json({ message: 'OTP verified' });
+      
     });
   } catch (error) {
-    res.status(500).json({ error: 'Server error' });
-  } finally {
     con.end();
-  }
+    res.status(500).json({ error: 'Server error' });
+  } 
+    
+  
 });
 
 app.post('/api/ip/reset/password', async (req, res) => {
@@ -3924,6 +3929,7 @@ app.post('/api/ip/reset/password', async (req, res) => {
   con.connect();
   } catch (error) {
     console.error('DB Connection Error', error);
+    con.end();
     res.status(500).json({ error: 'DB Connection Error' });
   }
 
@@ -3934,13 +3940,15 @@ app.post('/api/ip/reset/password', async (req, res) => {
       if (err || result.affectedRows === 0) {
         return res.status(500).json({ error: 'Failed to reset password' });
       }
+      con.end();
       res.status(200).json({ message: 'Password reset successfully' });
     });
   } catch (error) {
-    res.status(500).json({ error: 'Server error' });
-  } finally {
     con.end();
-  }
+    res.status(500).json({ error: 'Server error' });
+  } 
+    
+  
 });
 
 
