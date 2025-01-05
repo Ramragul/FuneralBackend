@@ -3856,6 +3856,7 @@ app.post('/api/ip/reset/password/send-otp', async (req, res) => {
       const insertOtpQuery = 'INSERT INTO IP_Users_OTP (mobile, otp, expires_at) VALUES (?, ?, ?)';
       con.query(insertOtpQuery, [mobile, otp, expiresAt], (err, result) => {
         if (err) {
+          console.log("Error "+err)
           return res.status(500).json({ error: 'Failed to store OTP' });
         }
 
