@@ -3768,6 +3768,7 @@ app.post('/api/ip/register', async (req, res) => {
     };
 });
 
+
 app.post('/ip/login', (req, res) => {
 
   try
@@ -3830,6 +3831,93 @@ app.post('/ip/login', (req, res) => {
     res.json({ token, userName: user.name,userId: user.mobile,userEmail: user.email , pId : pId , userRole : user.userType});
 
   });
+});
+
+
+// Password Resetting Logic 
+
+const otpExpirationTime = 10 * 60 * 1000; // 10 minutes expiration
+
+app.post('/api/ip/reset/password/send-otp', async (req, res) => {
+  const { mobile } = req.body;
+  const con = dbConnection();
+
+  try {
+    const query = 'SELECT email, name FROM IP_Users WHERE mobile = ?';
+    con.query(query, [mobile], (err, result) => {
+      if (err || result.length === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + otpExpirationTime); // OTP expiration time
+
+      // Insert OTP into the database
+      const insertOtpQuery = 'INSERT INTO IP_Users_OTP (mobile, otp, expires_at) VALUES (?, ?, ?)';
+      con.query(insertOtpQuery, [mobile, otp, expiresAt], (err, result) => {
+        if (err) {
+          return res.status(500).json({ error: 'Failed to store OTP' });
+        }
+
+        // Send OTP email to the user
+        const transporter = mailConfig();
+        const mailOptions = {
+          from: '"Park Bench Team" <support@cottoncandy.co.in>',
+          to: result[0].email,
+          subject: 'Reset Password OTP',
+          html: `<h1 style="color: purple;">Your OTP: ${otp}</h1>`
+        };
+
+        transporter.sendMail(mailOptions, (error) => {
+          if (error) return res.status(500).json({ error: 'Failed to send OTP' });
+          res.status(200).json({ message: 'OTP sent successfully' });
+        });
+      });
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  } finally {
+    con.end();
+  }
+});
+
+app.post('/api/ip/reset/password/verify-otp', (req, res) => {
+  const { mobile, otp } = req.body;
+  const con = dbConnection();
+
+  try {
+    const query = 'SELECT * FROM IP_Users_OTP WHERE mobile = ? AND otp = ? AND expires_at > NOW()';
+    con.query(query, [mobile, otp], (err, result) => {
+      if (err || result.length === 0) {
+        return res.status(400).json({ error: 'Invalid or expired OTP' });
+      }
+      res.status(200).json({ message: 'OTP verified' });
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  } finally {
+    con.end();
+  }
+});
+
+app.post('/api/ip/reset/password', async (req, res) => {
+  const { mobile, password } = req.body;
+  const con = dbConnection();
+
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const query = 'UPDATE IP_Users SET password = ? WHERE mobile = ?';
+    con.query(query, [hashedPassword, mobile], (err, result) => {
+      if (err || result.affectedRows === 0) {
+        return res.status(500).json({ error: 'Failed to reset password' });
+      }
+      res.status(200).json({ message: 'Password reset successfully' });
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  } finally {
+    con.end();
+  }
 });
 
 
