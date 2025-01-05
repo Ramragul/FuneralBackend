@@ -3840,6 +3840,8 @@ const otpExpirationTime = 10 * 60 * 1000; // 10 minutes expiration
 
 app.post('/api/ip/reset/password/send-otp', async (req, res) => {
   const { mobile } = req.body;
+
+  console.log("MOble Number is :"+mobile)
   //const con = dbConnection();
   try
   {
@@ -3853,6 +3855,7 @@ app.post('/api/ip/reset/password/send-otp', async (req, res) => {
   try {
     const query = 'SELECT email, name FROM IP_Users WHERE mobile = ?';
     con.query(query, [mobile], (err, result) => {
+      console.log("Result Value is : "+JSON.stringify(result));
       if (err || result.length === 0) {
         return res.status(404).json({ error: 'User not found' });
       }
