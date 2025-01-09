@@ -4841,6 +4841,58 @@ app.post('/aws/upload/video', upload.single('video'), async (req, res) => {
 
 
 
+// Get Videos API
+
+app.get('/api/ip/partner/:partnerId/videos', async (req, res) => {
+  const { partnerId } = req.params;
+  let con;
+
+  try {
+    // Establish the DB connection
+    con = dbConnection();
+    con.connect();
+  } catch (error) {
+    console.error('DB Connection Error:', error);
+    return res.status(500).json({ error: 'DB Connection Error' });
+  }
+
+  console.log('Connected to database.');
+
+  try {
+    // Fetch video details for the given partnerId
+    const query = `
+      SELECT id, uploader_id, video_url, created_at 
+      FROM videos 
+      WHERE uploader_id = ?
+      ORDER BY created_at DESC
+    `;
+
+    const videos = await new Promise((resolve, reject) => {
+      con.query(query, [partnerId], (err, results) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(results);
+        }
+      });
+    });
+
+    if (videos.length === 0) {
+      return res.status(404).json({ message: 'No videos found for this partner.' });
+    }
+
+    res.status(200).json({ videos });
+  } catch (dbError) {
+    console.error('DB Query Error:', dbError);
+    return res.status(500).json({ error: 'Failed to fetch videos' });
+  } finally {
+    con.end();
+  }
+});
+
+
+
+
 
 
 
