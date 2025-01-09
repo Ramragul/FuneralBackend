@@ -4783,6 +4783,61 @@ app.get('/api/ip/partner/:partnerId/students', async (req, res) => {
 });
 
 
+// Video Upload API
+
+app.post('aws/upload/video', upload.single('video'), async (req, res) => {
+  const { uploader_id } = req.body;
+
+  if (!req.file || !uploader_id) {
+    return res.status(400).json({ error: 'Video file and uploader ID are required' });
+  }
+
+  const file = req.file;
+  const videoKey = `gb_ground/${uuidv4()}_${file.originalname}`;
+
+  const params = {
+    Bucket: 'snektoawsbucket',
+    Key: videoKey,
+    Body: file.buffer,
+    ContentType: file.mimetype,
+    ACL: 'public-read',
+  };
+
+  let con;
+  try {
+    // Upload video to S3
+    const uploadResult = await s3.upload(params).promise();
+
+    // Save video details in the database
+    try {
+      con = dbConnection();
+      con.connect();
+
+      const query = 'INSERT INTO videos (uploader_id, video_url) VALUES (?, ?)';
+      await new Promise((resolve, reject) => {
+        con.query(query, [uploader_id, uploadResult.Location], (err, result) => {
+          if (err) reject(err);
+          else resolve(result);
+        });
+      });
+
+      con.end();
+    } catch (dbError) {
+      console.error('DB Error:', dbError);
+      return res.status(500).json({ error: 'Database Error' });
+    }
+
+    res.status(201).json({
+      message: 'Video uploaded successfully',
+      videoUrl: uploadResult.Location,
+    });
+  } catch (s3Error) {
+    console.error('S3 Upload Error:', s3Error);
+    res.status(500).json({ error: 'Video upload failed' });
+  }
+});
+
+
 
 
 
