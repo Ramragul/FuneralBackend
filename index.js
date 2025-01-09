@@ -3912,7 +3912,7 @@ app.post('/api/ip/reset/password/verify-otp', (req, res) => {
     const query = 'SELECT * FROM IP_Users_OTP WHERE mobile = ? AND otp = ? AND expires_at > NOW()';
     con.query(query, [mobile, otp], (err, result) => {
       if (err || result.length === 0) {
-        return res.status(400).json({ error: 'Invalid or expired OTP' });
+        return res.status(401).json({ error: 'Invalid or expired OTP' });
       }
       con.end();
       res.status(200).json({ message: 'OTP verified' });
