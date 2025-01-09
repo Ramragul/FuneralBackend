@@ -4785,7 +4785,7 @@ app.get('/api/ip/partner/:partnerId/students', async (req, res) => {
 
 // Video Upload API
 
-app.post('aws/upload/video', upload.single('video'), async (req, res) => {
+app.post('/aws/upload/video', upload.single('video'), async (req, res) => {
 
   console.log("Inside Video Uploader Api")
   const { uploader_id } = req.body;
