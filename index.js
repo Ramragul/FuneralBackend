@@ -4714,11 +4714,11 @@ app.get('/api/ip/test/:testId/stats', async (req, res) => {
     con.end();
     console.log('Connection Ended');
 
-    return res.status(200).json({
+    return res.status(200).json({data:{
       assignedCandidates,
       attendedCandidates,
       notAttendedCandidates,
-    });
+    }});
   } catch (error) {
     console.error('Query Error:', error);
     con.end();
