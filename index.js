@@ -3828,7 +3828,7 @@ app.post('/ip/login', (req, res) => {
 
     // Partners Table parther id fetch logic ends
     con.end();
-    res.json({ token, userName: user.name,userId: user.mobile,userEmail: user.email , pId : pId , userRole : user.userType, institure: user.institute});
+    res.json({ token, userName: user.name,userId: user.mobile,userEmail: user.email , pId : pId , userRole : user.userType, institute: user.institute});
 
   });
 });
