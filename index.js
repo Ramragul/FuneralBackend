@@ -4785,10 +4785,10 @@ app.get('/api/ip/partner/:partnerId/students', async (req, res) => {
 
 // Video Upload API
 
-app.post('/aws/upload/video', upload.single('video'), async (req, res) => {
+app.post('/api/ip/video/upload', upload.single('video'), async (req, res) => {
 
   console.log("Inside Video Uploader Api")
-  const { uploader_id } = req.body;
+  const { uploader_id,course_id,subject } = req.body;
 
   if (!req.file || !uploader_id) {
     return res.status(400).json({ error: 'Video file and uploader ID are required' });
@@ -4815,9 +4815,9 @@ app.post('/aws/upload/video', upload.single('video'), async (req, res) => {
       con = dbConnection();
       con.connect();
 
-      const query = 'INSERT INTO videos (uploader_id, video_url) VALUES (?, ?)';
+      const query = 'INSERT INTO IP_Videos (uploader_id, video_url,course_id,subject) VALUES (?, ?,?,?)';
       await new Promise((resolve, reject) => {
-        con.query(query, [uploader_id, uploadResult.Location], (err, result) => {
+        con.query(query, [uploader_id, uploadResult.Location,course_id,subject], (err, result) => {
           if (err) reject(err);
           else resolve(result);
         });
@@ -4861,8 +4861,8 @@ app.get('/api/ip/partner/:partnerId/videos', async (req, res) => {
   try {
     // Fetch video details for the given partnerId
     const query = `
-      SELECT id, uploader_id, video_url, created_at 
-      FROM videos 
+      SELECT id, uploader_id, video_url, created_at,course_id,subject 
+      FROM IP_Videos 
       WHERE uploader_id = ?
       ORDER BY created_at DESC
     `;
