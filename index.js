@@ -4982,7 +4982,7 @@ app.get('/api/ip/partner/:partnerId/documents', async (req, res) => {
   try {
     // Fetch document details for the given partnerId
     const query = `
-      SELECT id, uploader_id, document_url, created_at, course_id, subject, file_type, file_size
+      SELECT id, uploader_id, document_url, created_at, course_id, subject, file_type, file_size, name, description, category
       FROM IP_Documents
       WHERE uploader_id = ?
       ORDER BY created_at DESC
