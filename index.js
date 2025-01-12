@@ -4891,9 +4891,121 @@ app.get('/api/ip/partner/:partnerId/videos', async (req, res) => {
 });
 
 
+// Document Upload API
+
+app.post('/api/ip/document/upload', upload.single('document'), async (req, res) => {
+  console.log("Inside Document Uploader API");
+  const { uploader_id, course_id, subject } = req.body;
+
+  if (!req.file || !uploader_id) {
+    return res.status(400).json({ error: 'Document file and uploader ID are required' });
+  }
+
+  const file = req.file;
+  const documentKey = `gb_documents/${uuidv4()}_${file.originalname}`;
+
+  const params = {
+    Bucket: 'snektoawsbucket',
+    Key: documentKey,
+    Body: file.buffer,
+    ContentType: file.mimetype,
+    ACL: 'public-read',
+  };
+
+  let con;
+  try {
+    // Upload document to S3
+    const uploadResult = await s3.upload(params).promise();
+
+    // Save document details in the database
+    try {
+      con = dbConnection();
+      con.connect();
+
+      const query = `
+        INSERT INTO IP_Documents (uploader_id, document_url, course_id, subject, file_type, file_size)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `;
+      await new Promise((resolve, reject) => {
+        con.query(query, [
+          uploader_id,
+          uploadResult.Location,
+          course_id,
+          subject,
+          file.mimetype,
+          file.size,
+        ], (err, result) => {
+          if (err) reject(err);
+          else resolve(result);
+        });
+      });
+
+      con.end();
+    } catch (dbError) {
+      console.error('DB Error:', dbError);
+      return res.status(500).json({ error: 'Database Error' });
+    }
+
+    res.status(201).json({
+      message: 'Document uploaded successfully',
+      documentUrl: uploadResult.Location,
+    });
+  } catch (s3Error) {
+    console.error('S3 Upload Error:', s3Error);
+    res.status(500).json({ error: 'Document upload failed' });
+  }
+});
 
 
+// Document Fetch API
 
+
+app.get('/api/ip/partner/:partnerId/documents', async (req, res) => {
+  const { partnerId } = req.params;
+  let con;
+
+  try {
+    // Establish the DB connection
+    con = dbConnection();
+    con.connect();
+  } catch (error) {
+    console.error('DB Connection Error:', error);
+    return res.status(500).json({ error: 'DB Connection Error' });
+  }
+
+  console.log('Connected to database.');
+
+  try {
+    // Fetch document details for the given partnerId
+    const query = `
+      SELECT id, uploader_id, document_url, created_at, course_id, subject, file_type, file_size
+      FROM IP_Documents
+      WHERE uploader_id = ?
+      ORDER BY created_at DESC
+    `;
+
+    const documents = await new Promise((resolve, reject) => {
+      con.query(query, [partnerId], (err, results) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(results);
+        }
+      });
+    });
+
+    if (documents.length === 0) {
+      return res.status(404).json({ message: 'No documents found for this partner.' });
+    }
+
+    res.status(200).json({ documents });
+  } catch (dbError) {
+    console.error('DB Query Error:', dbError);
+    return res.status(500).json({ error: 'Failed to fetch documents' });
+  } finally {
+    con.end();
+  }
+});
 
 
 
