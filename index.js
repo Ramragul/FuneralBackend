@@ -5033,7 +5033,7 @@ app.get('/api/ip/:type/lists', async (req, res) => {
   try {
     // Fetch distinct institute names where status = 'active' and sort them alphabetically
     const query = `
-      SELECT DISTINCT institute
+      SELECT DISTINCT institute AS type
       FROM IP_Users
       WHERE status = 'active' AND userType = 'Business Partner'
       ORDER BY institute ASC`;
