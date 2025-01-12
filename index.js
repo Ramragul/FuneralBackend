@@ -4894,8 +4894,9 @@ app.get('/api/ip/partner/:partnerId/videos', async (req, res) => {
 // Document Upload API
 
 app.post('/api/ip/document/upload', upload.single('document'), async (req, res) => {
-  console.log("Inside Document Uploader API");
+
   const { uploader_id, course_id, subject ,name, description ,category} = req.body;
+  console.log("Name Value is :" +name);
 
   if (!req.file || !uploader_id) {
     return res.status(400).json({ error: 'Document file and uploader ID are required' });
