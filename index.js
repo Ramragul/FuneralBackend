@@ -4895,7 +4895,7 @@ app.get('/api/ip/partner/:partnerId/videos', async (req, res) => {
 
 app.post('/api/ip/document/upload', upload.single('document'), async (req, res) => {
   console.log("Inside Document Uploader API");
-  const { uploader_id, course_id, subject } = req.body;
+  const { uploader_id, course_id, subject ,name, description ,category} = req.body;
 
   if (!req.file || !uploader_id) {
     return res.status(400).json({ error: 'Document file and uploader ID are required' });
@@ -4923,8 +4923,8 @@ app.post('/api/ip/document/upload', upload.single('document'), async (req, res) 
       con.connect();
 
       const query = `
-        INSERT INTO IP_Documents (uploader_id, document_url, course_id, subject, file_type, file_size)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO IP_Documents (uploader_id, document_url, course_id, subject, file_type, file_size,name,description,category)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
       await new Promise((resolve, reject) => {
         con.query(query, [
