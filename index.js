@@ -4923,7 +4923,7 @@ app.post('/api/ip/document/upload', upload.single('document'), async (req, res) 
       con.connect();
 
       const query = `
-        INSERT INTO IP_Documents (uploader_id, document_url, course_id, subject, file_type, file_size,name,description,category)
+        INSERT INTO IP_Documents (uploader_id, document_url, course_id, subject, file_type, file_size, name, description, category)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
       await new Promise((resolve, reject) => {
@@ -4934,6 +4934,9 @@ app.post('/api/ip/document/upload', upload.single('document'), async (req, res) 
           subject,
           file.mimetype,
           file.size,
+          name,
+          description,
+          category
         ], (err, result) => {
           if (err) reject(err);
           else resolve(result);
