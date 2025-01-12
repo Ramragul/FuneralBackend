@@ -5012,6 +5012,57 @@ app.get('/api/ip/partner/:partnerId/documents', async (req, res) => {
 });
 
 
+// Get List of Institutes API
+
+app.get('/api/ip/:type/lists', async (req, res) => {
+  const { type } = req.params;
+  console.log("Type is " + type);
+  let con;
+
+  try {
+    // Establish the DB connection
+    con = dbConnection();
+    con.connect();
+  } catch (error) {
+    console.error('DB Connection Error:', error);
+    return res.status(500).json({ error: 'DB Connection Error' });
+  }
+
+  console.log('Connected to database.');
+
+  try {
+    // Fetch distinct institute names where status = 'active' and sort them alphabetically
+    const query = `
+      SELECT DISTINCT institute
+      FROM IP_Users
+      WHERE status = 'active' AND userType = 'Business Partner'
+      ORDER BY institute ASC`;
+
+    const list = await new Promise((resolve, reject) => {
+      con.query(query, (err, results) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(results);
+        }
+      });
+    });
+
+    if (list.length === 0) {
+      return res.status(404).json({ message: 'No Data Found' });
+    }
+
+    res.status(200).json({ data: list });
+  } catch (dbError) {
+    console.error('DB Query Error:', dbError);
+    return res.status(500).json({ error: 'Failed to fetch lists' });
+  } finally {
+    con.end();
+  }
+});
+
+
+
 
 
 app.listen(3000, () => {
