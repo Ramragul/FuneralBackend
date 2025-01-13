@@ -3693,9 +3693,13 @@ app.post('/api/ip/register', async (req, res) => {
     // Hash the password before saving
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    var institution = (institute != null || institute != undefined) ? institute : businessName;
+
+    console.log("Institution Value is "+institution);
+
     // Insert basic user data into CC_Users table
     const userQuery = 'INSERT INTO IP_Users (name, mobile, email, address, city, password, userType,institute,qualifications, pincode) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-    con.query(userQuery, [name, mobile, email, address, city, hashedPassword, userType, institute, qualifications, pincode], (err, result) => {
+    con.query(userQuery, [name, mobile, email, address, city, hashedPassword, userType, institution, qualifications, pincode], (err, result) => {
       if (err) {
         console.error('Error inserting user:', err);
         return res.status(500).json({ message: 'Error inserting user' });
