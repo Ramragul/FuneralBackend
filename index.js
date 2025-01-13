@@ -4849,8 +4849,8 @@ app.post('/api/ip/video/upload', upload.single('video'), async (req, res) => {
 
 // Get Videos API
 
-app.get('/api/ip/partner/:partnerId/videos', async (req, res) => {
-  const { partnerId } = req.params;
+app.get('/api/ip/partner/:institute/videos', async (req, res) => {
+  const { institute } = req.params;
   let con;
 
   try {
@@ -4865,16 +4865,16 @@ app.get('/api/ip/partner/:partnerId/videos', async (req, res) => {
   console.log('Connected to database.');
 
   try {
-    // Fetch video details for the given partnerId
+    // Fetch video details for the given institute
     const query = `
       SELECT id, uploader_id, video_url, created_at,course_id,subject 
       FROM IP_Videos 
-      WHERE uploader_id = ?
+      WHERE institute = ?
       ORDER BY created_at DESC
     `;
 
     const videos = await new Promise((resolve, reject) => {
-      con.query(query, [partnerId], (err, results) => {
+      con.query(query, [institute], (err, results) => {
         if (err) {
           reject(err);
         } else {
@@ -4970,8 +4970,8 @@ app.post('/api/ip/document/upload', upload.single('document'), async (req, res) 
 // Document Fetch API
 
 
-app.get('/api/ip/partner/:partnerId/documents', async (req, res) => {
-  const { partnerId } = req.params;
+app.get('/api/ip/partner/:institute/documents', async (req, res) => {
+  const { institute } = req.params;
   let con;
 
   try {
@@ -4986,16 +4986,16 @@ app.get('/api/ip/partner/:partnerId/documents', async (req, res) => {
   console.log('Connected to database.');
 
   try {
-    // Fetch document details for the given partnerId
+    // Fetch document details for the given institute
     const query = `
       SELECT id, uploader_id, document_url, created_at, course_id, subject, file_type, file_size, name, description, category
       FROM IP_Documents
-      WHERE uploader_id = ?
+      WHERE institute = ?
       ORDER BY created_at DESC
     `;
 
     const documents = await new Promise((resolve, reject) => {
-      con.query(query, [partnerId], (err, results) => {
+      con.query(query, [institute], (err, results) => {
         if (err) {
           reject(err);
         } else {
