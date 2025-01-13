@@ -3681,7 +3681,7 @@ app.get('/api/ip/testDetails/:testId', (req, res) => {
 });
 
 app.post('/api/ip/register', async (req, res) => {
-  console.log("Request received from registration page");
+  console.log("Request received from registration page, Institute Value is " +institute );
   
   const { name, mobile, email, address, city, password, userType, businessName, trainingsProvided,institute,qualifications,businessType,pincode } = req.body;
   const transporter = mailConfig();
@@ -3693,7 +3693,7 @@ app.post('/api/ip/register', async (req, res) => {
     // Hash the password before saving
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    var institution = (institute != null || institute != undefined) ? institute : businessName;
+    var institution = (institute === null || institute === undefined ||institute === "") ? businessName : institute;
 
     console.log("Institution Value is "+institution);
 
