@@ -4794,7 +4794,7 @@ app.get('/api/ip/partner/:partnerId/students', async (req, res) => {
 app.post('/api/ip/video/upload', upload.single('video'), async (req, res) => {
 
   console.log("Inside Video Uploader Api")
-  const { uploader_id,course_id,subject } = req.body;
+  const { uploader_id,course_id,subject , institute} = req.body;
 
   if (!req.file || !uploader_id) {
     return res.status(400).json({ error: 'Video file and uploader ID are required' });
@@ -4821,9 +4821,9 @@ app.post('/api/ip/video/upload', upload.single('video'), async (req, res) => {
       con = dbConnection();
       con.connect();
 
-      const query = 'INSERT INTO IP_Videos (uploader_id, video_url,course_id,subject) VALUES (?, ?,?,?)';
+      const query = 'INSERT INTO IP_Videos (uploader_id, video_url,course_id,subject,institute) VALUES (?, ?,?,?,?)';
       await new Promise((resolve, reject) => {
-        con.query(query, [uploader_id, uploadResult.Location,course_id,subject], (err, result) => {
+        con.query(query, [uploader_id, uploadResult.Location,course_id,subject,institute], (err, result) => {
           if (err) reject(err);
           else resolve(result);
         });
@@ -4901,7 +4901,7 @@ app.get('/api/ip/partner/:institute/videos', async (req, res) => {
 
 app.post('/api/ip/document/upload', upload.single('document'), async (req, res) => {
 
-  const { uploader_id, course_id, subject ,name, description ,category} = req.body;
+  const { uploader_id, course_id, subject ,name, description ,category,institute} = req.body;
   console.log("Name Value is :" +name);
 
   if (!req.file || !uploader_id) {
@@ -4930,8 +4930,8 @@ app.post('/api/ip/document/upload', upload.single('document'), async (req, res) 
       con.connect();
 
       const query = `
-        INSERT INTO IP_Documents (uploader_id, document_url, course_id, subject, file_type, file_size, name, description, category)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO IP_Documents (uploader_id, document_url, course_id, subject, file_type, file_size, name, description, category,institute)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,?)
       `;
       await new Promise((resolve, reject) => {
         con.query(query, [
@@ -4943,7 +4943,8 @@ app.post('/api/ip/document/upload', upload.single('document'), async (req, res) 
           file.size,
           name,
           description,
-          category
+          category,
+          institute
         ], (err, result) => {
           if (err) reject(err);
           else resolve(result);
@@ -4988,7 +4989,7 @@ app.get('/api/ip/partner/:institute/documents', async (req, res) => {
   try {
     // Fetch document details for the given institute
     const query = `
-      SELECT id, uploader_id, document_url, created_at, course_id, subject, file_type, file_size, name, description, category
+      SELECT id, uploader_id, document_url, created_at, course_id, subject, file_type, file_size, name, description, category,institute
       FROM IP_Documents
       WHERE institute = ?
       ORDER BY created_at DESC
