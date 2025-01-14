@@ -3402,7 +3402,7 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
 
   console.log("Received validity date" +testValidity);
 
-  let formattedTestValidity = testValidity ? formatDateForIST(testValidity) : "";
+  let formattedTestValidity = (testValidity === "" || testValidity === undefined || testValidity === null)  ? "2099-12-31" : formatDateForIST(testValidity);
 
   console.log("Formatted validity date" +formattedTestValidity)
 
