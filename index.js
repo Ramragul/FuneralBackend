@@ -3224,14 +3224,159 @@ app.get('/api/cc/tailoring/orders', async (req, res) => {
 // });
 
 
-// Version 2 : This version stores the latex converted values as html in db
+// Version 2 : This version stores the latex converted values as html in db - Working Code
+
+// app.post("/test/upload", upload.single("file"), async (req, res) => {
+//   if (!req.file) {
+//     return res.status(400).send({ message: "No file uploaded" });
+//   }
+  
+//   const { testName, testCategory, testDescription, testTimings, testValidity, testStudents, createdBy } = req.body;
+
+//   const formatDateForMySQL = (date) => {
+//     if (!date || isNaN(new Date(date).getTime())) {
+//       return "2099-12-31";
+//     }
+//     const isoString = new Date(date).toISOString();
+//     return isoString.split("T")[0];
+//   };
+
+//   let formattedTestValidity = testValidity ? formatDateForMySQL(testValidity) : "";
+
+//   try {
+//     const con = dbConnection();
+//     con.connect();
+
+//     const workbook = xlsx.read(req.file.buffer, { type: "buffer" });
+//     const sheetName = workbook.SheetNames[0];
+//     const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+//     const dbPromise = con.promise();
+
+//     for (const row of data) {
+//       const {
+//         test_name,
+//         test_description,
+//         category,
+//         question_text,
+//         option_1,
+//         option_2,
+//         option_3,
+//         option_4,
+//         correct_option,
+//         rewarded_marks,
+//         subject,
+//       } = row;
+
+//       // Process question_text if subject is math
+//       // const processedQuestionText = subject === "maths"
+//       //   ? processMathQuestion(question_text)
+//       //   : question_text;
+
+//       // const processedQuestionText = subject === "maths"
+//       // ?convert(processMathQuestion(question_text),{wordwrap:false})
+//       // : question_text;
+
+//       // const processedQuestionText = subject === "maths"
+//       // ? convert(processMathQuestion(question_text),{wordwrap:false})
+//       // : question_text;
+
+//       //  const processedQuestionText = subject === "maths"
+//       //  ? convert(processMathQuestionToMathML(question_text), { wordwrap: false })
+//       //  : question_text;
+
+//       // const processedQuestionText = subject === "maths"
+//       // ? processMathQuestionToMathML(question_text)
+//       // : question_text;
+
+//       // const processedQuestionText = subject === "maths"
+//       //   ? extractTextFromHTML(processMathQuestion(question_text))
+//       //   : question_text;
+
+//     //   const processedQuestionText = subject === "maths"
+//     //   ? processMathQuestion(question_text)
+//     //  : question_text;
+      
+//      // Process question text
+//       // const processedQuestionText = subject === "maths"
+//       // ? extractMathSymbols(processMathQuestion(question_text))
+//       // : question_text;
+
+//       // console.log(processedQuestionText);
+
+//       const processedQuestionText = subject === "maths"
+//       ? processMathQuestion(question_text) // Only return the MathML or rendered HTML 
+//       : question_text;
+
+//     //console.log(processedQuestionText);
+
+      
+      
+
+//       // Insert test details if not exists
+//       let [testResult] = await dbPromise.query(
+//         "SELECT id FROM IP_Tests WHERE name = ?",
+//         [testName]
+//       );
+
+//       let testId;
+//       if (testResult.length === 0) {
+//         const [insertTestResult] = await dbPromise.query(
+//           "INSERT INTO IP_Tests (name, description, category, timings, validity, status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)",
+//           [testName, testDescription, testCategory, testTimings, formattedTestValidity, "active", createdBy]
+//         );
+//         testId = insertTestResult.insertId;
+//       } else {
+//         testId = testResult[0].id;
+//       }
+
+//       // Insert the question
+//       const [questionResult] = await dbPromise.query(
+//         "INSERT INTO IP_Questions (test_id, category, question_text) VALUES (?, ?, ?)",
+//         [testId, category, processedQuestionText]
+//       );
+//       const questionId = questionResult.insertId;
+
+//       // Insert options and identify the correct one
+//       const optionIds = [];
+//       for (let i = 1; i <= 4; i++) {
+//         const [optionResult] = await dbPromise.query(
+//           "INSERT INTO IP_Options (question_id, option_text) VALUES (?, ?)",
+//           [questionId, row[`option_${i}`]]
+//         );
+//         optionIds.push(optionResult.insertId);
+//       }
+
+//       const correctOptionIndex = correct_option.split("_")[1];
+//       const correctOptionId = optionIds[parseInt(correctOptionIndex) - 1];
+
+//       await dbPromise.query(
+//         "INSERT INTO IP_Answers (question_id, correct_option_id, rewarded_marks) VALUES (?, ?, ?)",
+//         [questionId, correctOptionId, rewarded_marks]
+//       );
+//     }
+
+//     res.status(201).send({ message: "File processed and data inserted successfully!" });
+//   } catch (error) {
+//     console.error("Error processing file:", error);
+//     res.status(500).send({ message: "An error occurred while processing the file." });
+//   }
+// });
+
+
+// Version 3 : Enhancement of version 2 : support multiple test creation mode. excel , ui etc
 
 app.post("/test/upload", upload.single("file"), async (req, res) => {
-  if (!req.file) {
-    return res.status(400).send({ message: "No file uploaded" });
-  }
-  
-  const { testName, testCategory, testDescription, testTimings, testValidity, testStudents, createdBy } = req.body;
+  const {
+    testName,
+    testCategory,
+    testDescription,
+    testTimings,
+    testValidity,
+    testStudents,
+    createdBy,
+    questions, // New field for manual test creation
+  } = req.body;
 
   const formatDateForMySQL = (date) => {
     if (!date || isNaN(new Date(date).getTime())) {
@@ -3246,126 +3391,130 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
   try {
     const con = dbConnection();
     con.connect();
-
-    const workbook = xlsx.read(req.file.buffer, { type: "buffer" });
-    const sheetName = workbook.SheetNames[0];
-    const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
-
     const dbPromise = con.promise();
 
-    for (const row of data) {
-      const {
-        test_name,
-        test_description,
-        category,
-        question_text,
-        option_1,
-        option_2,
-        option_3,
-        option_4,
-        correct_option,
-        rewarded_marks,
-        subject,
-      } = row;
+    let testId;
 
-      // Process question_text if subject is math
-      // const processedQuestionText = subject === "maths"
-      //   ? processMathQuestion(question_text)
-      //   : question_text;
+    // Check if the test already exists
+    let [testResult] = await dbPromise.query(
+      "SELECT id FROM IP_Tests WHERE name = ?",
+      [testName]
+    );
 
-      // const processedQuestionText = subject === "maths"
-      // ?convert(processMathQuestion(question_text),{wordwrap:false})
-      // : question_text;
-
-      // const processedQuestionText = subject === "maths"
-      // ? convert(processMathQuestion(question_text),{wordwrap:false})
-      // : question_text;
-
-      //  const processedQuestionText = subject === "maths"
-      //  ? convert(processMathQuestionToMathML(question_text), { wordwrap: false })
-      //  : question_text;
-
-      // const processedQuestionText = subject === "maths"
-      // ? processMathQuestionToMathML(question_text)
-      // : question_text;
-
-      // const processedQuestionText = subject === "maths"
-      //   ? extractTextFromHTML(processMathQuestion(question_text))
-      //   : question_text;
-
-    //   const processedQuestionText = subject === "maths"
-    //   ? processMathQuestion(question_text)
-    //  : question_text;
-      
-     // Process question text
-      // const processedQuestionText = subject === "maths"
-      // ? extractMathSymbols(processMathQuestion(question_text))
-      // : question_text;
-
-      // console.log(processedQuestionText);
-
-      const processedQuestionText = subject === "maths"
-      ? processMathQuestion(question_text) // Only return the MathML or rendered HTML 
-      : question_text;
-
-    //console.log(processedQuestionText);
-
-      
-      
-
-      // Insert test details if not exists
-      let [testResult] = await dbPromise.query(
-        "SELECT id FROM IP_Tests WHERE name = ?",
-        [testName]
+    if (testResult.length === 0) {
+      const [insertTestResult] = await dbPromise.query(
+        "INSERT INTO IP_Tests (name, description, category, timings, validity, status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [testName, testDescription, testCategory, testTimings, formattedTestValidity, "active", createdBy]
       );
-
-      let testId;
-      if (testResult.length === 0) {
-        const [insertTestResult] = await dbPromise.query(
-          "INSERT INTO IP_Tests (name, description, category, timings, validity, status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)",
-          [testName, testDescription, testCategory, testTimings, formattedTestValidity, "active", createdBy]
-        );
-        testId = insertTestResult.insertId;
-      } else {
-        testId = testResult[0].id;
-      }
-
-      // Insert the question
-      const [questionResult] = await dbPromise.query(
-        "INSERT INTO IP_Questions (test_id, category, question_text) VALUES (?, ?, ?)",
-        [testId, category, processedQuestionText]
-      );
-      const questionId = questionResult.insertId;
-
-      // Insert options and identify the correct one
-      const optionIds = [];
-      for (let i = 1; i <= 4; i++) {
-        const [optionResult] = await dbPromise.query(
-          "INSERT INTO IP_Options (question_id, option_text) VALUES (?, ?)",
-          [questionId, row[`option_${i}`]]
-        );
-        optionIds.push(optionResult.insertId);
-      }
-
-      const correctOptionIndex = correct_option.split("_")[1];
-      const correctOptionId = optionIds[parseInt(correctOptionIndex) - 1];
-
-      await dbPromise.query(
-        "INSERT INTO IP_Answers (question_id, correct_option_id, rewarded_marks) VALUES (?, ?, ?)",
-        [questionId, correctOptionId, rewarded_marks]
-      );
+      testId = insertTestResult.insertId;
+    } else {
+      testId = testResult[0].id;
     }
 
-    res.status(201).send({ message: "File processed and data inserted successfully!" });
+    if (req.file) {
+      // Handle Excel upload
+      const workbook = xlsx.read(req.file.buffer, { type: "buffer" });
+      const sheetName = workbook.SheetNames[0];
+      const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+      for (const row of data) {
+        const {
+          category,
+          question_text,
+          option_1,
+          option_2,
+          option_3,
+          option_4,
+          correct_option,
+          rewarded_marks,
+          subject,
+        } = row;
+
+        const processedQuestionText =
+          subject === "maths"
+            ? processMathQuestion(question_text)
+            : question_text;
+
+        const [questionResult] = await dbPromise.query(
+          "INSERT INTO IP_Questions (test_id, category, question_text) VALUES (?, ?, ?)",
+          [testId, category, processedQuestionText]
+        );
+
+        const questionId = questionResult.insertId;
+        const optionIds = [];
+
+        for (let i = 1; i <= 4; i++) {
+          const [optionResult] = await dbPromise.query(
+            "INSERT INTO IP_Options (question_id, option_text) VALUES (?, ?)",
+            [questionId, row[`option_${i}`]]
+          );
+          optionIds.push(optionResult.insertId);
+        }
+
+        const correctOptionIndex = correct_option.split("_")[1];
+        const correctOptionId = optionIds[parseInt(correctOptionIndex) - 1];
+
+        await dbPromise.query(
+          "INSERT INTO IP_Answers (question_id, correct_option_id, rewarded_marks) VALUES (?, ?, ?)",
+          [questionId, correctOptionId, rewarded_marks]
+        );
+      }
+    } else if (questions) {
+      // Handle manual test creation
+      for (const question of questions) {
+        const {
+          category,
+          question_text,
+          options,
+          correct_option,
+          rewarded_marks,
+          subject,
+        } = question;
+
+        const processedQuestionText =
+          subject === "maths"
+            ? processMathQuestion(question_text)
+            : question_text;
+
+        const [questionResult] = await dbPromise.query(
+          "INSERT INTO IP_Questions (test_id, category, question_text) VALUES (?, ?, ?)",
+          [testId, category, processedQuestionText]
+        );
+
+        const questionId = questionResult.insertId;
+        const optionIds = [];
+
+        for (const option of options) {
+          const [optionResult] = await dbPromise.query(
+            "INSERT INTO IP_Options (question_id, option_text) VALUES (?, ?)",
+            [questionId, option]
+          );
+          optionIds.push(optionResult.insertId);
+        }
+
+        const correctOptionId = optionIds[correct_option - 1];
+
+        await dbPromise.query(
+          "INSERT INTO IP_Answers (question_id, correct_option_id, rewarded_marks) VALUES (?, ?, ?)",
+          [questionId, correctOptionId, rewarded_marks]
+        );
+      }
+    } else {
+      return res.status(400).send({ message: "No valid input provided." });
+    }
+
+    res.status(201).send({ message: "Test created successfully!" });
   } catch (error) {
-    console.error("Error processing file:", error);
-    res.status(500).send({ message: "An error occurred while processing the file." });
+    console.error("Error processing test creation:", error);
+    res.status(500).send({ message: "An error occurred while processing the test creation." });
   }
 });
 
 
 
-// Version 3 : This version stores latex converted value as end output
+
+
+// Version 4 : This version stores latex converted value as end output (Enhancement to v2, but not working)
 
 // app.post("/test/upload", upload.single("file"), async (req, res) => {
 //   if (!req.file) {
