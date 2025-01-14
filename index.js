@@ -3378,15 +3378,33 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
     questions, // New field for manual test creation
   } = req.body;
 
-  const formatDateForMySQL = (date) => {
-    if (!date || isNaN(new Date(date).getTime())) {
-      return "2099-12-31";
-    }
-    const isoString = new Date(date).toISOString();
-    return isoString.split("T")[0];
-  };
+  // const formatDateForMySQL = (date) => {
+  //   if (!date || isNaN(new Date(date).getTime())) {
+  //     return "2099-12-31";
+  //   }
+  //   const isoString = new Date(date).toISOString();
+  //   return isoString.split("T")[0];
+  // };
 
-  let formattedTestValidity = testValidity ? formatDateForMySQL(testValidity) : "";
+  const formatDateForIST = (date) => {
+    if (!date || isNaN(new Date(date).getTime())) {
+      return "2099-12-31"; // Default fallback date
+    }
+    
+    // Convert the date to IST timezone
+    const istOffset = 5.5 * 60 * 60 * 1000; // IST offset in milliseconds
+    const istDate = new Date(new Date(date).getTime() + istOffset);
+    
+    // Format the date as YYYY-MM-DD
+    return istDate.toISOString().split("T")[0];
+  };
+  
+
+  console.log("Received validity date" +testValidity);
+
+  let formattedTestValidity = testValidity ? formatDateForIST(testValidity) : "";
+
+  console.log("Formatted validity date" +formattedTestValidity)
 
   try {
     const con = dbConnection();
