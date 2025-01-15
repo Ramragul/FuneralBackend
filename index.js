@@ -3378,13 +3378,7 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
     questions, // New field for manual test creation
   } = req.body;
 
-  // const formatDateForMySQL = (date) => {
-  //   if (!date || isNaN(new Date(date).getTime())) {
-  //     return "2099-12-31";
-  //   }
-  //   const isoString = new Date(date).toISOString();
-  //   return isoString.split("T")[0];
-  // };
+
 
   const formatDateForIST = (date) => {
     if (!date || isNaN(new Date(date).getTime())) {
@@ -4135,7 +4129,7 @@ app.post('/api/ip/reset/password', async (req, res) => {
 
 app.post("/test/update", upload.single("file"), async (req, res) => {
 
-   const { testID, testName, testCategory, testDescription, testTimings, testValidity, modifiedBy } = req.body; // Getting test details and createdBy from request body
+   const { testID, testName, testCategory, testDescription, testTimings, testValidity, modifiedBy,testStatus } = req.body; // Getting test details and createdBy from request body
   //const { id, name, category, description, timings, validity, users, created_by } = req.body; // Getting test details and createdBy from request body
 
   console.log("Id received form Test Details Page :" +testID + "name :" +testName + "Modified By" + modifiedBy );
@@ -4172,8 +4166,8 @@ app.post("/test/update", upload.single("file"), async (req, res) => {
 
     // Update the IP_Tests table if test details have changed
     await dbPromise.query(
-      "UPDATE IP_Tests SET name = ?, description = ?, category = ?, timings = ?, validity = ?,modified_by = ?, modified_date = ? WHERE id = ?",
-      [testName, testDescription, testCategory, testTimings, testValidity, modifiedBy,modifiedDate, testID]
+      "UPDATE IP_Tests SET name = ?, description = ?, category = ?, timings = ?, validity = ?,modified_by = ?, modified_date = ?, status = ? WHERE id = ?",
+      [testName, testDescription, testCategory, testTimings, testValidity, modifiedBy,modifiedDate, testID,testStatus]
     );
     console.log(`Test ID ${testID} details updated successfully.`);
     res.send({ message: "Test updated successfully!" });
