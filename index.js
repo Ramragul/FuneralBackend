@@ -4132,7 +4132,7 @@ app.post("/test/update", upload.single("file"), async (req, res) => {
    const { testID, testName, testCategory, testDescription, testTimings, testValidity, modifiedBy,testStatus } = req.body; // Getting test details and createdBy from request body
   //const { id, name, category, description, timings, validity, users, created_by } = req.body; // Getting test details and createdBy from request body
 
-  console.log("Id received form Test Details Page :" +testID + "name :" +testName + "Modified By" + modifiedBy );
+  console.log("Id received form Test Details Page :" +testID + "name :" +testName + "Modified By" + modifiedBy + "Test Status" +testStatus);
   //console.log("Data Received from Test Details Page : " +JSON.stringify(req.body))
   // if (!id || !created_by) {
   //   return res.status(400).send({ message: "TestID and createdBy are required" });
@@ -4167,7 +4167,7 @@ app.post("/test/update", upload.single("file"), async (req, res) => {
     // Update the IP_Tests table if test details have changed
     await dbPromise.query(
       "UPDATE IP_Tests SET name = ?, description = ?, category = ?, timings = ?, validity = ?,modified_by = ?, modified_date = ?, status = ? WHERE id = ?",
-      [testName, testDescription, testCategory, testTimings, testValidity, modifiedBy,modifiedDate, testID,testStatus]
+      [testName, testDescription, testCategory, testTimings, testValidity, modifiedBy,modifiedDate,testStatus, testID]
     );
     console.log(`Test ID ${testID} details updated successfully.`);
     res.send({ message: "Test updated successfully!" });
