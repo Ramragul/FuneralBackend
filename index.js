@@ -4545,15 +4545,26 @@ app.get('/api/ip/users/:id/tests', (req, res) => {
     return res.status(400).json({ error: 'UserID is required' });
   }
 
+  // Commented to restrict inacative tests in new logic below
+  // const query = `
+  //   SELECT 
+  //     t.id, t.name, t.description, t.created_by, t.created_at, 
+  //     t.status, t.validity, t.timings, t.category, t.modified_by, t.modified_date
+  //   FROM IP_Test_Assignments a
+  //   INNER JOIN IP_Tests t ON a.TestID = t.id
+  //   WHERE a.UserID = ?
+  //   ORDER BY t.created_at DESC
+  // `;
+
   const query = `
-    SELECT 
-      t.id, t.name, t.description, t.created_by, t.created_at, 
-      t.status, t.validity, t.timings, t.category, t.modified_by, t.modified_date
-    FROM IP_Test_Assignments a
-    INNER JOIN IP_Tests t ON a.TestID = t.id
-    WHERE a.UserID = ?
-    ORDER BY t.created_at DESC
-  `;
+  SELECT 
+    t.id, t.name, t.description, t.created_by, t.created_at, 
+    t.status, t.validity, t.timings, t.category, t.modified_by, t.modified_date
+  FROM IP_Test_Assignments a
+  INNER JOIN IP_Tests t ON a.TestID = t.id
+  WHERE a.UserID = ? AND t.status = "active"
+  ORDER BY t.created_at DESC
+`;
 
   con.query(query, [userId], (err, results) => {
     if (err) {
