@@ -3761,6 +3761,12 @@ app.get('/api/ip/tests/:id?', (req, res) => {
     queryParams.push(created_by);
   }
 
+  // New logic to restrict only active tests
+  if(id || created_by) {
+    query += " AND status = ?"
+    queryParams.push("active");
+  }
+
   // Execute the query
   con.query(query, queryParams, (err, data) => {
     if (err) {
