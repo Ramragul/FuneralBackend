@@ -4894,7 +4894,7 @@ app.get('/api/ip/test/:testId/stats', async (req, res) => {
     ORDER BY 
         IP_Test_Results.candidate_id, IP_Test_Results.attempt_id;
 
-    const [attendedCandidates] = await con.promise().query(attendedQuery, [testId]);
+    const [attendedCandidates] = await con.promise().query(attendedQuery, [testId])`;
 
     // Query for not attended candidates
     const notAttendedQuery = `
