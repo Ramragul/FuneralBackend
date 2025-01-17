@@ -4862,18 +4862,37 @@ app.get('/api/ip/test/:testId/stats', async (req, res) => {
     const [assignedCandidates] = await con.promise().query(assignedQuery, [testId]);
 
     // Query for attended candidates
+   // const attendedQuery = `
+    //   SELECT 
+    //     IP_Test_Assignments.UserID AS candidateId,
+    //     IP_Test_Assignments.CandidateName AS name,
+    //     IP_Test_Results.marks_scored AS marksScored,
+    //     IP_Test_Results.total_marks AS totalMarks,
+    //     ROUND((IP_Test_Results.marks_scored / IP_Test_Results.total_marks) * 100, 2) AS percentage
+    //   FROM IP_Test_Results
+    //   JOIN IP_Test_Assignments 
+    //     ON IP_Test_Assignments.UserID = IP_Test_Results.candidate_id
+    //   WHERE IP_Test_Results.test_id = ?
+    // `;
     const attendedQuery = `
-      SELECT 
+        SELECT 
+        DISTINCT
         IP_Test_Assignments.UserID AS candidateId,
         IP_Test_Assignments.CandidateName AS name,
         IP_Test_Results.marks_scored AS marksScored,
         IP_Test_Results.total_marks AS totalMarks,
-        ROUND((IP_Test_Results.marks_scored / IP_Test_Results.total_marks) * 100, 2) AS percentage
-      FROM IP_Test_Results
-      JOIN IP_Test_Assignments 
+        ROUND((IP_Test_Results.marks_scored / IP_Test_Results.total_marks) * 100, 2) AS percentage,
+        IP_Test_Results.attempt_id AS attemptId,  -- Distinguish between attempts
+        IP_Test_Results.created_at AS attemptDate -- Include attempt date for uniqueness
+    FROM 
+        IP_Test_Results
+    JOIN 
+        IP_Test_Assignments 
         ON IP_Test_Assignments.UserID = IP_Test_Results.candidate_id
-      WHERE IP_Test_Results.test_id = ?
-    `;
+    WHERE 
+        IP_Test_Results.test_id = ?
+    ORDER BY 
+        IP_Test_Results.candidate_id, IP_Test_Results.attempt_id;
 
     const [attendedCandidates] = await con.promise().query(attendedQuery, [testId]);
 
