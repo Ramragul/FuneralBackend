@@ -5220,10 +5220,11 @@ app.get('/api/ip/partner/:institute/documents', async (req, res) => {
 
 app.get('/api/ip/:type/lists', async (req, res) => {
   const { type } = req.params;
+  var institute =""
 
   if(req.query.institute)
     {
-      const institute = req.query.institute;
+      institute = req.query.institute;
     }
 
   console.log("Type is " + type);
