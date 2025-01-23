@@ -5220,6 +5220,12 @@ app.get('/api/ip/partner/:institute/documents', async (req, res) => {
 
 app.get('/api/ip/:type/lists', async (req, res) => {
   const { type } = req.params;
+
+  if(req.query.institute)
+    {
+      const institute = req.query.institute;
+    }
+
   console.log("Type is " + type);
   let con;
 
@@ -5236,11 +5242,24 @@ app.get('/api/ip/:type/lists', async (req, res) => {
 
   try {
     // Fetch distinct institute names where status = 'active' and sort them alphabetically
+
+    if(type === 'institute')
+      {
     const query = `
       SELECT DISTINCT institute AS type
       FROM IP_Users
       WHERE status = 'active' AND userType = 'Business Partner'
       ORDER BY institute ASC`;
+      }
+
+      if(type === 'course')
+        {
+      const query = `
+        SELECT DISTINCT course_name AS type
+        FROM IP_Courses
+        WHERE institute = institute
+        ORDER BY course_name ASC`;
+        }
 
     const list = await new Promise((resolve, reject) => {
       con.query(query, (err, results) => {
