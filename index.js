@@ -5245,7 +5245,7 @@ app.get('/api/ip/:type/lists', async (req, res) => {
 
     if(type === 'institute')
       {
-        console.log("Inside institue if block");
+       
     query = `
       SELECT DISTINCT institute AS type
       FROM IP_Users
@@ -5255,11 +5255,11 @@ app.get('/api/ip/:type/lists', async (req, res) => {
 
       if(type === 'course')
         {
-        console.log("Inside institue if block");
+      
       query = `
         SELECT DISTINCT course_name AS type
         FROM IP_Courses
-        WHERE institute = institute
+        WHERE institute = '${institute}'
         ORDER BY course_name ASC`;
         }
 
