@@ -3891,7 +3891,28 @@ app.post('/api/ip/register', async (req, res) => {
           // Respond with success
           res.status(201).json({ message: 'Business Partner registered successfully' });
         });
-      } else {
+      }
+      
+      else if (userType === 'Candidate')
+        {
+          const userId = result.insertId; // Get the inserted user ID
+          const studentQuery = 'INSERT INTO IP_Students (name,institute,email,mobile,course_name) VALUES (?, ?, ?, ?, ?)';
+          
+          con.query(studentQuery, [name, institute, email,mobile, course], (err, result) => {
+            if (err) {
+              console.error('Error inserting Students Table:', err);
+              return res.status(500).json({ message: 'Error inserting in students table' });
+            }
+  
+            // Send registration email to the business partner
+            sendRegistrationEmail(email, name);
+  
+            // Respond with success
+            res.status(201).json({ message: 'Business Partner registered successfully' });
+          });
+        }
+      
+      else {
         // If it's a candidate, just respond with success
         sendRegistrationEmail(email, name);
         res.status(201).json({ message: 'User registered successfully' });
