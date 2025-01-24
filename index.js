@@ -3850,7 +3850,7 @@ app.get('/api/ip/testDetails/:testId', (req, res) => {
 app.post('/api/ip/register', async (req, res) => {
 
   
-  const { name, mobile, email, address, city, password, userType, businessName, trainingsProvided,institute,qualifications,businessType,pincode } = req.body;
+  const { name, mobile, email, address, city, password, userType, businessName, trainingsProvided,institute,qualifications,businessType,pincode, course } = req.body;
   const transporter = mailConfig();
   try {
     // Establish DB connection
