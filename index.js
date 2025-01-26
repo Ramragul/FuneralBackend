@@ -5276,7 +5276,6 @@ app.get('/api/ip/:type/lists', async (req, res) => {
     query = `
       SELECT DISTINCT businessNAME AS type
       FROM IP_Business_Partners
-      WHERE status = 'active' AND userType = 'Business Partner'
       ORDER BY institute ASC`;
 
       }
