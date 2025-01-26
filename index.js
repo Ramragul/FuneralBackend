@@ -5268,11 +5268,17 @@ app.get('/api/ip/:type/lists', async (req, res) => {
     if(type === 'institute')
       {
        
+    // query = `
+    //   SELECT DISTINCT institute AS type
+    //   FROM IP_Users
+    //   WHERE status = 'active' AND userType = 'Business Partner'
+    //   ORDER BY institute ASC`;
     query = `
-      SELECT DISTINCT institute AS type
-      FROM IP_Users
+      SELECT DISTINCT businessNAME AS type
+      FROM IP_Business_Partners
       WHERE status = 'active' AND userType = 'Business Partner'
       ORDER BY institute ASC`;
+
       }
 
       if(type === 'course')
