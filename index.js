@@ -756,6 +756,8 @@ app.post("/api/test", (req, res) => {
       var Country = "India";
       var QueryDate = new Date().toISOString().split('T')[0];
       var QueryStatus = "O"
+      var Caste = req.body.caste;
+      var Religion = req.body.religion;
 
 
       console.log(QueryDate);
@@ -768,7 +770,7 @@ app.post("/api/test", (req, res) => {
    
       
      
-      var sql = "INSERT INTO GB_Bookings (FullName, MobileNumber, Email, City, State, Country, Category, Message, QueryDate, QueryStatus) VALUES ('"+FullName+"', '"+MobileNumber+"','"+Email+"','"+City+"','"+State+"','"+Country+"','"+Category+"','"+Message+"','"+QueryDate+"','"+QueryStatus+"')";  
+      var sql = "INSERT INTO GB_Bookings (FullName, MobileNumber, Email, City, State, Country, Category, Message, QueryDate, QueryStatus,Religion,Caste) VALUES ('"+FullName+"', '"+MobileNumber+"','"+Email+"','"+City+"','"+State+"','"+Country+"','"+Category+"','"+Message+"','"+QueryDate+"','"+QueryStatus+"','"+Religion+"','"+Caste+"')";  
       var result = ""
       con.query(sql, function (err, result) {  
       if (err) throw err;  
