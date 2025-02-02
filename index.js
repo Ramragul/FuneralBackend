@@ -780,7 +780,7 @@ app.post("/api/test", (req, res) => {
       con.end();
       //res.json({ message: "Data Received Successfully" });
       console.log("DB  Message:" +result);
-      res.status(200).json("Response from DB"+result);
+      res.status(201).json("Response from DB"+result);
    });
 
    // 2) GoodBye Funeral Ground Fetching Api
