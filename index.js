@@ -5316,6 +5316,48 @@ app.get('/api/ip/:type/lists', async (req, res) => {
 });
 
 
+// Course and Subject Creation api 
+
+app.post('/api/ip/course/creation', async (req, res) => {
+  const { courseName, courseDescription, subjects } = req.body;
+
+  if (!courseName) {
+    return res.status(400).json({ error: "Course name is required" });
+  }
+
+  let con;
+  try {
+    con = dbConnection();
+    con.connect();
+    await new Promise((resolve, reject) => con.beginTransaction(err => err ? reject(err) : resolve()));
+
+    // Insert course into IP_Course
+    const courseInsertQuery = `INSERT INTO IP_Course (course_name, course_description) VALUES (?, ?)`;
+    const [courseResult] = await con.promise().query(courseInsertQuery, [courseName, courseDescription || ""]);
+    const courseId = courseResult.insertId;
+
+    // Insert subjects if they exist
+    if (subjects && subjects.length > 0) {
+      const subjectInsertQuery = `INSERT INTO IP_Subjects (name, course_id) VALUES ?`;
+      const subjectValues = subjects.map(subject => [subject, courseId]);
+      await con.promise().query(subjectInsertQuery, [subjectValues]);
+    }
+
+    await new Promise((resolve, reject) => con.commit(err => err ? reject(err) : resolve()));
+    res.status(201).json({ message: "Course created successfully", courseId });
+
+  } catch (error) {
+    if (con) await new Promise((resolve, reject) => con.rollback(err => err ? reject(err) : resolve()));
+    console.error("Error creating course:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+
+  } finally {
+    if (con) con.end();
+  }
+});
+
+
+
 
 
 
