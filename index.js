@@ -5332,7 +5332,7 @@ app.post('/api/ip/course/creation', async (req, res) => {
     await new Promise((resolve, reject) => con.beginTransaction(err => err ? reject(err) : resolve()));
 
     // Insert course into IP_Course
-    const courseInsertQuery = `INSERT INTO IP_Course (course_name, course_description) VALUES (?, ?)`;
+    const courseInsertQuery = `INSERT INTO IP_Courses (course_name, course_description) VALUES (?, ?)`;
     const [courseResult] = await con.promise().query(courseInsertQuery, [courseName, courseDescription || ""]);
     const courseId = courseResult.insertId;
 
