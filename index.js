@@ -5319,7 +5319,7 @@ app.get('/api/ip/:type/lists', async (req, res) => {
 // Course and Subject Creation api 
 
 app.post('/api/ip/course/creation', async (req, res) => {
-  const { courseName, courseDescription, subjects } = req.body;
+  const { courseName, courseDescription, subjects, userId } = req.body;
 
   if (!courseName) {
     return res.status(400).json({ error: "Course name is required" });
@@ -5332,8 +5332,8 @@ app.post('/api/ip/course/creation', async (req, res) => {
     await new Promise((resolve, reject) => con.beginTransaction(err => err ? reject(err) : resolve()));
 
     // Insert course into IP_Course
-    const courseInsertQuery = `INSERT INTO IP_Courses (course_name, course_description) VALUES (?, ?)`;
-    const [courseResult] = await con.promise().query(courseInsertQuery, [courseName, courseDescription || ""]);
+    const courseInsertQuery = `INSERT INTO IP_Courses (user_id,course_name, course_description) VALUES (?, ?, ?)`;
+    const [courseResult] = await con.promise().query(courseInsertQuery, [userId, courseName, courseDescription || ""]);
     const courseId = courseResult.insertId;
 
     // Insert subjects if they exist
