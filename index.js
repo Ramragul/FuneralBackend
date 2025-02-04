@@ -5357,6 +5357,59 @@ app.post('/api/ip/course/creation', async (req, res) => {
 });
 
 
+// Staff Creation API
+
+app.post('/api/ip/staff/creation', async (req, res) => {
+  const { mobile, name, email, institute, qualification, specialization } = req.body;
+
+  if (!mobile || !name || !email) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  const con = dbConnection();
+  
+  try {
+    await new Promise((resolve, reject) => con.connect(err => (err ? reject(err) : resolve())));
+
+    // Start transaction
+    await new Promise((resolve, reject) => con.query('START TRANSACTION', err => (err ? reject(err) : resolve())));
+
+    // Insert into IP_Staff
+    const insertStaffQuery = `
+      INSERT INTO IP_Staff (name, email, mobile, institute, qualification, specialization) 
+      VALUES (?, ?, ?, ?, ?, ?)
+    `;
+    await new Promise((resolve, reject) =>
+      con.query(insertStaffQuery, [name, email, mobile, institute, qualification, specialization], (err, result) => {
+        if (err) reject(err);
+        else resolve(result);
+      })
+    );
+
+    // Update userType in IP_Users
+    const updateUserQuery = `UPDATE IP_Users SET userType = 'Staff' WHERE mobile = ?`;
+    await new Promise((resolve, reject) =>
+      con.query(updateUserQuery, [mobile], (err, result) => {
+        if (err) reject(err);
+        else resolve(result);
+      })
+    );
+
+    // Commit transaction
+    await new Promise((resolve, reject) => con.query('COMMIT', err => (err ? reject(err) : resolve())));
+
+    res.status(201).json({ message: 'Staff created successfully' });
+  } catch (error) {
+    await new Promise((resolve, reject) => con.query('ROLLBACK', err => (err ? reject(err) : resolve())));
+    console.error('Error creating staff:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  } finally {
+    con.end();
+  }
+});
+
+
+
 
 
 
