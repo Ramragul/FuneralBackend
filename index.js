@@ -5419,6 +5419,8 @@ app.post('/api/ip/staff/creation', async (req, res) => {
 app.post("api/cc/create-order", async (req, res) => {
   const { amount, currency } = req.body;
 
+  console.log("Currency Received " +currency);
+
   try {
     const order = await razorpay.orders.create({
       amount: amount * 100, // Amount in paise (₹1 = 100 paise)
