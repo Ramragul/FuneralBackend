@@ -14,6 +14,8 @@ const { v4: uuidv4 } = require('uuid');
 const moment = require('moment');
 const sharp = require('sharp');
 const nodemailer = require('nodemailer');
+const Razorpay = require("razorpay");
+
 
 
 const xlsx = require('xlsx');
@@ -596,7 +598,12 @@ const generateNextPid = async (con) => {
   });
 };
 
+// Razor Pay Function 
 
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
 
 app.use(function (req, res, next) {
 
@@ -5408,6 +5415,23 @@ app.post('/api/ip/staff/creation', async (req, res) => {
   }
 });
 
+
+app.post("api/cc/create-order", async (req, res) => {
+  const { amount, currency } = req.body;
+
+  try {
+    const order = await razorpay.orders.create({
+      amount: amount * 100, // Amount in paise (₹1 = 100 paise)
+      currency: currency || "INR",
+      receipt: `order_rcptid_${Date.now()}`,
+      payment_capture: 1, // Auto-captures the payment
+    });
+
+    res.json({ orderId: order.id });
+  } catch (error) {
+    res.status(500).send(error);
+  }
+});
 
 
 
