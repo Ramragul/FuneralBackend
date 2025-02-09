@@ -5416,7 +5416,7 @@ app.post('/api/ip/staff/creation', async (req, res) => {
 });
 
 
-app.post("api/cc/create-order", async (req, res) => {
+app.post("/api/cc/create-order", async (req, res) => {
   const { amount, currency } = req.body;
 
   console.log("Currency Received " +currency);
