@@ -1730,7 +1730,7 @@ app.post('/api/cc/register', async (req, res) => {
                                     res.status(500).json({ error: err.message });
                                 });
                             }
-                            res.status(201).json({ message: 'Order placed successfully' , order_id : orderId});
+                            res.status(201).json({ order_id: 'orderId'});
                         });
                     })
                     .catch((err) => {
