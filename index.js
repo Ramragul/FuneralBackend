@@ -14,6 +14,8 @@ const { v4: uuidv4 } = require('uuid');
 const moment = require('moment');
 const sharp = require('sharp');
 const nodemailer = require('nodemailer');
+const Razorpay = require("razorpay");
+
 
 
 const xlsx = require('xlsx');
@@ -596,7 +598,12 @@ const generateNextPid = async (con) => {
   });
 };
 
+// Razor Pay Function 
 
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
 
 app.use(function (req, res, next) {
 
@@ -1723,7 +1730,7 @@ app.post('/api/cc/register', async (req, res) => {
                                     res.status(500).json({ error: err.message });
                                 });
                             }
-                            res.status(201).json({ message: 'Order placed successfully' });
+                            res.status(201).json({ message: 'Order placed successfully' , order_id : orderId});
                         });
                     })
                     .catch((err) => {
@@ -5314,6 +5321,123 @@ app.get('/api/ip/:type/lists', async (req, res) => {
     con.end();
   }
 });
+
+
+// Course and Subject Creation api 
+
+app.post('/api/ip/course/creation', async (req, res) => {
+  const { courseName, courseDescription, subjects, userId,institute } = req.body;
+
+  if (!courseName) {
+    return res.status(400).json({ error: "Course name is required" });
+  }
+
+  let con;
+  try {
+    con = dbConnection();
+    con.connect();
+    await new Promise((resolve, reject) => con.beginTransaction(err => err ? reject(err) : resolve()));
+
+    // Insert course into IP_Course
+    const courseInsertQuery = `INSERT INTO IP_Courses (user_id,institute,course_name, course_description) VALUES (?,?, ?, ?)`;
+    const [courseResult] = await con.promise().query(courseInsertQuery, [userId, institute,courseName, courseDescription || ""]);
+    const courseId = courseResult.insertId;
+
+    // Insert subjects if they exist
+    if (subjects && subjects.length > 0) {
+      const subjectInsertQuery = `INSERT INTO IP_Subjects (name, course_id) VALUES ?`;
+      const subjectValues = subjects.map(subject => [subject, courseId]);
+      await con.promise().query(subjectInsertQuery, [subjectValues]);
+    }
+
+    await new Promise((resolve, reject) => con.commit(err => err ? reject(err) : resolve()));
+    res.status(201).json({ message: "Course created successfully", courseId });
+
+  } catch (error) {
+    if (con) await new Promise((resolve, reject) => con.rollback(err => err ? reject(err) : resolve()));
+    console.error("Error creating course:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+
+  } finally {
+    if (con) con.end();
+  }
+});
+
+
+// Staff Creation API
+
+app.post('/api/ip/staff/creation', async (req, res) => {
+  const { mobile, name, email, institute, qualification, specialization } = req.body;
+
+  if (!mobile || !name || !email) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  const con = dbConnection();
+  
+  try {
+    await new Promise((resolve, reject) => con.connect(err => (err ? reject(err) : resolve())));
+
+    // Start transaction
+    await new Promise((resolve, reject) => con.query('START TRANSACTION', err => (err ? reject(err) : resolve())));
+
+    // Insert into IP_Staff
+    const insertStaffQuery = `
+      INSERT INTO IP_Staff (name, email, mobile, institute, qualification, specialization) 
+      VALUES (?, ?, ?, ?, ?, ?)
+    `;
+    await new Promise((resolve, reject) =>
+      con.query(insertStaffQuery, [name, email, mobile, institute, qualification, specialization], (err, result) => {
+        if (err) reject(err);
+        else resolve(result);
+      })
+    );
+
+    // Update userType in IP_Users
+    const updateUserQuery = `UPDATE IP_Users SET userType = 'Staff' WHERE mobile = ?`;
+    await new Promise((resolve, reject) =>
+      con.query(updateUserQuery, [mobile], (err, result) => {
+        if (err) reject(err);
+        else resolve(result);
+      })
+    );
+
+    // Commit transaction
+    await new Promise((resolve, reject) => con.query('COMMIT', err => (err ? reject(err) : resolve())));
+
+    res.status(201).json({ message: 'Staff created successfully' });
+  } catch (error) {
+    await new Promise((resolve, reject) => con.query('ROLLBACK', err => (err ? reject(err) : resolve())));
+    console.error('Error creating staff:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  } finally {
+    con.end();
+  }
+});
+
+
+app.post("/api/cc/create-order", async (req, res) => {
+  const { amount, currency } = req.body;
+
+  console.log("Currency Received " +currency);
+  console.log("Using Razorpay Key ID:", process.env.RAZORPAY_KEY_ID);
+console.log("Using Razorpay Key Secret:", process.env.RAZORPAY_KEY_SECRET);
+
+
+  try {
+    const order = await razorpay.orders.create({
+      amount: amount * 100, // Amount in paise (₹1 = 100 paise)
+      currency: currency || "INR",
+      receipt: `order_rcptid_${Date.now()}`,
+      payment_capture: 1, // Auto-captures the payment
+    });
+
+    res.json({ orderId: order.id });
+  } catch (error) {
+    res.status(500).send(error);
+  }
+});
+
 
 
 
