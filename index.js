@@ -1771,9 +1771,10 @@ var paymentSource = ""
   if(paymentId)
     {
       paymentSource = await getPaymentSource(paymentId);
+      console.log("Payment Source" +paymentSource);
     }
 
-    console.log("Payment Source" +paymentSource);
+  
   let con;
 
   try {
@@ -5500,8 +5501,6 @@ app.post("/api/cc/create-order", async (req, res) => {
   const { amount, currency } = req.body;
 
   console.log("Currency Received " +currency);
-  console.log("Using Razorpay Key ID:", process.env.RAZORPAY_KEY_ID);
-console.log("Using Razorpay Key Secret:", process.env.RAZORPAY_KEY_SECRET);
 
 
   try {
