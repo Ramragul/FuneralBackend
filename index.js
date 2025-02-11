@@ -1684,8 +1684,8 @@ app.post('/api/cc/register', async (req, res) => {
 
             // Insert order
             const orderQuery = `
-                INSERT INTO CC_Orders (delivery_details_id, products_price, security_deposit, total_amount,order_date,order_status,user_id)
-                VALUES (?, ?, ?, ?,?,?,?)
+                INSERT INTO CC_Orders (delivery_details_id, products_price, security_deposit, total_amount,order_date,order_status,user_id,payment_type)
+                VALUES (?, ?, ?, ?,?,?,?,?)
             `;
 
             const orderStatus = "Created"
@@ -1697,7 +1697,8 @@ app.post('/api/cc/register', async (req, res) => {
                 //new Date().toISOString().replace('T', ' ').substring(0, 19),
                 orderDate,
                 orderStatus,
-                userId
+                userId,
+                deliveryDetails.paymentType
             ];
 
             connection.query(orderQuery, orderValues, (err, orderResult) => {
