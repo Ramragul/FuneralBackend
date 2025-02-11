@@ -1762,6 +1762,9 @@ app.post('/api/cc/register', async (req, res) => {
 app.post('/api/cc/order/:orderId/payment', async (req, res) => {
   const { paymentId} = req.body;
   const {orderId} = req.params;
+
+  console.log("ORdert Id " +orderId);
+  console.log("Payment Id" +paymentId);
   var institute =""
 var paymentSource = ""
 
@@ -1770,6 +1773,7 @@ var paymentSource = ""
       paymentSource = await getPaymentSource(paymentId);
     }
 
+    console.log("Payment Source" +paymentSource);
   let con;
 
   try {
