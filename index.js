@@ -1804,8 +1804,8 @@ var paymentSource = ""
       SET 
         payment_status = ?, 
         payment_source = ?, 
-        payment_id = ? 
-        payment_date = ?
+        payment_id = ? ,
+        payment_date = ?,
       WHERE id = ?
     `;
 
