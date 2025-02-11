@@ -605,31 +605,21 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-// razor pay function to fetch payment source
-
 async function getPaymentSource(paymentId) {
   try {
-    const payment = await razorpayInstance.payments.fetch(paymentId);
+    const payment = await razorpay.payments.fetch(paymentId);
     return payment.method;  // Example: 'upi', 'card', 'netbanking', 'wallet'
   } catch (error) {
     console.error('Error fetching payment details:', error);
     return null;
   }
 }
+// razor pay function to fetch payment source
 
 
-async function getPaymentSource(paymentId) {
-  try {
-    const payment = await razorpayInstance.payments.fetch(paymentId);
-    console.log("FUll Payment response variable" +JSON.stringify(payment));
-    console.log("Payment method "+payment.method)
-    return payment.method;  // Example: 'upi', 'card', 'netbanking', 'wallet'
-   
-  } catch (error) {
-    console.error("Error fetching payment details:", error);
-    return null;
-  }
-}
+
+
+
 
 
 app.use(function (req, res, next) {
