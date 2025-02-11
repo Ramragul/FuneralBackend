@@ -1770,6 +1770,11 @@ app.post('/api/cc/order/:orderId/payment', async (req, res) => {
   console.log("ORdert Id " +orderId);
   console.log("Payment Id" +paymentId);
 
+  const formatDateForIST = (date) => {
+    const options = { timeZone: 'Asia/Kolkata', hour12: false };
+    return new Intl.DateTimeFormat('en-GB', options).format(date);
+  };
+
   const currentDate = formatDateForIST(new Date());
 
   var institute =""
