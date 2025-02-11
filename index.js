@@ -1769,6 +1769,9 @@ app.post('/api/cc/order/:orderId/payment', async (req, res) => {
 
   console.log("ORdert Id " +orderId);
   console.log("Payment Id" +paymentId);
+
+  const currentDate = formatDateForIST(new Date());
+
   var institute =""
 var paymentSource = ""
 
@@ -1797,10 +1800,11 @@ var paymentSource = ""
         payment_status = ?, 
         payment_source = ?, 
         payment_id = ? 
+        payment_date = ?
       WHERE id = ?
     `;
 
-    const values = ['PAID', paymentSource, paymentId, orderId];
+    const values = ['PAID', paymentSource, paymentId, currentDate, orderId];
 
     con.query(updateQuery, values, (err, result) => {
       if (err) {
