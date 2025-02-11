@@ -1778,9 +1778,21 @@ app.post('/api/cc/order/:orderId/payment', async (req, res) => {
   //const currentDate = formatDateForIST(new Date());
   //const currentDate= new Date();
 
+  // const getCurrentDateInIST = () => {
+  //   const date = new Date().toLocaleString('en-GB', { timeZone: 'Asia/Kolkata' });
+  //   return date;
+  // };
+
   const getCurrentDateInIST = () => {
     const date = new Date().toLocaleString('en-GB', { timeZone: 'Asia/Kolkata' });
-    return date;
+    
+    // Convert it to MySQL datetime format: YYYY-MM-DD HH:mm:ss
+    const [datePart, timePart] = date.split(', ');
+    const [day, month, year] = datePart.split('/');
+    
+    const formattedDate = `${year}-${month}-${day} ${timePart}`;
+    
+    return formattedDate;
   };
   
   const paymentDate =  getCurrentDateInIST ()
