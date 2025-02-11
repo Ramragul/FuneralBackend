@@ -1776,6 +1776,7 @@ app.post('/api/cc/order/:orderId/payment', async (req, res) => {
   };
 
   const currentDate = formatDateForIST(new Date());
+  console.log("Received Date is :" +currentDate);
 
   var institute =""
 var paymentSource = ""
