@@ -605,6 +605,19 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
+// razor pay function to fetch payment source
+
+async function getPaymentSource(paymentId) {
+  try {
+    const payment = await razorpayInstance.payments.fetch(paymentId);
+    return payment.method;  // Example: 'upi', 'card', 'netbanking', 'wallet'
+  } catch (error) {
+    console.error('Error fetching payment details:', error);
+    return null;
+  }
+}
+
+
 app.use(function (req, res, next) {
 
     // Website you wish to allow to connect
@@ -1743,6 +1756,69 @@ app.post('/api/cc/register', async (req, res) => {
     });
 });
 
+
+// update orders
+
+app.post('/api/cc/order/:orderId/payment', async (req, res) => {
+  const { paymentId} = req.body;
+  const {orderId} = req.params;
+  var institute =""
+var paymentSource = ""
+
+  if(paymentId)
+    {
+      paymentSource = await getPaymentSource(paymentId);
+    }
+
+  let con;
+
+  try {
+    // Establish the DB connection
+    con = dbConnection();
+    con.connect();
+  } catch (error) {
+    console.error('DB Connection Error:', error);
+    return res.status(500).json({ error: 'DB Connection Error' });
+  }
+
+  try {
+    const updateQuery = `
+      UPDATE CC_Orders 
+      SET 
+        payment_status = ?, 
+        payment_source = ?, 
+        payment_id = ? 
+      WHERE id = ?
+    `;
+
+    const values = ['PAID', paymentSource, paymentId, orderId];
+
+    con.query(updateQuery, values, (err, result) => {
+      if (err) {
+        console.error('Error updating order:', err);
+        return res.status(500).json({ error: 'Database update failed' });
+      }
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+
+      console.log(`Order ${orderId} updated successfully.`);
+      return res.status(200).json({ message: 'Order updated successfully', orderId });
+    });
+
+  } catch (error) {
+    console.error('Server Error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+
+  } finally {
+    if (con) con.end();
+  
+  }
+
+  console.log('Connected to database.');
+
+})
 
 
 
