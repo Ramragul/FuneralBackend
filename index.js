@@ -1806,7 +1806,7 @@ var paymentSource = ""
         payment_status = ?, 
         payment_source = ?, 
         payment_id = ? ,
-        payment_date = ?,
+        payment_date = ?
       WHERE id = ?
     `;
 
