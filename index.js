@@ -1770,13 +1770,23 @@ app.post('/api/cc/order/:orderId/payment', async (req, res) => {
   console.log("ORdert Id " +orderId);
   console.log("Payment Id" +paymentId);
 
-  const formatDateForIST = (date) => {
-    const options = { timeZone: 'Asia/Kolkata', hour12: false };
-    return new Intl.DateTimeFormat('en-GB', options).format(date);
-  };
+  // const formatDateForIST = (date) => {
+  //   const options = { timeZone: 'Asia/Kolkata', hour12: false };
+  //   return new Intl.DateTimeFormat('en-GB', options).format(date);
+  // };
 
-  const currentDate = formatDateForIST(new Date());
-  console.log("Received Date is :" +currentDate);
+  //const currentDate = formatDateForIST(new Date());
+  //const currentDate= new Date();
+
+  const getCurrentDateInIST = () => {
+    const date = new Date().toLocaleString('en-GB', { timeZone: 'Asia/Kolkata' });
+    return date;
+  };
+  
+  const paymentDate =  getCurrentDateInIST ()
+  console.log("Payment Date 1 :" +getCurrentDateInIST());
+  console.log("Payment Date 2 :"+paymentDate);
+  
 
   var institute =""
 var paymentSource = ""
@@ -1810,7 +1820,7 @@ var paymentSource = ""
       WHERE id = ?
     `;
 
-    const values = ['PAID', paymentSource, paymentId, currentDate, orderId];
+    const values = ['PAID', paymentSource, paymentId, paymentDate, orderId];
 
     con.query(updateQuery, values, (err, result) => {
       if (err) {
