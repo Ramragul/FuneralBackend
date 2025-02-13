@@ -1765,7 +1765,7 @@ app.post('/api/cc/register', async (req, res) => {
 // update orders
 
 app.post('/api/cc/order/:orderId/payment', async (req, res) => {
-  const { paymentId} = req.body;
+  const { paymentId,paymentScenario} = req.body;
   const {orderId} = req.params;
 
   console.log("ORdert Id " +orderId);
@@ -1823,8 +1823,11 @@ var paymentSource = ""
   }
 
   try {
+
+    if(paymentScenario === 'tailoring')
+{
     const updateQuery = `
-      UPDATE CC_Orders 
+      UPDATE CC_TailoringOrders 
       SET 
         payment_status = ?, 
         payment_source = ?, 
@@ -1832,6 +1835,18 @@ var paymentSource = ""
         payment_date = ?
       WHERE id = ?
     `;
+
+} else {
+  const updateQuery = `
+  UPDATE CC_Orders 
+  SET 
+    payment_status = ?, 
+    payment_source = ?, 
+    payment_id = ? ,
+    payment_date = ?
+  WHERE id = ?
+`;
+}
 
     const values = ['PAID', paymentSource, paymentId, paymentDate, orderId];
 
