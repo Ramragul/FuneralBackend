@@ -1823,11 +1823,11 @@ var paymentSource = ""
   }
 
   try {
+    var updateQuery;
 
     if(paymentScenario === 'tailoring')
-      var updateQuery;
 {
-    updateQuery = `
+     updateQuery = `
       UPDATE CC_Tailoring_Orders 
       SET 
         payment_status = ?, 
@@ -1838,7 +1838,7 @@ var paymentSource = ""
     `;
 
 } else {
-  updateQuery = `
+   updateQuery = `
   UPDATE CC_Orders 
   SET 
     payment_status = ?, 
