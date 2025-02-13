@@ -2263,8 +2263,8 @@ var orderId = ""
 
           // Insert order related to tailoring
           const orderQuery = `
-              INSERT INTO CC_Tailoring_Orders (tailoring_details_id, order_date, order_status, user_id, partner,products_price)
-              VALUES (?, ?, ?, ?, ?,?)
+              INSERT INTO CC_Tailoring_Orders (tailoring_details_id, order_date, order_status, user_id, partner,products_price,payment_type)
+              VALUES (?, ?, ?, ?, ?, ?, ?)
           `;
 
           const orderValues = [
@@ -2273,7 +2273,8 @@ var orderId = ""
               orderStatus,
               userId,
               owningAuthority,
-              productPrice
+              productPrice,
+              paymentType
           ];
 
           con.query(orderQuery, orderValues, (err, orderResult) => {
