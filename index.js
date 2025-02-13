@@ -2193,6 +2193,7 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
       productImageURL,
       owningAuthority,
       productPrice,
+      paymentType,
   } = req.body;
 
   // GMT to IST Conversion
