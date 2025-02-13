@@ -2297,6 +2297,7 @@ var orderId = ""
                   }
 
                   sendOrderConfirmationEmail(email, name);
+                  console.log("Order_Id :" +orderId )
                   res.status(201).json({ message: 'Tailoring order placed successfully', order_id: orderId});
                   con.end();
               });
