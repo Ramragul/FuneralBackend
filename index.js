@@ -1825,9 +1825,10 @@ var paymentSource = ""
   try {
 
     if(paymentScenario === 'tailoring')
+      var updateQuery;
 {
-    const updateQuery = `
-      UPDATE CC_TailoringOrders 
+    updateQuery = `
+      UPDATE CC_Tailoring_Orders 
       SET 
         payment_status = ?, 
         payment_source = ?, 
@@ -1837,7 +1838,7 @@ var paymentSource = ""
     `;
 
 } else {
-  const updateQuery = `
+  updateQuery = `
   UPDATE CC_Orders 
   SET 
     payment_status = ?, 
