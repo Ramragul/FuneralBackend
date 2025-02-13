@@ -1834,7 +1834,7 @@ var paymentSource = ""
         payment_source = ?, 
         payment_id = ? ,
         payment_date = ?
-      WHERE id = ?
+      WHERE order_id = ?
     `;
 
 } else {
