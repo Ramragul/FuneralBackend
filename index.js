@@ -2339,7 +2339,7 @@ var orderId = ""
         if (error) {
           res.status(500).json({ message: 'Failure in Email Delivery ' +error });
         } else {
-          res.status(201).json({ message: 'Tailoring order placed successfully ' +info.response , order_id: tailoringId });
+          res.status(201).json({ message: 'Tailoring order placed successfully ' +info.response , order_id: orderId });
         }
       });
     });
