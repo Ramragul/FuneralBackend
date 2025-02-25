@@ -5144,11 +5144,11 @@ app.get('/api/ip/test/:testId/stats', async (req, res) => {
       IP_Users
     WHERE 
       institute = ? 
-      AND userType = userType;
+      AND userType = ?;
   `;
 
     // Execute the query
-    con.query(query, [partnerId], (err, results) => {
+    con.query(query, [partnerId,userType], (err, results) => {
       if (err) {
         console.error('Query Error:', err);
         con.end();
