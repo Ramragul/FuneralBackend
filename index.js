@@ -5100,7 +5100,9 @@ app.get('/api/ip/test/:testId/stats', async (req, res) => {
 // API to fetch All Candidates under the business partner - Business Related API
 
 
-app.get('/api/ip/partner/:partnerId/students', async (req, res) => {
+// app.get('/api/ip/partner/:partnerId/students', async (req, res) => {
+  app.get('/api/ip/partner/:partnerId/:userType', async (req, res) => {
+
   let con;
 
   try {
@@ -5114,7 +5116,9 @@ app.get('/api/ip/partner/:partnerId/students', async (req, res) => {
 
   console.log('Connected to database.');
 
-  const { partnerId } = req.params;
+  const { partnerId, userType } = req.params;
+
+  console.log("Inside  api (userType) : "+userType);
 
   if (!partnerId) {
     con.end();
@@ -5123,15 +5127,25 @@ app.get('/api/ip/partner/:partnerId/students', async (req, res) => {
 
   try {
     // Define the SQL query
+    // const query = `
+    //   SELECT 
+    //     id, name, mobile, email, city
+    //   FROM 
+    //     IP_Users
+    //   WHERE 
+    //     institute = ? 
+    //     AND userType = 'Candidate';
+    // `;
+
     const query = `
-      SELECT 
-        id, name, mobile, email, city
-      FROM 
-        IP_Users
-      WHERE 
-        institute = ? 
-        AND userType = 'Candidate';
-    `;
+    SELECT 
+      id, name, mobile, email, city
+    FROM 
+      IP_Users
+    WHERE 
+      institute = ? 
+      AND userType = userType;
+  `;
 
     // Execute the query
     con.query(query, [partnerId], (err, results) => {
