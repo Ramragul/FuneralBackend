@@ -5558,6 +5558,8 @@ app.post("/api/cc/create-order", async (req, res) => {
 
   console.log("Currency Received " +currency);
 
+  console.log("Amount Received Boss:" +amount)
+
 
   try {
     const order = await razorpay.orders.create({
