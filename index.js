@@ -5559,11 +5559,13 @@ app.post("/api/cc/create-order", async (req, res) => {
   console.log("Currency Received " +currency);
 
   console.log("Amount Received Boss:" +JSON.stringify(amount))
+  console.log("Amount Object Received Boss:" +JSON.stringify(amount))
+  console.log("Total Amount :" +amount.totalAmount)
 
 
   try {
     const order = await razorpay.orders.create({
-      amount: amount * 100, // Amount in paise (₹1 = 100 paise)
+      amount: amount.totalAmount * 100, // Amount in paise (₹1 = 100 paise)
       currency: currency || "INR",
       receipt: `order_rcptid_${Date.now()}`,
       payment_capture: 1, // Auto-captures the payment
