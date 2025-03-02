@@ -2920,6 +2920,84 @@ app.post('/api/service/upload', async (req, res) => {
   }
 });
 
+// Test api
+// app.get('/api/cc/service/variants', async (req, res) => {
+//   let con;
+//   try {
+//     // Establishing a DB connection
+//     con = dbConnection();
+//     con.connect();
+//   } catch (error) {
+//     console.error('DB Connection Error', error);
+//     return res.status(500).json({ error: 'DB Connection Error' });
+//   }
+
+//   try {
+//     // Query to fetch details from CC_Tailoring_Orders and CC_Tailoring_Order_Details
+//     const query = `
+     
+//     `;
+
+//     // Execute the query using the promise-based method
+
+
+//   } catch (error) {
+//     if (con) con.end();
+//     console.error('Error fetching tailoring order details:', error);
+//     res.status(500).json({ error: 'Error fetching tailoring order details' });
+//   }
+// });
+
+app.get('/api/cc/service/variants', async (req, res) => {
+  let con;
+  try {
+    // Establishing a DB connection
+    con = dbConnection();
+    con.connect();
+  } catch (error) {
+    console.error('DB Connection Error', error);
+    return res.status(500).json({ error: 'DB Connection Error' });
+  }
+
+  const { partner_id, service_id } = req.query;
+  if (!service_id) {
+    return res.status(400).json({ error: 'service_id is required' });
+  }
+
+  try {
+    // Query to fetch all partners offering the given service
+    const partnersQuery = `
+      SELECT p.pid, p.business_name, p.mobile, p.address, p.city, p.pincode, 
+             p.partner_type, p.availability, p.registration_date, p.id_proof
+      FROM CC_Partners p
+      JOIN CC_Service_Variants sv ON p.pid = sv.partner_id
+      WHERE sv.service_id = ?
+      GROUP BY p.pid;
+    `;
+    const [partners] = await con.promise().query(partnersQuery, [service_id]);
+
+    if (partner_id) {
+      // Query to fetch service variants of a specific partner for a given service
+      const variantsQuery = `
+        SELECT variant_id, partner_id, service_id, variant_name, description, price, 
+               brand_used, willing_to_travel, policies, created_at
+        FROM CC_Service_Variants
+        WHERE partner_id = ? AND service_id = ?;
+      `;
+      const [variants] = await con.promise().query(variantsQuery, [partner_id, service_id]);
+      return res.json({ partner_id, service_id, variants });
+    }
+
+    res.json({ service_id, partners });
+  } catch (error) {
+    console.error('Error fetching service partners or variants:', error);
+    res.status(500).json({ error: 'Error fetching service partners or variants' });
+  } finally {
+    if (con) con.end();
+  }
+});
+
+
 
 app.post('/api/cc/service/booking', async (req, res) => {
   const {
