@@ -2920,7 +2920,9 @@ app.post('/api/service/upload', async (req, res) => {
   }
 });
 
-// Test api
+
+// API to return service users, variant etc
+
 // app.get('/api/cc/service/variants', async (req, res) => {
 //   let con;
 //   try {
@@ -2932,19 +2934,41 @@ app.post('/api/service/upload', async (req, res) => {
 //     return res.status(500).json({ error: 'DB Connection Error' });
 //   }
 
+//   const { partner_id, service_id } = req.query;
+//   if (!service_id) {
+//     return res.status(400).json({ error: 'service_id is required' });
+//   }
+
 //   try {
-//     // Query to fetch details from CC_Tailoring_Orders and CC_Tailoring_Order_Details
-//     const query = `
-     
+//     // Query to fetch all partners offering the given service
+//     const partnersQuery = `
+//       SELECT p.pid, p.business_name, p.mobile, p.address, p.city, p.pincode, 
+//              p.partner_type, p.availability, p.registration_date, p.id_proof
+//       FROM CC_Partners p
+//       JOIN CC_Service_Variants sv ON p.pid = sv.partner_id
+//       WHERE sv.service_id = ?
+//       GROUP BY p.pid;
 //     `;
+//     const [partners] = await con.promise().query(partnersQuery, [service_id]);
 
-//     // Execute the query using the promise-based method
+//     if (partner_id) {
+//       // Query to fetch service variants of a specific partner for a given service
+//       const variantsQuery = `
+//         SELECT variant_id, partner_id, service_id, variant_name, description, price, 
+//                brand_used, willing_to_travel, policies, created_at
+//         FROM CC_Service_Variants
+//         WHERE partner_id = ? AND service_id = ?;
+//       `;
+//       const [variants] = await con.promise().query(variantsQuery, [partner_id, service_id]);
+//       return res.json({ partner_id, service_id, variants });
+//     }
 
-
+//     res.json({ service_id, partners });
 //   } catch (error) {
+//     console.error('Error fetching service partners or variants:', error);
+//     res.status(500).json({ error: 'Error fetching service partners or variants' });
+//   } finally {
 //     if (con) con.end();
-//     console.error('Error fetching tailoring order details:', error);
-//     res.status(500).json({ error: 'Error fetching tailoring order details' });
 //   }
 // });
 
@@ -2965,12 +2989,14 @@ app.get('/api/cc/service/variants', async (req, res) => {
   }
 
   try {
-    // Query to fetch all partners offering the given service
+    // Query to fetch all partners offering the given service along with their portfolio images
     const partnersQuery = `
       SELECT p.pid, p.business_name, p.mobile, p.address, p.city, p.pincode, 
-             p.partner_type, p.availability, p.registration_date, p.id_proof
+             p.partner_type, p.availability, p.registration_date, p.id_proof, 
+             sp.image_url
       FROM CC_Partners p
       JOIN CC_Service_Variants sv ON p.pid = sv.partner_id
+      LEFT JOIN CC_Service_Portfolio sp ON p.pid = sp.partner_id AND sv.service_id = sp.service_id
       WHERE sv.service_id = ?
       GROUP BY p.pid;
     `;
@@ -2996,6 +3022,7 @@ app.get('/api/cc/service/variants', async (req, res) => {
     if (con) con.end();
   }
 });
+
 
 
 
