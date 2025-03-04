@@ -3011,7 +3011,8 @@ app.get('/api/cc/service/variants', async (req, res) => {
         WHERE partner_id = ? AND service_id = ?;
       `;
       const [variants] = await con.promise().query(variantsQuery, [partner_id, service_id]);
-      return res.json({ partner_id, service_id, variants });
+      //return res.json({ partner_id, service_id, variants });
+      return res.json({data:{ partner_id, service_id, variants }});
     }
 
     res.json({ service_id, partners });
