@@ -3015,7 +3015,7 @@ app.get('/api/cc/service/variants', async (req, res) => {
       return res.json({data:{ partner_id, service_id, variants }});
     }
 
-    res.json({ service_id, partners });
+    res.json({data:{ service_id, partners }});
   } catch (error) {
     console.error('Error fetching service partners or variants:', error);
     res.status(500).json({ error: 'Error fetching service partners or variants' });
