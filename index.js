@@ -3026,8 +3026,8 @@ app.get('/api/cc/service/variants', async (req, res) => {
 
 
 
-
-app.post('/api/cc/service/booking', async (req, res) => {
+// mehendi service booking
+app.post('/api/cc/mehendi/service/booking', async (req, res) => {
   const {
       name,
       email,
@@ -3135,6 +3135,82 @@ app.post('/api/cc/service/booking', async (req, res) => {
   };
 
 });
+
+
+// Generic Service Booking Starts
+
+app.post('/api/cc/service/booking', async (req, res) => {
+  const {
+    serviceId,
+    partnerId,
+    partnerName,
+    clientName,
+    userId,
+    selectedVariantName,
+    selectedVariantPrice,
+    selectedVariantId,
+    serviceDate,
+    serviceTime,
+    eventDate,
+    eventTime,
+    eventType,
+    address,
+    pincode,
+    city,
+    contactNumber,
+    email,
+    orderNotes
+  } = req.body;
+
+  // Validation: Check for required fields
+  if (!serviceId || !partnerId || !clientName || !userId || !selectedVariantId || !serviceDate || !serviceTime || !eventDate || !eventTime || !address || !pincode || !city || !contactNumber || !email) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  try {
+    var con = dbConnection();
+    con.connect();
+  } catch (error) {
+    console.error('DB Connection Error', error);
+    con.end();
+    return res.status(500).json({ error: 'DB Connection Error' });
+  }
+
+  try {
+    const bookingDate = new Date().toISOString().split('T')[0]; // Current date
+    const bookingStatus = 'Pending'; // Default status
+    const query = `
+      INSERT INTO CC_Service_Booking 
+        (name, address, pincode, contact_number, email, city, user_id, service_id, variant_id, 
+         partner_id, partner_business_name, service_date, service_time, event_date, event_time, 
+         booking_date, total_price, booking_status, order_notes) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    const values = [
+      clientName, address, pincode, contactNumber, email, city, userId, serviceId, selectedVariantId,
+      partnerId, partnerName, serviceDate.split('T')[0], serviceTime, eventDate.split('T')[0], eventTime,
+      bookingDate, selectedVariantPrice, bookingStatus, orderNotes
+    ];
+
+    con.query(query, values, (err, result) => {
+      con.end(); // Close DB connection
+      if (err) {
+        console.error('Error inserting booking:', err);
+        return res.status(500).json({ error: 'Database Insertion Failed' });
+      }
+      res.status(201).json({ message: 'Booking successful', bookingId: result.insertId });
+    });
+
+  } catch (error) {
+    console.error('Server error:', error);
+    con.end();
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+
+// Generic Service Booking Ends
 
 app.get('/api/cc/tailoring/orders', async (req, res) => {
   let con;
