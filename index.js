@@ -3163,9 +3163,9 @@ app.post('/api/cc/service/booking', async (req, res) => {
   } = req.body;
 
   // Validation: Check for required fields
-  if (!serviceId || !partnerId || !clientName || !userId || !selectedVariantId || !serviceDate || !serviceTime || !eventDate || !eventTime || !address || !pincode || !city || !contactNumber || !email) {
-    return res.status(400).json({ error: 'Missing required fields' });
-  }
+  // if (!serviceId || !partnerId || !clientName || !userId || !selectedVariantId || !serviceDate || !serviceTime || !eventDate || !eventTime || !address || !pincode || !city || !contactNumber || !email) {
+  //   return res.status(400).json({ error: 'Missing required fields' });
+  // }
 
   try {
     var con = dbConnection();
