@@ -3180,7 +3180,7 @@ app.post('/api/cc/service/booking', async (req, res) => {
     const bookingDate = new Date().toISOString().split('T')[0]; // Current date
     const bookingStatus = 'Pending'; // Default status
     const query = `
-      INSERT INTO CC_Service_Booking 
+      INSERT INTO CC_Service_Bookings 
         (name, address, pincode, contact_number, email, city, user_id, service_id, variant_id, 
          partner_id, partner_business_name, service_date, service_time, event_date, event_time, 
          booking_date, total_price, booking_status, order_notes) 
