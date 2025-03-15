@@ -3182,14 +3182,14 @@ app.post('/api/cc/service/booking', async (req, res) => {
     const bookingStatus = 'Pending'; // Default status
     const query = `
       INSERT INTO CC_Service_Bookings 
-        (name, address, pincode, contact_number, email, city, user_id, service_id, variant_id, 
+        (name, address, pincode, contact_number, email, city, user_id, service_id,service_type, variant_id, 
          partner_id, partner_business_name, service_date, service_time, event_date, event_time, 
          booking_date, total_price, booking_status, order_notes) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const values = [
-      clientName, address, pincode, contactNumber, email, city, userId, serviceId, selectedVariantId,
+      clientName, address, pincode, contactNumber, email, city, userId, serviceId,serviceType, selectedVariantId,
       partnerId, partnerName, serviceDate.split('T')[0], serviceTime, eventDate.split('T')[0], eventTime,
       bookingDate, selectedVariantPrice, bookingStatus, orderNotes
     ];
