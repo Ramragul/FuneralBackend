@@ -3142,6 +3142,7 @@ app.post('/api/cc/mehendi/service/booking', async (req, res) => {
 app.post('/api/cc/service/booking', async (req, res) => {
   const {
     serviceId,
+    serviceType,
     partnerId,
     partnerName,
     clientName,
