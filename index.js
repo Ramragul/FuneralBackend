@@ -2909,7 +2909,7 @@ app.post('/api/service/upload', async (req, res) => {
     //  Insert into payment rules table
 
     const paymentQuery = `
-    INSERT INTO CC_Service_Payment_Rules (partner_id,service_id, advance_percentage, remaining_due_one, refund_policy)
+    INSERT INTO CC_Service_Payment_Rules (partner_id,service_id, advance_percentage, remaining_due_on, refund_policy)
     VALUES (?, ?, ?, ?, ?)
   `;
   const paymentValues = [partnerId, serviceId, paymentPolicy, finalPaymentDueOn, refundPolicy];
