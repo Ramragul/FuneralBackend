@@ -3139,6 +3139,79 @@ app.post('/api/cc/mehendi/service/booking', async (req, res) => {
 
 // Generic Service Booking Starts
 
+// app.post('/api/cc/service/booking', async (req, res) => {
+//   const {
+//     serviceId,
+//     serviceType,
+//     partnerId,
+//     partnerName,
+//     clientName,
+//     userId,
+//     selectedVariantName,
+//     selectedVariantPrice,
+//     selectedVariantId,
+//     serviceDate,
+//     serviceTime,
+//     eventDate,
+//     eventTime,
+//     eventType,
+//     address,
+//     pincode,
+//     city,
+//     contactNumber,
+//     email,
+//     orderNotes
+//   } = req.body;
+
+//   // Validation: Check for required fields
+//   // if (!serviceId || !partnerId || !clientName || !userId || !selectedVariantId || !serviceDate || !serviceTime || !eventDate || !eventTime || !address || !pincode || !city || !contactNumber || !email) {
+//   //   return res.status(400).json({ error: 'Missing required fields' });
+//   // }
+
+//   try {
+//     var con = dbConnection();
+//     con.connect();
+//   } catch (error) {
+//     console.error('DB Connection Error', error);
+//     con.end();
+//     return res.status(500).json({ error: 'DB Connection Error' });
+//   }
+
+//   try {
+//     const bookingDate = new Date().toISOString().split('T')[0]; // Current date
+//     const bookingStatus = 'Pending'; // Default status
+//     const query = `
+//       INSERT INTO CC_Service_Bookings 
+//         (name, address, pincode, contact_number, email, city, user_id, service_id,service_type, variant_id, 
+//          partner_id, partner_business_name, service_date, service_time, event_date, event_time, 
+//          booking_date, total_price, booking_status, order_notes) 
+//       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+//     `;
+
+//     const values = [
+//       clientName, address, pincode, contactNumber, email, city, userId, serviceId,serviceType, selectedVariantId,
+//       partnerId, partnerName, serviceDate.split('T')[0], serviceTime, eventDate.split('T')[0], eventTime,
+//       bookingDate, selectedVariantPrice, bookingStatus, orderNotes
+//     ];
+
+//     con.query(query, values, (err, result) => {
+//       con.end(); // Close DB connection
+//       if (err) {
+//         console.error('Error inserting booking:', err);
+//         return res.status(500).json({ error: 'Database Insertion Failed' });
+//       }
+//       res.status(201).json({ message: 'Booking successful', bookingId: result.insertId });
+//     });
+
+//   } catch (error) {
+//     console.error('Server error:', error);
+//     con.end();
+//     res.status(500).json({ error: 'Server error' });
+//   }
+// });
+
+// Version 2 :
+
 app.post('/api/cc/service/booking', async (req, res) => {
   const {
     serviceId,
@@ -3163,45 +3236,56 @@ app.post('/api/cc/service/booking', async (req, res) => {
     orderNotes
   } = req.body;
 
-  // Validation: Check for required fields
-  // if (!serviceId || !partnerId || !clientName || !userId || !selectedVariantId || !serviceDate || !serviceTime || !eventDate || !eventTime || !address || !pincode || !city || !contactNumber || !email) {
-  //   return res.status(400).json({ error: 'Missing required fields' });
-  // }
-
   try {
     var con = dbConnection();
     con.connect();
   } catch (error) {
     console.error('DB Connection Error', error);
-    con.end();
     return res.status(500).json({ error: 'DB Connection Error' });
   }
 
   try {
-    const bookingDate = new Date().toISOString().split('T')[0]; // Current date
-    const bookingStatus = 'Pending'; // Default status
-    const query = `
+    const bookingDate = new Date().toISOString().split('T')[0];
+    const bookingStatus = 'Pending';
+
+    // Fetch partner's payment rule
+    const [paymentRule] = await con.promise().query(
+      `SELECT advance_percentage FROM CC_Service_Payment_Rules WHERE partner_id = ? AND service_id = ?`,
+      [partnerId, serviceId]
+    );
+
+    let advancePercentage = paymentRule.length > 0 ? paymentRule[0].advance_percentage : 0;
+    let advanceAmount = (selectedVariantPrice * advancePercentage) / 100;
+    let remainingAmount = selectedVariantPrice - advanceAmount;
+
+    // Insert Booking
+    const bookingQuery = `
       INSERT INTO CC_Service_Bookings 
-        (name, address, pincode, contact_number, email, city, user_id, service_id,service_type, variant_id, 
+        (name, address, pincode, contact_number, email, city, user_id, service_id, service_type, variant_id, 
          partner_id, partner_business_name, service_date, service_time, event_date, event_time, 
          booking_date, total_price, booking_status, order_notes) 
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
-
-    const values = [
-      clientName, address, pincode, contactNumber, email, city, userId, serviceId,serviceType, selectedVariantId,
+    const bookingValues = [
+      clientName, address, pincode, contactNumber, email, city, userId, serviceId, serviceType, selectedVariantId,
       partnerId, partnerName, serviceDate.split('T')[0], serviceTime, eventDate.split('T')[0], eventTime,
       bookingDate, selectedVariantPrice, bookingStatus, orderNotes
     ];
+    
+    const [bookingResult] = await con.promise().query(bookingQuery, bookingValues);
+    const bookingId = bookingResult.insertId;
 
-    con.query(query, values, (err, result) => {
-      con.end(); // Close DB connection
-      if (err) {
-        console.error('Error inserting booking:', err);
-        return res.status(500).json({ error: 'Database Insertion Failed' });
-      }
-      res.status(201).json({ message: 'Booking successful', bookingId: result.insertId });
-    });
+    // Insert Payment Record
+    const paymentQuery = `
+      INSERT INTO CC_Service_Payments (booking_id, user_id, partner_id, total_amount, advance_paid, remaining_amount, payment_status)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+    const paymentValues = [bookingId, userId, partnerId, selectedVariantPrice, advanceAmount, remainingAmount, 'Pending'];
+
+    await con.promise().query(paymentQuery, paymentValues);
+
+    con.end();
+    res.status(201).json({ message: 'Booking successful', bookingId, advanceAmount, remainingAmount });
 
   } catch (error) {
     console.error('Server error:', error);
@@ -3211,7 +3295,52 @@ app.post('/api/cc/service/booking', async (req, res) => {
 });
 
 
+
 // Generic Service Booking Ends
+
+// Generic Service Booking Payment handling api
+
+app.post('/api/cc/service/payment', async (req, res) => {
+  const { bookingId, paymentAmount } = req.body;
+
+  try {
+    var con = dbConnection();
+    con.connect();
+  } catch (error) {
+    console.error('DB Connection Error', error);
+    return res.status(500).json({ error: 'DB Connection Error' });
+  }
+
+  try {
+    // Get current payment details
+    const [payment] = await con.promise().query(
+      `SELECT remaining_amount, advance_paid FROM CC_Service_Payments WHERE booking_id = ?`,
+      [bookingId]
+    );
+
+    if (!payment.length) {
+      return res.status(400).json({ error: 'Booking not found' });
+    }
+
+    let remainingAmount = payment[0].remaining_amount - paymentAmount;
+    let newPaymentStatus = remainingAmount <= 0 ? 'Completed' : 'Pending';
+
+    // Update payment record
+    await con.promise().query(
+      `UPDATE CC_Service_Payments SET remaining_amount = ?, payment_status = ? WHERE booking_id = ?`,
+      [remainingAmount, newPaymentStatus, bookingId]
+    );
+
+    con.end();
+    res.status(200).json({ message: 'Payment updated successfully', remainingAmount, paymentStatus: newPaymentStatus });
+
+  } catch (error) {
+    console.error('Payment update error:', error);
+    con.end();
+    res.status(500).json({ error: 'Payment update failed' });
+  }
+});
+
 
 app.get('/api/cc/tailoring/orders', async (req, res) => {
   let con;
