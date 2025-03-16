@@ -2914,7 +2914,7 @@ app.post('/api/service/upload', async (req, res) => {
   `;
   const paymentValues = [partnerId, serviceId, paymentPolicy, finalPaymentDueOn, refundPolicy];
 
-  await con.promise().query(paymentQuery, paymentValues);
+  await con.query(paymentQuery, paymentValues);
 
     // Insert into payment rules table
 
