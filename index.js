@@ -3278,7 +3278,7 @@ app.post('/api/cc/service/booking', async (req, res) => {
     // Insert Payment Record
     const paymentQuery = `
       INSERT INTO CC_Service_Payments (booking_id, user_id, partner_id,service_id, total_amount, advance_amount, remaining_amount, payment_status)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?,?)
     `;
     const paymentValues = [bookingId, userId, partnerId, serviceId, selectedVariantPrice, advanceAmount, remainingAmount, 'Pending'];
 
