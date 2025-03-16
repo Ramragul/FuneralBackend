@@ -2851,7 +2851,7 @@ app.post('/api/businessPartnerRegistration', async (req, res) => {
 app.post('/api/service/upload', async (req, res) => {
   const { partnerId, serviceId, brandUsed, willingToTravel, paymentPolicy, refundPolicy, finalPaymentDueOn, variants, portfolioImages } = req.body;
 
-  console.log("Portfolio Image URL from node" +portfolioImages)
+  console.log("Final Payment Due on " +finalPaymentDueOn)
   // Check for missing fields
   if (!partnerId || !serviceId || !variants || !portfolioImages) {
     return res.status(400).json({ error: 'Missing required fields' });
