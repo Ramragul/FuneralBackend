@@ -3277,10 +3277,10 @@ app.post('/api/cc/service/booking', async (req, res) => {
 
     // Insert Payment Record
     const paymentQuery = `
-      INSERT INTO CC_Service_Payments (booking_id, user_id, partner_id, total_amount, advance_amount, remaining_amount, payment_status)
+      INSERT INTO CC_Service_Payments (booking_id, user_id, partner_id,service_id, total_amount, advance_amount, remaining_amount, payment_status)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
-    const paymentValues = [bookingId, userId, partnerId, selectedVariantPrice, advanceAmount, remainingAmount, 'Pending'];
+    const paymentValues = [bookingId, userId, partnerId, serviceId, selectedVariantPrice, advanceAmount, remainingAmount, 'Pending'];
 
     await con.promise().query(paymentQuery, paymentValues);
 
