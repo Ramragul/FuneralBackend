@@ -2849,7 +2849,7 @@ app.post('/api/businessPartnerRegistration', async (req, res) => {
 
 
 app.post('/api/service/upload', async (req, res) => {
-  const { partnerId, serviceId, brandUsed, willingToTravel, rules, variants, portfolioImages } = req.body;
+  const { partnerId, serviceId, brandUsed, willingToTravel, paymentPolicy, refundPolicy, finalPaymentDueOn, variants, portfolioImages } = req.body;
 
   console.log("Portfolio Image URL from node" +portfolioImages)
   // Check for missing fields
@@ -2880,7 +2880,7 @@ app.post('/api/service/upload', async (req, res) => {
         price,
         brandUsed,
         willingToTravel === 'true' ? 1 : 0, // Convert to boolean
-        rules,
+        refundPolicy,
       ]);
     });
 
@@ -2905,6 +2905,18 @@ app.post('/api/service/upload', async (req, res) => {
       portfolioImagesString,  // This should be a single string now
       '' // Optional description (empty for now)
     ]);
+
+    //  Insert into payment rules table
+
+    const paymentQuery = `
+    INSERT INTO CC_Service_Payment_Rules (partner_id,service_id, advance_percentage, remaining_due_one, refund_policy)
+    VALUES (?, ?, ?, ?, ?)
+  `;
+  const paymentValues = [partnerId, serviceId, paymentPolicy, finalPaymentDueOn, refundPolicy];
+
+  await con.promise().query(paymentQuery, paymentValues);
+
+    // Insert into payment rules table
 
     // Commit transaction
     await con.commit();
