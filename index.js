@@ -2998,9 +2998,6 @@ app.get('/api/cc/services', async (req, res) => {
     return res.status(500).json({ error: 'DB Connection Error' });
   }
 
-  if (!service_id) {
-    return res.status(400).json({ error: 'service_id is required' });
-  }
 
   try {
     // Query to fetch all partners offering the given service along with their portfolio images
