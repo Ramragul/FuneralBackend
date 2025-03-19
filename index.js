@@ -2984,6 +2984,42 @@ app.post('/api/service/upload', async (req, res) => {
 //   }
 // });
 
+
+// Api to fetch all available services 
+
+app.get('/api/cc/services', async (req, res) => {
+  let con;
+  try {
+    // Establishing a DB connection
+    con = dbConnection();
+    con.connect();
+  } catch (error) {
+    console.error('DB Connection Error', error);
+    return res.status(500).json({ error: 'DB Connection Error' });
+  }
+
+  if (!service_id) {
+    return res.status(400).json({ error: 'service_id is required' });
+  }
+
+  try {
+    // Query to fetch all partners offering the given service along with their portfolio images
+    const partnersQuery = `
+      SELECT service_id service_name from CC_Services
+    `;
+    const [services] = await con.promise().query(partnersQuery);
+
+    res.json({data:{ services }});
+  } catch (error) {
+    console.error('Error fetching services::', error);
+    res.status(500).json({ error: 'Error fetching services ' });
+  } finally {
+    if (con) con.end();
+  }
+});
+
+
+// To fetch Service details and variantas based on service id and variant details based on variant id of that particular service
 app.get('/api/cc/service/variants', async (req, res) => {
   let con;
   try {
