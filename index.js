@@ -3108,7 +3108,7 @@ app.get('/api/cc/partner/services', async (req, res) => {
 
       // Fetch service variants (pricing, duration, etc.)
       const variantsQuery = `
-        SELECT variant_id, variant_name, price, duration, description 
+        SELECT variant_id, variant_name, price, description 
         FROM CC_Service_Variants 
         WHERE partner_id = ? AND service_id = ?
       `;
