@@ -3084,10 +3084,11 @@ app.get('/api/cc/partner/services', async (req, res) => {
   }
 
   try {
-    // Query to fetch unique services created by the partner along with portfolio images
+    // Extracting partner_id from query parameters
     const { partner_id } = req.query;
     if (!partner_id) return res.status(400).json({ error: 'Partner ID is required' });
 
+    // Fetch unique services created by the partner
     const servicesQuery = `
       SELECT DISTINCT sv.service_id, s.service_name, s.service_image 
       FROM CC_Service_Variants sv 
@@ -3096,14 +3097,23 @@ app.get('/api/cc/partner/services', async (req, res) => {
     `;
     const [services] = await con.promise().query(servicesQuery, [partner_id]);
 
-    // Fetch portfolio images for each service
     for (let service of services) {
+      // Fetch portfolio images
       const portfolioQuery = `
         SELECT image_url FROM CC_Service_Portfolio 
         WHERE partner_id = ? AND service_id = ?
       `;
       const [portfolio] = await con.promise().query(portfolioQuery, [partner_id, service.service_id]);
       service.portfolio_images = portfolio.map(p => p.image_url);
+
+      // Fetch service variants (pricing, duration, etc.)
+      const variantsQuery = `
+        SELECT variant_id, variant_name, price, duration, description 
+        FROM CC_Service_Variants 
+        WHERE partner_id = ? AND service_id = ?
+      `;
+      const [variants] = await con.promise().query(variantsQuery, [partner_id, service.service_id]);
+      service.variants = variants; // Adding variants details to the response
     }
 
     res.json({ data: { services } });
