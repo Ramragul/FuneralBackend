@@ -3016,6 +3016,7 @@ app.get('/api/cc/services', async (req, res) => {
 });
 
 
+
 // To fetch Service details and variantas based on service id and variant details based on variant id of that particular service
 app.get('/api/cc/service/variants', async (req, res) => {
   let con;
@@ -3064,6 +3065,51 @@ app.get('/api/cc/service/variants', async (req, res) => {
   } catch (error) {
     console.error('Error fetching service partners or variants:', error);
     res.status(500).json({ error: 'Error fetching service partners or variants' });
+  } finally {
+    if (con) con.end();
+  }
+});
+
+// Api for fetching services and corresponding varinat - partner perspective 
+
+app.get('/api/cc/partner/services', async (req, res) => {
+  let con;
+  try {
+    // Establishing a DB connection
+    con = dbConnection();
+    con.connect();
+  } catch (error) {
+    console.error('DB Connection Error', error);
+    return res.status(500).json({ error: 'DB Connection Error' });
+  }
+
+  try {
+    // Query to fetch unique services created by the partner along with portfolio images
+    const { partner_id } = req.query;
+    if (!partner_id) return res.status(400).json({ error: 'Partner ID is required' });
+
+    const servicesQuery = `
+      SELECT DISTINCT sv.service_id, s.service_name, s.service_image 
+      FROM CC_Service_Variants sv 
+      JOIN CC_Services s ON sv.service_id = s.service_id 
+      WHERE sv.partner_id = ?
+    `;
+    const [services] = await con.promise().query(servicesQuery, [partner_id]);
+
+    // Fetch portfolio images for each service
+    for (let service of services) {
+      const portfolioQuery = `
+        SELECT image_url FROM CC_Service_Portfolio 
+        WHERE partner_id = ? AND service_id = ?
+      `;
+      const [portfolio] = await con.promise().query(portfolioQuery, [partner_id, service.service_id]);
+      service.portfolio_images = portfolio.map(p => p.image_url);
+    }
+
+    res.json({ data: { services } });
+  } catch (error) {
+    console.error('Error fetching partner services:', error);
+    res.status(500).json({ error: 'Error fetching partner services' });
   } finally {
     if (con) con.end();
   }
