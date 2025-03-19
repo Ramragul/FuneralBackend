@@ -3002,7 +3002,7 @@ app.get('/api/cc/services', async (req, res) => {
   try {
     // Query to fetch all partners offering the given service along with their portfolio images
     const partnersQuery = `
-      SELECT service_id service_name from CC_Services
+      SELECT service_id ,service_name from CC_Services
     `;
     const [services] = await con.promise().query(partnersQuery);
 
