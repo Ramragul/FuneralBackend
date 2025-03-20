@@ -3126,6 +3126,14 @@ app.get('/api/cc/partner/services', async (req, res) => {
 });
 
 
+// Api to modify parnter service details - By Partner
+
+app.post('/api/cc/partner/services', async (req, res) => {
+
+  console.log("data Received from partner service is :" +JSON.stringify(req.body))
+
+});
+
 
 // mehendi service booking
 app.post('/api/cc/mehendi/service/booking', async (req, res) => {
