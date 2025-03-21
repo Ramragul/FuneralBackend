@@ -3148,7 +3148,7 @@ app.get('/api/cc/partner/services', async (req, res) => {
 app.post('/api/cc/partner/services', async (req, res) => {
   console.log("Data received from partner service:", JSON.stringify(req.body));
 
-  const { deletedVariants, modifiedVariants } = req.body;
+  const { deletedVariants, modifiedVariants, partner_id, service_id } = req.body;
   let con;
 
   try {
@@ -3192,8 +3192,8 @@ app.post('/api/cc/partner/services', async (req, res) => {
             INSERT INTO CC_Service_Variants (partner_id, service_id, variant_name, description, price) 
             VALUES (?, ?, ?, ?, ?)`;
           const [result] = await con.promise().query(insertQuery, [
-            req.body.partner_id,  // Make sure to include this in your request
-            req.body.service_id,  // Make sure to include this in your request
+            partner_id,  // Make sure to include this in your request
+            service_id,  // Make sure to include this in your request
             variant.variant_name,
             variant.description,
             variant.price
