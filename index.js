@@ -3128,12 +3128,90 @@ app.get('/api/cc/partner/services', async (req, res) => {
 
 // Api to modify parnter service details - By Partner
 
+// app.post('/api/cc/partner/services', async (req, res) => {
+
+//   console.log("data Received from partner service is :" +JSON.stringify(req.body))
+
+//   let con;
+//   try {
+//     // Establishing a DB connection
+//     con = dbConnection();
+//     con.connect();
+//   } catch (error) {
+//     console.error('DB Connection Error', error);
+//     return res.status(500).json({ error: 'DB Connection Error' });
+//   }
+
+// });
+
+
 app.post('/api/cc/partner/services', async (req, res) => {
+  console.log("Data received from partner service:", JSON.stringify(req.body));
 
-  console.log("data Received from partner service is :" +JSON.stringify(req.body))
+  const { deletedVariants, modifiedVariants } = req.body;
+  let con;
 
+  try {
+    con = dbConnection();
+    con.connect();
+
+    } catch (error) {
+    console.error('DB Connection Error', error);
+    return res.status(500).json({ error: 'DB Connection Error' });
+  }
+
+    try{
+
+    // **1. DELETE Variants**
+    if (deletedVariants && deletedVariants.length > 0) {
+      const deleteIds = deletedVariants.map(v => v.variant_id);
+      const deleteQuery = `DELETE FROM CC_Service_Variants WHERE variant_id IN (?)`;
+      await con.promise().query(deleteQuery, [deleteIds]);
+      console.log(`Deleted variants: ${deleteIds.join(", ")}`);
+    }
+
+    // **2. UPDATE & INSERT Variants**
+    if (modifiedVariants && modifiedVariants.length > 0) {
+      for (const variant of modifiedVariants) {
+        if (variant.variant_id) {
+          // Update existing variant
+          const updateQuery = `
+            UPDATE CC_Service_Variants 
+            SET variant_name = ?, description = ?, price = ? 
+            WHERE variant_id = ?`;
+          await con.promise().query(updateQuery, [
+            variant.variant_name,
+            variant.description,
+            variant.price,
+            variant.variant_id
+          ]);
+          console.log(`Updated variant: ${variant.variant_id}`);
+        } else {
+          // Insert new variant
+          const insertQuery = `
+            INSERT INTO CC_Service_Variants (partner_id, service_id, variant_name, description, price) 
+            VALUES (?, ?, ?, ?, ?)`;
+          const [result] = await con.promise().query(insertQuery, [
+            req.body.partner_id,  // Make sure to include this in your request
+            req.body.service_id,  // Make sure to include this in your request
+            variant.variant_name,
+            variant.description,
+            variant.price
+          ]);
+          console.log(`Inserted new variant with ID: ${result.insertId}`);
+        }
+      }
+    }
+
+    res.status(200).json({ message: "Service variants updated successfully" });
+
+  } catch (error) {
+    console.error("Error updating variants:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  } finally {
+    if (con) con.end();
+  }
 });
-
 
 // mehendi service booking
 app.post('/api/cc/mehendi/service/booking', async (req, res) => {
