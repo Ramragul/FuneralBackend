@@ -3218,6 +3218,7 @@ app.post('/api/cc/mehendi/service/booking', async (req, res) => {
   const {
       name,
       email,
+      variant,
       phoneNumber,
       address,
       city,
@@ -3231,6 +3232,12 @@ app.post('/api/cc/mehendi/service/booking', async (req, res) => {
       bookingStatus
   } = req.body;
 
+
+  // Variant and price extract
+
+      const [variantType, variantPrice] = variant.split('-');
+  console.log('Type:', variantType);
+  console.log('Price:', variantPrice);
 
   // GMT to IST Conversion
 
@@ -3266,8 +3273,8 @@ app.post('/api/cc/mehendi/service/booking', async (req, res) => {
 
 
 
-  const query = 'INSERT INTO CC_Service_Bookings (name, contact_number, email, address, city, pincode,service_id,variant_id,service_date,service_time,user_id,booking_date,booking_status,remarks) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-  con.query(query, [name, phoneNumber, email, address, city, pincode, serviceId, variantId, serviceDateIST, serviceTime, userId, bookingDate,bookingStatus,remarks], (err, result) => {
+  const query = 'INSERT INTO CC_Mehendi_Service_Bookings (name, contact_number, email, address, city, pincode,service_id,variant_id,service_date,service_time,user_id,booking_date,booking_status,order_notes,total_price,variant_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+  con.query(query, [name, phoneNumber, email, address, city, pincode, serviceId, variantId, serviceDateIST, serviceTime, userId, bookingDate,bookingStatus,remarks,variantPrice,variantName], (err, result) => {
     if (err) {
       console.error('Error inserting user:', err);
       return res.status(205).json({ message: err });
