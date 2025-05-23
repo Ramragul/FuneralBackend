@@ -3235,8 +3235,8 @@ app.post('/api/cc/mehendi/service/booking', async (req, res) => {
 
   // Variant and price extract
 
-      const [variantType, variantPrice] = variant.split('-');
-  console.log('Type:', variantType);
+      const [variantName, variantPrice] = variant.split('-');
+  console.log('Type:', variantName);
   console.log('Price:', variantPrice);
 
   // GMT to IST Conversion
