@@ -6116,7 +6116,7 @@ app.get('/api/mehendi/booking', (req, res) => {
       } else if (results.length === 0) {
         res.status(404).json({ message: 'Booking not found' });
       } else {
-        res.json({ data: results[0], status: 'success' });
+        res.json({ data: results, status: 'success' });
       }
     });
   } catch (error) {
