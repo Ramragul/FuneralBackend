@@ -6098,6 +6098,72 @@ app.post("/api/cc/create-order", async (req, res) => {
 });
 
 
+// Get Mehendi order api
+
+app.get('/api/mehendi/booking', (req, res) => {
+  let con;
+  //const bookingId = req.params.id;
+
+  try {
+    con = dbConnection();
+    con.connect();
+
+    const query = 'SELECT * FROM CC_Mehendi_Service_Bookings';
+    con.query(query, (err, results) => {
+      if (err) {
+        console.error('Query Error', err);
+        res.status(500).json({ error: 'Error fetching booking details' });
+      } else if (results.length === 0) {
+        res.status(404).json({ message: 'Booking not found' });
+      } else {
+        res.json({ data: results[0], status: 'success' });
+      }
+    });
+  } catch (error) {
+    console.error('DB Connection Error', error);
+    res.status(500).json({ error: 'DB Connection Error' });
+  }
+});
+
+
+// Update Mehendi order api
+
+app.post('/api/mehendi/booking/update', (req, res) => {
+  let con;
+  const { id, booking_status, order_notes } = req.body;
+
+  if (!id) {
+    return res.status(400).json({ error: 'Booking ID is required' });
+  }
+
+  try {
+    con = dbConnection();
+    con.connect();
+
+    const query = `
+      UPDATE CC_Mehendi_Service_Bookings 
+      SET booking_status = ?, order_notes = ?
+      WHERE id = ?
+    `;
+    con.query(query, [booking_status, order_notes, id], (err, result) => {
+      if (err) {
+        console.error('Update Error', err);
+        res.status(500).json({ error: 'Error updating booking' });
+      } else if (result.affectedRows === 0) {
+        res.status(404).json({ message: 'Booking not found' });
+      } else {
+        res.json({ message: 'Booking updated successfully', status: 'success' });
+      }
+    });
+  } catch (error) {
+    console.error('DB Connection Error', error);
+    res.status(500).json({ error: 'DB Connection Error' });
+  }
+});
+
+
+
+
 
 
 
