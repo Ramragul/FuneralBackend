@@ -1546,9 +1546,9 @@ app.post("/api/cc/rental/product/upload", (req, res) => {
   const occasionValue = Array.isArray(productUsageOccasion)
     ? productUsageOccasion.join(",")
     : productUsageOccasion;
-  const imageValue = Array.isArray(productImageURLs)
-    ? productImageURLs.join(",")
-    : productImageURLs;
+  const imageValue = Array.isArray(productImageURL)
+    ? productImageURL.join(",")
+    : productImageURL;
 
   conn.beginTransaction((txErr) => {
     if (txErr) {
@@ -1594,8 +1594,8 @@ app.post("/api/cc/rental/product/upload", (req, res) => {
       const newProductID = insertResult.insertId;
 
       // If extra image table
-      if (Array.isArray(productImageURLs) && productImageURLs.length) {
-        const values = productImageURLs.map((url) => [newProductID, url]);
+      if (Array.isArray(productImageURL) && productImageURL.length) {
+        const values = productImageURL.map((url) => [newProductID, url]);
         conn.query(
           "INSERT INTO CC_ProductImages (ProductID, ImageURL) VALUES ?",
           [values],
