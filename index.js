@@ -1368,59 +1368,143 @@ app.get('/api/cc/rental/product', (req, res) => {
 });
 
 
-// POST Rental Master Table Data Upload api 
+// POST Rental Master Table Data Upload api # commented on Sept 8,2025
 
-app.post("/api/cc/rental/product/upload", (req, res) => {
+// app.post("/api/cc/rental/product/upload", (req, res) => {
 
 
-   //Database Update Logic
-   try
-   {
-   var con = dbConnection();
-   con.connect();
-   //console.log('Connected to database.' +con);
+//    //Database Update Logic
+//    try
+//    {
+//    var con = dbConnection();
+//    con.connect();
+//    //console.log('Connected to database.' +con);
  
-   //Data from the req parameters
+//    //Data from the req parameters
  
  
-   console.log("Received Request at Node End : "+JSON.stringify (req.body))
-   var ProductName = req.body.productName;
-   var ProductType = req.body.productType;
-   var ProductBrandName = req.body.productBrandName;
-   var ProductImageURL = req.body.productImageURL;
-   var ProductUsageGender = req.body.productUsageGender;
-   var ProductUsageOccasion = req.body.productUsageOccasion;
-   var ProductOrigin = req.body.productOrigin;
-   var ProductCategory = req.body.productCategory;
-   //var ProductCategoryID = req.body.productCategoryID
-   var ProductPriceBand = req.body.productPriceBand;
-   var ProductPrice = req.body.productPrice;
-   var ProductPurchasePrice = req.body.productPurchasePrice;
-   var ProductAvailability = req.body.productAvailability;
-   var Remarks = req.body.remarks;
-   var OwningAuthority = req.body.owningAuthority;
+//    console.log("Received Request at Node End : "+JSON.stringify (req.body))
+//    var ProductName = req.body.productName;
+//    var ProductType = req.body.productType;
+//    var ProductBrandName = req.body.productBrandName;
+//    var ProductImageURL = req.body.productImageURL;
+//    var ProductUsageGender = req.body.productUsageGender;
+//    var ProductUsageOccasion = req.body.productUsageOccasion;
+//    var ProductOrigin = req.body.productOrigin;
+//    var ProductCategory = req.body.productCategory;
+//    //var ProductCategoryID = req.body.productCategoryID
+//    var ProductPriceBand = req.body.productPriceBand;
+//    var ProductPrice = req.body.productPrice;
+//    var ProductPurchasePrice = req.body.productPurchasePrice;
+//    var ProductAvailability = req.body.productAvailability;
+//    var Remarks = req.body.remarks;
+//    var OwningAuthority = req.body.owningAuthority;
    
  
  
  
-   var sql = "INSERT INTO CC_RentalProductMaster (ProductName,ProductType,ProductBrandName, ProductImageURL, ProductUsageGender, ProductUsageOccasion, ProductOrigin, ProductCategory,ProductPriceBand, ProductPrice,ProductPurchasePrice,ProductAvailability,Remarks, OwningAuthority) VALUES ('"+ProductName+"','"+ProductType+"','"+ProductBrandName+"', '"+ProductImageURL+"','"+ProductUsageGender+"','"+ProductUsageOccasion+"','"+ProductOrigin+"','"+ProductCategory+"','"+ProductPriceBand+"','"+ProductPrice+"','"+ProductPurchasePrice+"','"+ProductAvailability+"','"+Remarks+"', '"+OwningAuthority+"')";  
+//    var sql = "INSERT INTO CC_RentalProductMaster (ProductName,ProductType,ProductBrandName, ProductImageURL, ProductUsageGender, ProductUsageOccasion, ProductOrigin, ProductCategory,ProductPriceBand, ProductPrice,ProductPurchasePrice,ProductAvailability,Remarks, OwningAuthority) VALUES ('"+ProductName+"','"+ProductType+"','"+ProductBrandName+"', '"+ProductImageURL+"','"+ProductUsageGender+"','"+ProductUsageOccasion+"','"+ProductOrigin+"','"+ProductCategory+"','"+ProductPriceBand+"','"+ProductPrice+"','"+ProductPurchasePrice+"','"+ProductAvailability+"','"+Remarks+"', '"+OwningAuthority+"')";  
                           
-   con.query(sql, function (err, result) {  
-  //  if (err) throw err;  
-  if (err) console.log(err);
-   console.log("1 record inserted");  
-   console.log("Result"+result.data);  
-   });  
-   con.end();
+//    con.query(sql, function (err, result) {  
+//   //  if (err) throw err;  
+//   if (err) console.log(err);
+//    console.log("1 record inserted");  
+//    console.log("Result"+result.data);  
+//    });  
+//    con.end();
  
-   res.status(201).json({ Status: "Data Upload completed Successfully" });
+//    res.status(201).json({ Status: "Data Upload completed Successfully" });
  
  
- } catch (error) {
-   console.error('Error uploading data to AWS DB:', error);
-   res.status(500).json({ error: 'Internal Server Error' });
- }
+//  } catch (error) {
+//    console.error('Error uploading data to AWS DB:', error);
+//    res.status(500).json({ error: 'Internal Server Error' });
+//  }
 
+// });
+
+// Post Rental Master Table New version  , Sept 8,2025
+
+app.post("/api/cc/rental/product/upload", async (req, res) => {
+  const con = dbConnection(); // pooled connection
+
+  // Destructure fields from body
+  const {
+    productName,
+    productType,
+    productBrandName,
+    productImageURLs,        // Accept an array even if you’re still storing in one column
+    productUsageGender,
+    productUsageOccasion,
+    productOrigin,
+    productCategory,
+    productPriceBand,
+    productPrice,
+    productPurchasePrice,
+    productAvailability,
+    remarks,
+    owningAuthority
+  } = req.body;
+
+  try {
+
+    var connection = dbConnection();
+    con.connect();
+
+    // start transaction
+    //const connection = await con.getConnection(); 
+    await connection.beginTransaction();
+
+    // Insert into master table
+    const [insertResult] = await connection.query(
+      `INSERT INTO CC_RentalProductMaster
+       (ProductName, ProductType, ProductBrandName, ProductImageURL,
+        ProductUsageGender, ProductUsageOccasion, ProductOrigin, ProductCategory,
+        ProductPriceBand, ProductPrice, ProductPurchasePrice,
+        ProductAvailability, Remarks, OwningAuthority)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [
+        productName,
+        productType,
+        productBrandName,
+        // join array back into comma string for now; later swap to image table
+        Array.isArray(productImageURLs) ? productImageURLs.join(",") : productImageURLs,
+        productUsageGender,
+        productUsageOccasion,
+        productOrigin,
+        productCategory,
+        productPriceBand,
+        productPrice,
+        productPurchasePrice,
+        productAvailability,
+        remarks,
+        owningAuthority
+      ]
+    );
+
+    const newProductID = insertResult.insertId;
+
+    // ===== Future: if you create CC_ProductImages, do something like =====
+    if (Array.isArray(productImageURLs) && productImageURLs.length) {
+      const values = productImageURLs.map(url => [newProductID, url]);
+      await connection.query(
+        "INSERT INTO CC_ProductImages (ProductID, ImageURL) VALUES ?",
+        [values]
+      );
+    }
+
+    await connection.commit();
+    connection.release();
+
+    res.status(201).json({
+      status: "Data Upload completed successfully",
+      productId: newProductID
+    });
+  } catch (err) {
+    console.error("Error uploading data:", err);
+    try { await con.query("ROLLBACK"); } catch (rollbackErr) {}
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 });
 
 // Get Catalogue Categories
