@@ -1386,64 +1386,58 @@ con.query(sql, values, function (err, result) {
 
 // Get Rental Product details api new version
 
-app.get("/api/cc/rental/product", async (req, res) => {
-  try {
-    const conn = dbConnection();
+app.get('/api/cc/rental/product', (req, res) => {
+  const conn = dbConnection();     // normal mysql2, no .promise()
+  conn.connect();
 
-    const { category, occasion, productType } = req.query;
+  const { category, occasion, productType } = req.query;
 
-    let where = [];
-    let params = [];
+  // Build WHERE + params
+  const where = [];
+  const params = [];
 
-    if (category) {
-      where.push("p.ProductCategory = ?");
-      params.push(category);
+  if (category)   { where.push('p.ProductCategory = ?'); params.push(category); }
+  if (occasion)   { where.push('FIND_IN_SET(?, p.ProductUsageOccasion)'); params.push(occasion); }
+  if (productType){ where.push('p.ProductType = ?'); params.push(productType); }
+
+  let sql = `
+    SELECT 
+      p.ProductID,
+      p.ProductName,
+      p.ProductType,
+      p.ProductBrandName,
+      p.ProductUsageGender,
+      p.ProductUsageOccasion,
+      p.ProductOrigin,
+      p.ProductCategory,
+      p.ProductPriceBand,
+      p.ProductPrice,
+      p.ProductPurchasePrice,
+      p.ProductAvailability,
+      p.Remarks,
+      p.OwningAuthority,
+      GROUP_CONCAT(i.ImageURL ORDER BY i.ImageID) AS ProductImageURL
+    FROM CC_RentalProductMaster p
+    LEFT JOIN CC_ProductImages i ON p.ProductID = i.ProductID
+  `;
+  if (where.length) {
+    sql += ' WHERE ' + where.join(' AND ');
+  }
+  sql += ' GROUP BY p.ProductID';
+
+  console.log('Final SQL:', sql, params);
+
+  conn.query(sql, params, (err, rows) => {
+    if (err) {
+      console.error('Error executing query:', err);
+      res.status(500).json({ error: 'Internal Server Error' });
+      conn.end();
+      return;
     }
-    if (occasion) {
-      where.push("FIND_IN_SET(?, p.ProductUsageOccasion)");
-      params.push(occasion);
-    }
-    if (productType) {
-      where.push("p.ProductType = ?");
-      params.push(productType);
-    }
-
-    let sql = `
-      SELECT 
-        p.ProductID,
-        p.ProductName,
-        p.ProductType,
-        p.ProductBrandName,
-        p.ProductUsageGender,
-        p.ProductUsageOccasion,
-        p.ProductOrigin,
-        p.ProductCategory,
-        p.ProductPriceBand,
-        p.ProductPrice,
-        p.ProductPurchasePrice,
-        p.ProductAvailability,
-        p.Remarks,
-        p.OwningAuthority,
-        GROUP_CONCAT(i.ImageURL ORDER BY i.ImageID) AS ProductImageURL
-      FROM CC_RentalProductMaster p
-      LEFT JOIN CC_ProductImages i ON p.ProductID = i.ProductID
-    `;
-
-    if (where.length) {
-      sql += " WHERE " + where.join(" AND ");
-    }
-    sql += " GROUP BY p.ProductID";
-
-    console.log("Final SQL:", sql, params);
-
-    const [rows] = await conn.query(sql, params);
-
+    // rows[].ProductImageURL is already a comma string from GROUP_CONCAT
     res.json({ data: rows });
     conn.end();
-  } catch (err) {
-    console.error("Rental product GET error:", err);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
+  });
 });
 
 
