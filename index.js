@@ -1387,66 +1387,65 @@ con.query(sql, values, function (err, result) {
 // Get Rental Product details api new version
 
 app.get("/api/cc/rental/product", async (req, res) => {
-  const conn = dbConnection();
-
-  const { category, occasion, productType } = req.query;
-
-  let where = [];
-  let params = [];
-
-  if (category) {
-    where.push("p.ProductCategory = ?");
-    params.push(category);
-  }
-  if (occasion) {
-    where.push("FIND_IN_SET(?, p.ProductUsageOccasion)");
-    params.push(occasion);
-  }
-  if (productType) {
-    where.push("p.ProductType = ?");
-    params.push(productType);
-  }
-
-  // Build final query
-  let sql = `
-    SELECT 
-      p.ProductID,
-      p.ProductName,
-      p.ProductType,
-      p.ProductBrandName,
-      p.ProductUsageGender,
-      p.ProductUsageOccasion,
-      p.ProductOrigin,
-      p.ProductCategory,
-      p.ProductPriceBand,
-      p.ProductPrice,
-      p.ProductPurchasePrice,
-      p.ProductAvailability,
-      p.Remarks,
-      p.OwningAuthority,
-      GROUP_CONCAT(i.ImageURL ORDER BY i.ImageID) AS ProductImageURL
-    FROM CC_RentalProductMaster p
-    LEFT JOIN CC_ProductImages i ON p.ProductID = i.ProductID
-  `;
-
-  if (where.length) {
-    sql += " WHERE " + where.join(" AND ");
-  }
-
-  sql += " GROUP BY p.ProductID";
-
   try {
+    const conn = dbConnection();
+
+    const { category, occasion, productType } = req.query;
+
+    let where = [];
+    let params = [];
+
+    if (category) {
+      where.push("p.ProductCategory = ?");
+      params.push(category);
+    }
+    if (occasion) {
+      where.push("FIND_IN_SET(?, p.ProductUsageOccasion)");
+      params.push(occasion);
+    }
+    if (productType) {
+      where.push("p.ProductType = ?");
+      params.push(productType);
+    }
+
+    let sql = `
+      SELECT 
+        p.ProductID,
+        p.ProductName,
+        p.ProductType,
+        p.ProductBrandName,
+        p.ProductUsageGender,
+        p.ProductUsageOccasion,
+        p.ProductOrigin,
+        p.ProductCategory,
+        p.ProductPriceBand,
+        p.ProductPrice,
+        p.ProductPurchasePrice,
+        p.ProductAvailability,
+        p.Remarks,
+        p.OwningAuthority,
+        GROUP_CONCAT(i.ImageURL ORDER BY i.ImageID) AS ProductImageURL
+      FROM CC_RentalProductMaster p
+      LEFT JOIN CC_ProductImages i ON p.ProductID = i.ProductID
+    `;
+
+    if (where.length) {
+      sql += " WHERE " + where.join(" AND ");
+    }
+    sql += " GROUP BY p.ProductID";
+
+    console.log("Final SQL:", sql, params);
+
     const [rows] = await conn.query(sql, params);
 
-    // rows.ProductImageURL is already a comma-separated string
     res.json({ data: rows });
-  } catch (err) {
-    console.error("Error executing query:", err);
-    res.status(500).json({ error: "Internal Server Error" });
-  } finally {
     conn.end();
+  } catch (err) {
+    console.error("Rental product GET error:", err);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
 
 
 // POST Rental Master Table Data Upload api # commented on Sept 8,2025
