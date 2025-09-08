@@ -1425,15 +1425,95 @@ app.get('/api/cc/rental/product', (req, res) => {
 
 // Post Rental Master Table New version  , Sept 8,2025
 
-app.post("/api/cc/rental/product/upload", async (req, res) => {
-  const con = dbConnection(); // pooled connection
+// app.post("/api/cc/rental/product/upload", async (req, res) => {
+//   const con = dbConnection(); // pooled connection
 
-  // Destructure fields from body
+//   // Destructure fields from body
+//   const {
+//     productName,
+//     productType,
+//     productBrandName,
+//     productImageURLs,        // Accept an array even if you’re still storing in one column
+//     productUsageGender,
+//     productUsageOccasion,
+//     productOrigin,
+//     productCategory,
+//     productPriceBand,
+//     productPrice,
+//     productPurchasePrice,
+//     productAvailability,
+//     remarks,
+//     owningAuthority
+//   } = req.body;
+
+//   try {
+
+//     var connection = dbConnection();
+//     con.connect();
+
+//     // start transaction
+//     //const connection = await con.getConnection(); 
+//     await connection.beginTransaction();
+
+//     // Insert into master table
+//     const [insertResult] = await connection.query(
+//       `INSERT INTO CC_RentalProductMaster
+//        (ProductName, ProductType, ProductBrandName, ProductImageURL,
+//         ProductUsageGender, ProductUsageOccasion, ProductOrigin, ProductCategory,
+//         ProductPriceBand, ProductPrice, ProductPurchasePrice,
+//         ProductAvailability, Remarks, OwningAuthority)
+//        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+//       [
+//         productName,
+//         productType,
+//         productBrandName,
+//         // join array back into comma string for now; later swap to image table
+//         Array.isArray(productImageURLs) ? productImageURLs.join(",") : productImageURLs,
+//         productUsageGender,
+//         productUsageOccasion,
+//         productOrigin,
+//         productCategory,
+//         productPriceBand,
+//         productPrice,
+//         productPurchasePrice,
+//         productAvailability,
+//         remarks,
+//         owningAuthority
+//       ]
+//     );
+
+//     const newProductID = insertResult.insertId;
+
+//     // ===== Future: if you create CC_ProductImages, do something like =====
+//     if (Array.isArray(productImageURLs) && productImageURLs.length) {
+//       const values = productImageURLs.map(url => [newProductID, url]);
+//       await connection.query(
+//         "INSERT INTO CC_ProductImages (ProductID, ImageURL) VALUES ?",
+//         [values]
+//       );
+//     }
+
+//     await connection.commit();
+//     connection.release();
+
+//     res.status(201).json({
+//       status: "Data Upload completed successfully",
+//       productId: newProductID
+//     });
+//   } catch (err) {
+//     console.error("Error uploading data:", err);
+//     try { await con.query("ROLLBACK"); } catch (rollbackErr) {}
+//     res.status(500).json({ error: "Internal Server Error" });
+//   }
+// });
+
+
+app.post("/api/cc/rental/product/upload", async (req, res) => {
   const {
     productName,
     productType,
     productBrandName,
-    productImageURLs,        // Accept an array even if you’re still storing in one column
+    productImageURLs,      // array of strings expected
     productUsageGender,
     productUsageOccasion,
     productOrigin,
@@ -1446,66 +1526,67 @@ app.post("/api/cc/rental/product/upload", async (req, res) => {
     owningAuthority
   } = req.body;
 
+  // get one connection only
+  const connection = dbConnection();
+
   try {
-
-    var connection = dbConnection();
-    con.connect();
-
-    // start transaction
-    //const connection = await con.getConnection(); 
+    // open connection + start transaction
+    connection.connect();
     await connection.beginTransaction();
 
-    // Insert into master table
-    const [insertResult] = await connection.query(
-      `INSERT INTO CC_RentalProductMaster
-       (ProductName, ProductType, ProductBrandName, ProductImageURL,
-        ProductUsageGender, ProductUsageOccasion, ProductOrigin, ProductCategory,
-        ProductPriceBand, ProductPrice, ProductPurchasePrice,
-        ProductAvailability, Remarks, OwningAuthority)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      [
-        productName,
-        productType,
-        productBrandName,
-        // join array back into comma string for now; later swap to image table
-        Array.isArray(productImageURLs) ? productImageURLs.join(",") : productImageURLs,
-        productUsageGender,
-        productUsageOccasion,
-        productOrigin,
-        productCategory,
-        productPriceBand,
-        productPrice,
-        productPurchasePrice,
-        productAvailability,
-        remarks,
-        owningAuthority
-      ]
-    );
+    // insert master row
+    const [insertResult] = await connection
+      .promise()
+      .query(
+        `INSERT INTO CC_RentalProductMaster
+         (ProductName, ProductType, ProductBrandName, ProductImageURL,
+          ProductUsageGender, ProductUsageOccasion, ProductOrigin, ProductCategory,
+          ProductPriceBand, ProductPrice, ProductPurchasePrice,
+          ProductAvailability, Remarks, OwningAuthority)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        [
+          productName,
+          productType,
+          productBrandName,
+          // keep legacy column populated for now
+          Array.isArray(productImageURLs) ? productImageURLs.join(",") : productImageURLs,
+          productUsageGender,
+          productUsageOccasion,
+          productOrigin,
+          productCategory,
+          productPriceBand,
+          productPrice,
+          productPurchasePrice,
+          productAvailability,
+          remarks,
+          owningAuthority
+        ]
+      );
 
     const newProductID = insertResult.insertId;
 
-    // ===== Future: if you create CC_ProductImages, do something like =====
+    // insert images into new table if you have created it
     if (Array.isArray(productImageURLs) && productImageURLs.length) {
       const values = productImageURLs.map(url => [newProductID, url]);
-      await connection.query(
-        "INSERT INTO CC_ProductImages (ProductID, ImageURL) VALUES ?",
-        [values]
-      );
+      await connection
+        .promise()
+        .query("INSERT INTO CC_ProductImages (ProductID, ImageURL) VALUES ?", [values]);
     }
 
     await connection.commit();
-    connection.release();
-
     res.status(201).json({
-      status: "Data Upload completed successfully",
+      status: "Data upload completed successfully",
       productId: newProductID
     });
   } catch (err) {
     console.error("Error uploading data:", err);
-    try { await con.query("ROLLBACK"); } catch (rollbackErr) {}
+    try { await connection.rollback(); } catch (rollbackErr) { console.error("Rollback error:", rollbackErr); }
     res.status(500).json({ error: "Internal Server Error" });
+  } finally {
+    connection.end(); // closes properly
   }
 });
+
 
 // Get Catalogue Categories
 
