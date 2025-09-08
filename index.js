@@ -1325,61 +1325,127 @@ con.query(sql, values, function (err, result) {
 
 // GET Rental Master Table Data Upload api
 
-app.get('/api/cc/rental/product', (req, res) => {
-  var connection = dbConnection();
-  
-  connection.connect();
+// Commented on Spet 8
 
-  const category = req.query.category;
-  const occasion = req.query.occasion;
-  const productType = req.query.productType;
-
-  console.log("Category: " + category);
-  console.log("Occasion: " + occasion);
-  console.log("Product Type :" +productType);
-
-  let query = 'SELECT * FROM CC_RentalProductMaster';
-  let queryParams = [];
-
-
-
-  if (category || occasion || productType) {
-    query += ' WHERE';
+// app.get('/api/cc/rental/product', (req, res) => {
+//   var connection = dbConnection();
   
-    if (category) {
-      query += ' ProductCategory = ?';
-      queryParams.push(category);
-    }
+//   connection.connect();
+
+//   const category = req.query.category;
+//   const occasion = req.query.occasion;
+//   const productType = req.query.productType;
+
+//   console.log("Category: " + category);
+//   console.log("Occasion: " + occasion);
+//   console.log("Product Type :" +productType);
+
+//   let query = 'SELECT * FROM CC_RentalProductMaster';
+//   let queryParams = [];
+
+
+
+//   if (category || occasion || productType) {
+//     query += ' WHERE';
   
-    if (category && (occasion || productType)) {
-      query += ' AND';
-    }
+//     if (category) {
+//       query += ' ProductCategory = ?';
+//       queryParams.push(category);
+//     }
   
-    if (occasion) {
-      query += ' FIND_IN_SET(?, ProductUsageOccasion)';
-      queryParams.push(occasion);
-    }
+//     if (category && (occasion || productType)) {
+//       query += ' AND';
+//     }
   
-    if (occasion && productType) {
-      query += ' AND';
-    }
+//     if (occasion) {
+//       query += ' FIND_IN_SET(?, ProductUsageOccasion)';
+//       queryParams.push(occasion);
+//     }
   
-    if (productType) {
-      query += ' ProductType = ?';
-      queryParams.push(productType);
-    }
+//     if (occasion && productType) {
+//       query += ' AND';
+//     }
+  
+//     if (productType) {
+//       query += ' ProductType = ?';
+//       queryParams.push(productType);
+//     }
+//   }
+
+//   connection.query(query, queryParams, (err, data) => {
+//     if (err) {
+//       console.error('Error executing query:', err);
+//       res.status(500).json({ error: 'Internal Server Error' });
+//       return;
+//     }
+//     res.json({ data });
+//   });
+
+//   connection.end();
+// });
+
+// Get Rental Product details api new version
+
+app.get("/api/cc/rental/product", async (req, res) => {
+  const conn = dbConnection();
+
+  const { category, occasion, productType } = req.query;
+
+  let where = [];
+  let params = [];
+
+  if (category) {
+    where.push("p.ProductCategory = ?");
+    params.push(category);
+  }
+  if (occasion) {
+    where.push("FIND_IN_SET(?, p.ProductUsageOccasion)");
+    params.push(occasion);
+  }
+  if (productType) {
+    where.push("p.ProductType = ?");
+    params.push(productType);
   }
 
-  connection.query(query, queryParams, (err, data) => {
-    if (err) {
-      console.error('Error executing query:', err);
-      res.status(500).json({ error: 'Internal Server Error' });
-      return;
-    }
-    res.json({ data });
-  });
+  // Build final query
+  let sql = `
+    SELECT 
+      p.ProductID,
+      p.ProductName,
+      p.ProductType,
+      p.ProductBrandName,
+      p.ProductUsageGender,
+      p.ProductUsageOccasion,
+      p.ProductOrigin,
+      p.ProductCategory,
+      p.ProductPriceBand,
+      p.ProductPrice,
+      p.ProductPurchasePrice,
+      p.ProductAvailability,
+      p.Remarks,
+      p.OwningAuthority,
+      GROUP_CONCAT(i.ImageURL ORDER BY i.ImageID) AS ProductImageURL
+    FROM CC_RentalProductMaster p
+    LEFT JOIN CC_ProductImages i ON p.ProductID = i.ProductID
+  `;
 
-  connection.end();
+  if (where.length) {
+    sql += " WHERE " + where.join(" AND ");
+  }
+
+  sql += " GROUP BY p.ProductID";
+
+  try {
+    const [rows] = await conn.query(sql, params);
+
+    // rows.ProductImageURL is already a comma-separated string
+    res.json({ data: rows });
+  } catch (err) {
+    console.error("Error executing query:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  } finally {
+    conn.end();
+  }
 });
 
 
