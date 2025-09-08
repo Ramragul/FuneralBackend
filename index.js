@@ -1529,7 +1529,7 @@ app.post("/api/cc/rental/product/upload", (req, res) => {
     productName,
     productType,
     productBrandName,
-    productImageURLs,
+    productImageURL,
     productUsageGender,
     productUsageOccasion,
     productOrigin,
