@@ -1546,10 +1546,15 @@ app.post("/api/cc/rental/product/upload", async (req, res) => {
   try {
     await conn.beginTransaction();
 
+    const occasionValue = Array.isArray(productUsageOccasion)
+  ? productUsageOccasion.join(",")
+  : productUsageOccasion;
+
+
     const [insertResult] = await conn.query(
       `INSERT INTO CC_RentalProductMaster
         (ProductName, ProductType, ProductBrandName, ProductImageURL,
-         ProductUsageGender, ProductUsageOccasion, ProductOrigin, ProductCategory,
+         ProductUsageGender, occasionValue, ProductOrigin, ProductCategory,
          ProductPriceBand, ProductPrice, ProductPurchasePrice,
          ProductAvailability, Remarks, OwningAuthority)
        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
