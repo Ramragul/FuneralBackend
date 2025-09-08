@@ -1440,15 +1440,16 @@ app.get('/api/cc/rental/product', (req, res) => {
 
 // Post Rental Master Table New version  , Sept 8,2025
 
-// app.post("/api/cc/rental/product/upload", async (req, res) => {
-//   const con = dbConnection(); // pooled connection
 
-//   // Destructure fields from body
+
+// app.post("/api/cc/rental/product/upload", async (req, res) => {
+//   const conn = dbConnection(); // already promise-enabled
+
 //   const {
 //     productName,
 //     productType,
 //     productBrandName,
-//     productImageURLs,        // Accept an array even if you’re still storing in one column
+//     productImageURLs,
 //     productUsageGender,
 //     productUsageOccasion,
 //     productOrigin,
@@ -1462,30 +1463,27 @@ app.get('/api/cc/rental/product', (req, res) => {
 //   } = req.body;
 
 //   try {
+//     await conn.beginTransaction();
 
-//     var connection = dbConnection();
-//     con.connect();
+//     const occasionValue = Array.isArray(productUsageOccasion)
+//   ? productUsageOccasion.join(",")
+//   : productUsageOccasion;
 
-//     // start transaction
-//     //const connection = await con.getConnection(); 
-//     await connection.beginTransaction();
 
-//     // Insert into master table
-//     const [insertResult] = await connection.query(
+//     const [insertResult] = await conn.query(
 //       `INSERT INTO CC_RentalProductMaster
-//        (ProductName, ProductType, ProductBrandName, ProductImageURL,
-//         ProductUsageGender, ProductUsageOccasion, ProductOrigin, ProductCategory,
-//         ProductPriceBand, ProductPrice, ProductPurchasePrice,
-//         ProductAvailability, Remarks, OwningAuthority)
+//         (ProductName, ProductType, ProductBrandName, ProductImageURL,
+//          ProductUsageGender, ProductUsageOccasion, ProductOrigin, ProductCategory,
+//          ProductPriceBand, ProductPrice, ProductPurchasePrice,
+//          ProductAvailability, Remarks, OwningAuthority)
 //        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 //       [
 //         productName,
 //         productType,
 //         productBrandName,
-//         // join array back into comma string for now; later swap to image table
 //         Array.isArray(productImageURLs) ? productImageURLs.join(",") : productImageURLs,
 //         productUsageGender,
-//         productUsageOccasion,
+//         occasionValue,
 //         productOrigin,
 //         productCategory,
 //         productPriceBand,
@@ -1499,17 +1497,17 @@ app.get('/api/cc/rental/product', (req, res) => {
 
 //     const newProductID = insertResult.insertId;
 
-//     // ===== Future: if you create CC_ProductImages, do something like =====
+//     // Optional: if you later keep a CC_ProductImages table
 //     if (Array.isArray(productImageURLs) && productImageURLs.length) {
 //       const values = productImageURLs.map(url => [newProductID, url]);
-//       await connection.query(
+//       await conn.query(
 //         "INSERT INTO CC_ProductImages (ProductID, ImageURL) VALUES ?",
 //         [values]
 //       );
 //     }
 
-//     await connection.commit();
-//     connection.release();
+//     await conn.commit();
+//     conn.end(); // close
 
 //     res.status(201).json({
 //       status: "Data Upload completed successfully",
@@ -1517,14 +1515,15 @@ app.get('/api/cc/rental/product', (req, res) => {
 //     });
 //   } catch (err) {
 //     console.error("Error uploading data:", err);
-//     try { await con.query("ROLLBACK"); } catch (rollbackErr) {}
+//     try { await conn.rollback(); } catch (e) {}
+//     conn.end();
 //     res.status(500).json({ error: "Internal Server Error" });
 //   }
 // });
 
 
-app.post("/api/cc/rental/product/upload", async (req, res) => {
-  const conn = dbConnection(); // already promise-enabled
+app.post("/api/cc/rental/product/upload", (req, res) => {
+  const conn = dbConnection(); // returns plain mysql2 connection (NO .promise())
 
   const {
     productName,
@@ -1543,64 +1542,95 @@ app.post("/api/cc/rental/product/upload", async (req, res) => {
     owningAuthority
   } = req.body;
 
-  try {
-    await conn.beginTransaction();
+  // convert arrays to comma string
+  const occasionValue = Array.isArray(productUsageOccasion)
+    ? productUsageOccasion.join(",")
+    : productUsageOccasion;
+  const imageValue = Array.isArray(productImageURLs)
+    ? productImageURLs.join(",")
+    : productImageURLs;
 
-    const occasionValue = Array.isArray(productUsageOccasion)
-  ? productUsageOccasion.join(",")
-  : productUsageOccasion;
-
-
-    const [insertResult] = await conn.query(
-      `INSERT INTO CC_RentalProductMaster
-        (ProductName, ProductType, ProductBrandName, ProductImageURL,
-         ProductUsageGender, ProductUsageOccasion, ProductOrigin, ProductCategory,
-         ProductPriceBand, ProductPrice, ProductPurchasePrice,
-         ProductAvailability, Remarks, OwningAuthority)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      [
-        productName,
-        productType,
-        productBrandName,
-        Array.isArray(productImageURLs) ? productImageURLs.join(",") : productImageURLs,
-        productUsageGender,
-        occasionValue,
-        productOrigin,
-        productCategory,
-        productPriceBand,
-        productPrice,
-        productPurchasePrice,
-        productAvailability,
-        remarks,
-        owningAuthority
-      ]
-    );
-
-    const newProductID = insertResult.insertId;
-
-    // Optional: if you later keep a CC_ProductImages table
-    if (Array.isArray(productImageURLs) && productImageURLs.length) {
-      const values = productImageURLs.map(url => [newProductID, url]);
-      await conn.query(
-        "INSERT INTO CC_ProductImages (ProductID, ImageURL) VALUES ?",
-        [values]
-      );
+  conn.beginTransaction((txErr) => {
+    if (txErr) {
+      console.error("Begin transaction failed:", txErr);
+      conn.end();
+      return res.status(500).json({ error: "DB transaction error" });
     }
 
-    await conn.commit();
-    conn.end(); // close
+    const insertSql = `
+      INSERT INTO CC_RentalProductMaster
+      (ProductName, ProductType, ProductBrandName, ProductImageURL,
+       ProductUsageGender, ProductUsageOccasion, ProductOrigin, ProductCategory,
+       ProductPriceBand, ProductPrice, ProductPurchasePrice,
+       ProductAvailability, Remarks, OwningAuthority)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
 
-    res.status(201).json({
-      status: "Data Upload completed successfully",
-      productId: newProductID
+    const insertParams = [
+      productName,
+      productType,
+      productBrandName,
+      imageValue,
+      productUsageGender,
+      occasionValue,
+      productOrigin,
+      productCategory,
+      productPriceBand,
+      productPrice,
+      productPurchasePrice,
+      productAvailability,
+      remarks,
+      owningAuthority
+    ];
+
+    conn.query(insertSql, insertParams, (insErr, insertResult) => {
+      if (insErr) {
+        console.error("Insert failed:", insErr);
+        return conn.rollback(() => {
+          conn.end();
+          res.status(500).json({ error: "Insert failed" });
+        });
+      }
+
+      const newProductID = insertResult.insertId;
+
+      // If extra image table
+      if (Array.isArray(productImageURLs) && productImageURLs.length) {
+        const values = productImageURLs.map((url) => [newProductID, url]);
+        conn.query(
+          "INSERT INTO CC_ProductImages (ProductID, ImageURL) VALUES ?",
+          [values],
+          (imgErr) => {
+            if (imgErr) {
+              console.error("Image insert failed:", imgErr);
+              return conn.rollback(() => {
+                conn.end();
+                res.status(500).json({ error: "Image insert failed" });
+              });
+            }
+            commitAndRespond(newProductID);
+          }
+        );
+      } else {
+        commitAndRespond(newProductID);
+      }
+
+      function commitAndRespond(id) {
+        conn.commit((commitErr) => {
+          conn.end();
+          if (commitErr) {
+            console.error("Commit failed:", commitErr);
+            return res.status(500).json({ error: "Commit failed" });
+          }
+          res.status(201).json({
+            status: "Data Upload completed successfully",
+            productId: id,
+          });
+        });
+      }
     });
-  } catch (err) {
-    console.error("Error uploading data:", err);
-    try { await conn.rollback(); } catch (e) {}
-    conn.end();
-    res.status(500).json({ error: "Internal Server Error" });
-  }
+  });
 });
+
 
 
 
