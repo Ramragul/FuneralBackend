@@ -538,22 +538,37 @@ app.use(bodyParser.json());
 
 
 
+// Commented on SEPT 8,2025 for 
 
+// function dbConnection () {
+//   console.log("PORT NUMBER" +process.env.DATABASE_PORT)
+//   var connection = mysql.createConnection({
+  
+//     //host     : "smartdisplay.cj0ybsa00pzb.ap-northeast-1.rds.amazonaws.com",
+//     host     : process.env.DATABASE_URL,
+//     user     : process.env.DATABASE_USERNAME,
+//     password : process.env.DATABASE_PASSWORD,
+//     port     : process.env.DATABASE_PORT,
+//     database : process.env.DATABASE_NAME
+//   });
+//   return connection;
+// }
+
+//const mysql = require("mysql2");   // keep normal mysql2
 
 function dbConnection () {
-  console.log("PORT NUMBER" +process.env.DATABASE_PORT)
-  var connection = mysql.createConnection({
-  
-    //host     : "smartdisplay.cj0ybsa00pzb.ap-northeast-1.rds.amazonaws.com",
+  console.log("PORT NUMBER " + process.env.DATABASE_PORT);
+  const connection = mysql.createConnection({
     host     : process.env.DATABASE_URL,
     user     : process.env.DATABASE_USERNAME,
     password : process.env.DATABASE_PASSWORD,
     port     : process.env.DATABASE_PORT,
     database : process.env.DATABASE_NAME
   });
-  return connection;
+  return connection.promise();   // 🔑 wrap for async/await
 }
 
+module.exports = dbConnection;
 
 function mailConfig () {
 const transporter = nodemailer.createTransport({
@@ -1509,11 +1524,13 @@ app.get('/api/cc/rental/product', (req, res) => {
 
 
 app.post("/api/cc/rental/product/upload", async (req, res) => {
+  const conn = dbConnection(); // already promise-enabled
+
   const {
     productName,
     productType,
     productBrandName,
-    productImageURLs,      // array of strings expected
+    productImageURLs,
     productUsageGender,
     productUsageOccasion,
     productOrigin,
@@ -1526,66 +1543,60 @@ app.post("/api/cc/rental/product/upload", async (req, res) => {
     owningAuthority
   } = req.body;
 
-  // get one connection only
-  const connection = dbConnection();
-
   try {
-    // open connection + start transaction
-    connection.connect();
-    await connection.beginTransaction();
+    await conn.beginTransaction();
 
-    // insert master row
-    const [insertResult] = await connection
-      .promise()
-      .query(
-        `INSERT INTO CC_RentalProductMaster
-         (ProductName, ProductType, ProductBrandName, ProductImageURL,
-          ProductUsageGender, ProductUsageOccasion, ProductOrigin, ProductCategory,
-          ProductPriceBand, ProductPrice, ProductPurchasePrice,
-          ProductAvailability, Remarks, OwningAuthority)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-        [
-          productName,
-          productType,
-          productBrandName,
-          // keep legacy column populated for now
-          Array.isArray(productImageURLs) ? productImageURLs.join(",") : productImageURLs,
-          productUsageGender,
-          productUsageOccasion,
-          productOrigin,
-          productCategory,
-          productPriceBand,
-          productPrice,
-          productPurchasePrice,
-          productAvailability,
-          remarks,
-          owningAuthority
-        ]
-      );
+    const [insertResult] = await conn.query(
+      `INSERT INTO CC_RentalProductMaster
+        (ProductName, ProductType, ProductBrandName, ProductImageURL,
+         ProductUsageGender, ProductUsageOccasion, ProductOrigin, ProductCategory,
+         ProductPriceBand, ProductPrice, ProductPurchasePrice,
+         ProductAvailability, Remarks, OwningAuthority)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [
+        productName,
+        productType,
+        productBrandName,
+        Array.isArray(productImageURLs) ? productImageURLs.join(",") : productImageURLs,
+        productUsageGender,
+        productUsageOccasion,
+        productOrigin,
+        productCategory,
+        productPriceBand,
+        productPrice,
+        productPurchasePrice,
+        productAvailability,
+        remarks,
+        owningAuthority
+      ]
+    );
 
     const newProductID = insertResult.insertId;
 
-    // insert images into new table if you have created it
+    // Optional: if you later keep a CC_ProductImages table
     if (Array.isArray(productImageURLs) && productImageURLs.length) {
       const values = productImageURLs.map(url => [newProductID, url]);
-      await connection
-        .promise()
-        .query("INSERT INTO CC_ProductImages (ProductID, ImageURL) VALUES ?", [values]);
+      await conn.query(
+        "INSERT INTO CC_ProductImages (ProductID, ImageURL) VALUES ?",
+        [values]
+      );
     }
 
-    await connection.commit();
+    await conn.commit();
+    conn.end(); // close
+
     res.status(201).json({
-      status: "Data upload completed successfully",
+      status: "Data Upload completed successfully",
       productId: newProductID
     });
   } catch (err) {
     console.error("Error uploading data:", err);
-    try { await connection.rollback(); } catch (rollbackErr) { console.error("Rollback error:", rollbackErr); }
+    try { await conn.rollback(); } catch (e) {}
+    conn.end();
     res.status(500).json({ error: "Internal Server Error" });
-  } finally {
-    connection.end(); // closes properly
   }
 });
+
 
 
 // Get Catalogue Categories
