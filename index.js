@@ -1327,119 +1327,119 @@ con.query(sql, values, function (err, result) {
 
 // Commented on Spet 8
 
-// app.get('/api/cc/rental/product', (req, res) => {
-//   var connection = dbConnection();
-  
-//   connection.connect();
-
-//   const category = req.query.category;
-//   const occasion = req.query.occasion;
-//   const productType = req.query.productType;
-
-//   console.log("Category: " + category);
-//   console.log("Occasion: " + occasion);
-//   console.log("Product Type :" +productType);
-
-//   let query = 'SELECT * FROM CC_RentalProductMaster';
-//   let queryParams = [];
-
-
-
-//   if (category || occasion || productType) {
-//     query += ' WHERE';
-  
-//     if (category) {
-//       query += ' ProductCategory = ?';
-//       queryParams.push(category);
-//     }
-  
-//     if (category && (occasion || productType)) {
-//       query += ' AND';
-//     }
-  
-//     if (occasion) {
-//       query += ' FIND_IN_SET(?, ProductUsageOccasion)';
-//       queryParams.push(occasion);
-//     }
-  
-//     if (occasion && productType) {
-//       query += ' AND';
-//     }
-  
-//     if (productType) {
-//       query += ' ProductType = ?';
-//       queryParams.push(productType);
-//     }
-//   }
-
-//   connection.query(query, queryParams, (err, data) => {
-//     if (err) {
-//       console.error('Error executing query:', err);
-//       res.status(500).json({ error: 'Internal Server Error' });
-//       return;
-//     }
-//     res.json({ data });
-//   });
-
-//   connection.end();
-// });
-
-// Get Rental Product details api new version
-
 app.get('/api/cc/rental/product', (req, res) => {
-  const conn = dbConnection();     // normal mysql2, no .promise()
-  conn.connect();
+  var connection = dbConnection();
+  
+  connection.connect();
 
-  const { category, occasion, productType } = req.query;
+  const category = req.query.category;
+  const occasion = req.query.occasion;
+  const productType = req.query.productType;
 
-  // Build WHERE + params
-  const where = [];
-  const params = [];
+  console.log("Category: " + category);
+  console.log("Occasion: " + occasion);
+  console.log("Product Type :" +productType);
 
-  if (category)   { where.push('p.ProductCategory = ?'); params.push(category); }
-  if (occasion)   { where.push('FIND_IN_SET(?, p.ProductUsageOccasion)'); params.push(occasion); }
-  if (productType){ where.push('p.ProductType = ?'); params.push(productType); }
+  let query = 'SELECT * FROM CC_RentalProductMaster';
+  let queryParams = [];
 
-  let sql = `
-    SELECT 
-      p.ProductID,
-      p.ProductName,
-      p.ProductType,
-      p.ProductBrandName,
-      p.ProductUsageGender,
-      p.ProductUsageOccasion,
-      p.ProductOrigin,
-      p.ProductCategory,
-      p.ProductPriceBand,
-      p.ProductPrice,
-      p.ProductPurchasePrice,
-      p.ProductAvailability,
-      p.Remarks,
-      p.OwningAuthority,
-      p.ProductStatus,
-      GROUP_CONCAT(i.ImageURL ORDER BY i.ImageID) AS ProductImageURL
-    FROM CC_RentalProductMaster p
-    LEFT JOIN CC_ProductImages i ON p.ProductID = i.ProductID
-  `;
-  if (where.length) {
-    sql += ' WHERE ' + where.join(' AND ');
+
+
+  if (category || occasion || productType) {
+    query += ' WHERE';
+  
+    if (category) {
+      query += ' ProductCategory = ?';
+      queryParams.push(category);
+    }
+  
+    if (category && (occasion || productType)) {
+      query += ' AND';
+    }
+  
+    if (occasion) {
+      query += ' FIND_IN_SET(?, ProductUsageOccasion)';
+      queryParams.push(occasion);
+    }
+  
+    if (occasion && productType) {
+      query += ' AND';
+    }
+  
+    if (productType) {
+      query += ' ProductType = ?';
+      queryParams.push(productType);
+    }
   }
-  sql += ' GROUP BY p.ProductID';
 
-  console.log('Final SQL:', sql, params);
-
-  conn.query(sql, params, (err, rows) => {
+  connection.query(query, queryParams, (err, data) => {
     if (err) {
       console.error('Error executing query:', err);
       res.status(500).json({ error: 'Internal Server Error' });
-      conn.end();
       return;
     }
-    // rows[].ProductImageURL is already a comma string from GROUP_CONCAT
-    res.json({ data: rows });
-    conn.end();
+    res.json({ data });
   });
+
+  connection.end();
 });
+
+// Get Rental Product details api new version
+
+// app.get('/api/cc/rental/product', (req, res) => {
+//   const conn = dbConnection();     // normal mysql2, no .promise()
+//   conn.connect();
+
+//   const { category, occasion, productType } = req.query;
+
+//   // Build WHERE + params
+//   const where = [];
+//   const params = [];
+
+//   if (category)   { where.push('p.ProductCategory = ?'); params.push(category); }
+//   if (occasion)   { where.push('FIND_IN_SET(?, p.ProductUsageOccasion)'); params.push(occasion); }
+//   if (productType){ where.push('p.ProductType = ?'); params.push(productType); }
+
+//   let sql = `
+//     SELECT 
+//       p.ProductID,
+//       p.ProductName,
+//       p.ProductType,
+//       p.ProductBrandName,
+//       p.ProductUsageGender,
+//       p.ProductUsageOccasion,
+//       p.ProductOrigin,
+//       p.ProductCategory,
+//       p.ProductPriceBand,
+//       p.ProductPrice,
+//       p.ProductPurchasePrice,
+//       p.ProductAvailability,
+//       p.Remarks,
+//       p.OwningAuthority,
+//       p.ProductStatus,
+//       GROUP_CONCAT(i.ImageURL ORDER BY i.ImageID) AS ProductImageURL
+//     FROM CC_RentalProductMaster p
+//     LEFT JOIN CC_ProductImages i ON p.ProductID = i.ProductID
+//   `;
+//   if (where.length) {
+//     sql += ' WHERE ' + where.join(' AND ');
+//   }
+//   sql += ' GROUP BY p.ProductID';
+
+//   console.log('Final SQL:', sql, params);
+
+//   conn.query(sql, params, (err, rows) => {
+//     if (err) {
+//       console.error('Error executing query:', err);
+//       res.status(500).json({ error: 'Internal Server Error' });
+//       conn.end();
+//       return;
+//     }
+//     // rows[].ProductImageURL is already a comma string from GROUP_CONCAT
+//     res.json({ data: rows });
+//     conn.end();
+//   });
+// });
 
 
 
