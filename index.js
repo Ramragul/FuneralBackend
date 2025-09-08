@@ -540,33 +540,33 @@ app.use(bodyParser.json());
 
 // Commented on SEPT 8,2025 for 
 
-// function dbConnection () {
-//   console.log("PORT NUMBER" +process.env.DATABASE_PORT)
-//   var connection = mysql.createConnection({
-  
-//     //host     : "smartdisplay.cj0ybsa00pzb.ap-northeast-1.rds.amazonaws.com",
-//     host     : process.env.DATABASE_URL,
-//     user     : process.env.DATABASE_USERNAME,
-//     password : process.env.DATABASE_PASSWORD,
-//     port     : process.env.DATABASE_PORT,
-//     database : process.env.DATABASE_NAME
-//   });
-//   return connection;
-// }
-
-//const mysql = require("mysql2");   // keep normal mysql2
-
 function dbConnection () {
-  console.log("PORT NUMBER " + process.env.DATABASE_PORT);
-  const connection = mysql.createConnection({
+  console.log("PORT NUMBER" +process.env.DATABASE_PORT)
+  var connection = mysql.createConnection({
+  
+    //host     : "smartdisplay.cj0ybsa00pzb.ap-northeast-1.rds.amazonaws.com",
     host     : process.env.DATABASE_URL,
     user     : process.env.DATABASE_USERNAME,
     password : process.env.DATABASE_PASSWORD,
     port     : process.env.DATABASE_PORT,
     database : process.env.DATABASE_NAME
   });
-  return connection.promise();   // 🔑 wrap for async/await
+  return connection;
 }
+
+//const mysql = require("mysql2");   // keep normal mysql2
+
+// function dbConnection () {
+//   console.log("PORT NUMBER " + process.env.DATABASE_PORT);
+//   const connection = mysql.createConnection({
+//     host     : process.env.DATABASE_URL,
+//     user     : process.env.DATABASE_USERNAME,
+//     password : process.env.DATABASE_PASSWORD,
+//     port     : process.env.DATABASE_PORT,
+//     database : process.env.DATABASE_NAME
+//   });
+//   return connection.promise();   // 🔑 wrap for async/await
+// }
 
 module.exports = dbConnection;
 
