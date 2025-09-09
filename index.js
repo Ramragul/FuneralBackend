@@ -6515,10 +6515,10 @@ app.get('/api/products/:id/images', (req, res) => {
     con.connect();
 
     con.query(
-      `SELECT ImageID, ProductID, ImageURL, DisplayOrder
+      `SELECT ImageID, ProductID, ImageURL, SortOrder
        FROM CC_ProductImages
        WHERE ProductID = ?
-       ORDER BY DisplayOrder ASC`,
+       ORDER BY SortOrder ASC`,
       [productId],
       (err, rows) => {
         if (err) {
@@ -6566,7 +6566,7 @@ app.post('/api/products/:id/images', upload.array('photos', 10), async (req, res
 
     uploadedImageURLs.forEach((img) => {
       con.query(
-        `INSERT INTO CC_ProductImages (ProductID, ImageURL, DisplayOrder)
+        `INSERT INTO CC_ProductImages (ProductID, ImageURL, SortOrder)
          VALUES (?, ?, ?)`,
         [productId, img.url, img.order],
         (err) => {
@@ -6611,7 +6611,7 @@ app.post('/api/products/:id/images/reorder', (req, res) => {
 
     order.forEach((item) => {
       con.query(
-        `UPDATE CC_ProductImages SET DisplayOrder=? WHERE ImageID=?`,
+        `UPDATE CC_ProductImages SET SortOrder=? WHERE ImageID=?`,
         [item.displayOrder, item.imageId],
         (err) => {
           if (err) console.error('Reorder update error:', err);
