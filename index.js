@@ -6433,6 +6433,200 @@ app.post('/api/mehendi/booking/update', (req, res) => {
 });
 
 
+// Product Managements API Codes 
+
+// ---------- Get product details ----------
+app.get('/api/products/:id', (req, res) => {
+  try {
+    const productId = req.params.id;
+    var con = dbConnection();
+    con.connect();
+
+    con.query(
+      `SELECT ProductID, ProductName, ProductBrandName, Remarks, ProductType,
+              OwningAuthority, ProductUsageGender, ProductUsageOccasion,
+              ProductUsageAgeRange, ProductOrigin, ProductUsageFrequency,
+              ProductUserReview, ProductPrice, ProductPurchasePrice,
+              ProductPriceBand, ProductAvailability, ProductNextAvailabilityDate,
+              ProductCategory, ProductStatus
+       FROM CC_RentalProductMaster
+       WHERE ProductID = ?`,
+      [productId],
+      (err, rows) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).json({ error: 'Server Error' });
+        }
+        if (!rows.length) return res.status(404).json({ error: 'Product not found' });
+        res.json(rows[0]);
+      }
+    );
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server Error' });
+  }
+});
+
+// ---------- Update product details ----------
+app.post('/api/products/:id', (req, res) => {
+  try {
+    const productId = req.params.id;
+    const body = req.body;
+    var con = dbConnection();
+    con.connect();
+
+    con.query(
+      `UPDATE CC_RentalProductMaster
+       SET ProductName=?, ProductBrandName=?, Remarks=?, ProductType=?,
+           OwningAuthority=?, ProductUsageGender=?, ProductUsageOccasion=?,
+           ProductUsageAgeRange=?, ProductOrigin=?, ProductUsageFrequency=?,
+           ProductUserReview=?, ProductPrice=?, ProductPurchasePrice=?,
+           ProductPriceBand=?, ProductAvailability=?, ProductNextAvailabilityDate=?,
+           ProductCategory=?, ProductStatus=?
+       WHERE ProductID=?`,
+      [
+        body.ProductName, body.ProductBrandName, body.Remarks, body.ProductType,
+        body.OwningAuthority, body.ProductUsageGender, body.ProductUsageOccasion,
+        body.ProductUsageAgeRange, body.ProductOrigin, body.ProductUsageFrequency,
+        body.ProductUserReview, body.ProductPrice, body.ProductPurchasePrice,
+        body.ProductPriceBand, body.ProductAvailability, body.ProductNextAvailabilityDate,
+        body.ProductCategory, body.ProductStatus,
+        productId
+      ],
+      (err, result) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).json({ error: 'Server Error' });
+        }
+        res.json({ message: 'Product updated successfully' });
+      }
+    );
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server Error' });
+  }
+});
+
+// ---------- Get product images ----------
+app.get('/api/products/:id/images', (req, res) => {
+  try {
+    const productId = req.params.id;
+    var con = dbConnection();
+    con.connect();
+
+    con.query(
+      `SELECT ImageID, ProductID, ImageURL, DisplayOrder
+       FROM CC_ProductImages
+       WHERE ProductID = ?
+       ORDER BY DisplayOrder ASC`,
+      [productId],
+      (err, rows) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).json({ error: 'Server Error' });
+        }
+        res.json(rows);
+      }
+    );
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server Error' });
+  }
+});
+
+// ---------- Upload new images ----------
+app.post('/api/products/:id/images', upload.array('photos', 10), async (req, res) => {
+  try {
+    const productId = req.params.id;
+    const uploadedImageURLs = [];
+
+    const promises = req.files.map(async (file, index) => {
+      // Resize and compress
+      const resizedBuffer = await sharp(file.buffer)
+        .resize(800, 800, { fit: sharp.fit.inside, withoutEnlargement: true })
+        .toFormat('jpeg', { quality: 80 })
+        .toBuffer();
+
+      const params = {
+        Bucket: 'snektoawsbucket',
+        Key: `gb_ground/${uuidv4()}_${file.originalname}`,
+        Body: resizedBuffer,
+        ContentType: 'image/jpeg',
+        ACL: 'public-read',
+      };
+
+      const data = await s3.upload(params).promise();
+      uploadedImageURLs.push({ url: data.Location, order: index });
+    });
+
+    await Promise.all(promises);
+
+    var con = dbConnection();
+    con.connect();
+
+    uploadedImageURLs.forEach((img) => {
+      con.query(
+        `INSERT INTO CC_ProductImages (ProductID, ImageURL, DisplayOrder)
+         VALUES (?, ?, ?)`,
+        [productId, img.url, img.order],
+        (err) => {
+          if (err) console.error('DB insert error:', err);
+        }
+      );
+    });
+
+    res.status(200).json({ imageURLs: uploadedImageURLs.map(i => i.url) });
+  } catch (error) {
+    console.error('Error uploading images:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// ---------- Delete image ----------
+app.post('/api/products/:id/images/delete', (req, res) => {
+  try {
+    const { imageId } = req.body;
+    var con = dbConnection();
+    con.connect();
+
+    con.query(`DELETE FROM CC_ProductImages WHERE ImageID = ?`, [imageId], (err) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'Server Error' });
+      }
+      res.json({ message: 'Image deleted successfully' });
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server Error' });
+  }
+});
+
+// ---------- Reorder images ----------
+app.post('/api/products/:id/images/reorder', (req, res) => {
+  try {
+    const { order } = req.body; // [{ imageId, displayOrder }, ...]
+    var con = dbConnection();
+    con.connect();
+
+    order.forEach((item) => {
+      con.query(
+        `UPDATE CC_ProductImages SET DisplayOrder=? WHERE ImageID=?`,
+        [item.displayOrder, item.imageId],
+        (err) => {
+          if (err) console.error('Reorder update error:', err);
+        }
+      );
+    });
+
+    res.json({ message: 'Reorder saved' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server Error' });
+  }
+});
+
+
 
 
 
