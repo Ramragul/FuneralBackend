@@ -6435,6 +6435,23 @@ app.post('/api/mehendi/booking/update', (req, res) => {
 
 // Product Managements API Codes 
 
+// ---------- Get All Products ---------------
+
+app.get("/api/products", (req, res) => {
+  var con = dbConnection();
+  con.connect();
+
+  con.query("SELECT * FROM CC_RentalProductMaster", (err, result) => {
+    if (err) {
+      console.error("Error fetching products:", err);
+      return res.status(500).json({ error: "DB error" });
+    }
+    res.json(result);
+  });
+
+  con.end();
+});
+
 // ---------- Get product details ----------
 app.get('/api/products/:id', (req, res) => {
   try {
