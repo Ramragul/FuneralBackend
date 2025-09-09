@@ -6435,13 +6435,58 @@ app.post('/api/mehendi/booking/update', (req, res) => {
 
 // Product Managements API Codes 
 
-// ---------- Get All Products ---------------
+// ---------- Get All Rental Products ---------------
+
+// app.get("/api/products", (req, res) => {
+//   var con = dbConnection();
+//   con.connect();
+
+//   con.query("SELECT * FROM CC_RentalProductMaster", (err, result) => {
+//     if (err) {
+//       console.error("Error fetching products:", err);
+//       return res.status(500).json({ error: "DB error" });
+//     }
+//     res.json(result);
+//   });
+
+//   con.end();
+// });
 
 app.get("/api/products", (req, res) => {
   var con = dbConnection();
   con.connect();
 
-  con.query("SELECT * FROM CC_RentalProductMaster", (err, result) => {
+  const sql = `
+    SELECT 
+      p.ProductID,
+      p.ProductBrandName,
+      p.Remarks,
+      p.ProductType,
+      p.OwningAuthority,
+      p.ProductName,
+      p.ProductUsageGender,
+      p.ProductUsageOccasion,
+      p.ProductUsageAgeRange,
+      p.ProductOrigin,
+      p.ProductUsageFrequency,
+      p.ProductUserReview,
+      p.ProductPrice,
+      p.ProductPurchasePrice,
+      p.ProductPriceBand,
+      p.ProductAvailability,
+      p.ProductNextAvailabilityDate,
+      p.ProductCategory,
+      p.ProductStatus,
+      -- ✅ pick first image from CC_ProductImages by SortOrder
+      (SELECT i.ImageURL 
+         FROM CC_ProductImages i 
+        WHERE i.ProductID = p.ProductID 
+        ORDER BY i.SortOrder ASC, i.ImageID ASC 
+        LIMIT 1) AS ProductImageURL
+    FROM CC_RentalProductMaster p
+  `;
+
+  con.query(sql, (err, result) => {
     if (err) {
       console.error("Error fetching products:", err);
       return res.status(500).json({ error: "DB error" });
@@ -6451,6 +6496,7 @@ app.get("/api/products", (req, res) => {
 
   con.end();
 });
+
 
 // ---------- Get product details ----------
 app.get('/api/products/:id', (req, res) => {
