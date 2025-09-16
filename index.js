@@ -6690,6 +6690,200 @@ app.post('/api/products/:id/images/reorder', (req, res) => {
 });
 
 
+// ------------ The Funeral Company ----------------
+
+// Coffin Purchase API
+
+app.post('/api/coffins/purchase', (req, res) => {
+  const {
+    customer,
+    shippingAddress,
+    productId,
+    size,
+    customizations = [],
+    quantity = 1,
+    deliveryDate,
+    collectionDate = null,
+    notes = ''
+  } = req.body;
+
+  if (!productId || !deliveryDate || !customer?.phone) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  let con;
+  try {
+    con = dbConnection();
+    con.connect();
+
+    con.beginTransaction(err => {
+      if (err) return res.status(500).json({ error: 'Transaction start failed' });
+
+      // Step 1: Upsert customer
+      con.query('SELECT id FROM customers WHERE phone = ? LIMIT 1', [customer.phone], (err, rows) => {
+        if (err) return rollback(con, res, 'Customer lookup failed', err);
+
+        const handleCustomer = (customerId) => {
+          // Step 2: Insert product
+          con.query('SELECT * FROM products WHERE id = ? LIMIT 1', [productId], (err, productRows) => {
+            if (err || !productRows.length) return rollback(con, res, 'Product not found', err);
+            const product = productRows[0];
+
+            // Step 3: Customizations
+            if (customizations.length) {
+              con.query('SELECT id, label, price FROM product_customizations WHERE id IN (?)', [customizations], (err, cRows) => {
+                if (err) return rollback(con, res, 'Customization lookup failed', err);
+                finishOrder(customerId, product, cRows);
+              });
+            } else {
+              finishOrder(customerId, product, []);
+            }
+          });
+        };
+
+        if (rows.length) {
+          const customerId = rows[0].id;
+          con.query('UPDATE customers SET name=?, email=? WHERE id=?', [customer.name, customer.email, customerId], (err) => {
+            if (err) return rollback(con, res, 'Customer update failed', err);
+            handleCustomer(customerId);
+          });
+        } else {
+          con.query('INSERT INTO customers (name, phone, email) VALUES (?, ?, ?)', [customer.name, customer.phone, customer.email], (err, result) => {
+            if (err) return rollback(con, res, 'Customer insert failed', err);
+            handleCustomer(result.insertId);
+          });
+        }
+      });
+
+      function finishOrder(customerId, product, customizationRows) {
+        const customSum = customizationRows.reduce((s, c) => s + Number(c.price), 0);
+        const unitPrice = Number(product.base_price) + customSum;
+        const totalPrice = unitPrice * quantity;
+
+        // Insert order
+        con.query('INSERT INTO orders (customer_id, order_type, total_price, status, payment_status) VALUES (?, ?, ?, ?, ?)',
+          [customerId, 'product', totalPrice, 'pending', 'unpaid'], (err, orderRes) => {
+            if (err) return rollback(con, res, 'Order insert failed', err);
+            const orderId = orderRes.insertId;
+
+            // Insert order_items
+            con.query('INSERT INTO order_items (order_id, item_type, item_ref, name, unit_price, quantity, subtotal, customizations) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+              [orderId, 'product', product.id, product.name, unitPrice, quantity, totalPrice, JSON.stringify(customizationRows)], (err) => {
+                if (err) return rollback(con, res, 'Order items insert failed', err);
+
+                // Insert product_orders
+                con.query(`INSERT INTO product_orders (order_id, product_id, size, delivery_date, collection_date, notes)
+                           VALUES (?, ?, ?, ?, ?, ?)`,
+                  [orderId, product.id, size, deliveryDate, collectionDate, notes], (err) => {
+                    if (err) return rollback(con, res, 'Product order insert failed', err);
+
+                    con.commit(err => {
+                      if (err) return rollback(con, res, 'Commit failed', err);
+                      res.json({ orderId, status: 'pending', total: totalPrice, message: 'Coffin order created' });
+                    });
+                  });
+              });
+          });
+      }
+    });
+  } catch (error) {
+    console.error('coffin purchase exception', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+
+
+
+// Service Booking API 
+
+
+app.post('/api/services/book', (req, res) => {
+  const { customer, packageCode, serviceDate, pickupLocation, dropLocation, notes } = req.body;
+
+  if (!packageCode || !serviceDate || !customer?.phone) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  let con;
+  try {
+    con = dbConnection();
+    con.connect();
+
+    con.beginTransaction(err => {
+      if (err) return res.status(500).json({ error: 'Transaction start failed' });
+
+      // 1) Upsert customer
+      con.query('SELECT id FROM customers WHERE phone = ? LIMIT 1', [customer.phone], (err, rows) => {
+        if (err) return rollback(con, res, 'Customer lookup failed', err);
+
+        const handleCustomer = (customerId) => {
+          // 2) Get service package
+          con.query('SELECT * FROM service_packages WHERE code = ? LIMIT 1', [packageCode], (err, pkgRows) => {
+            if (err || !pkgRows.length) return rollback(con, res, 'Service package not found', err);
+            const pkg = pkgRows[0];
+            const totalPrice = Number(pkg.price);
+
+            // 3) Insert order
+            con.query('INSERT INTO orders (customer_id, order_type, total_price, status, payment_status) VALUES (?, ?, ?, ?, ?)',
+              [customerId, 'service', totalPrice, 'pending', 'unpaid'], (err, orderRes) => {
+                if (err) return rollback(con, res, 'Order insert failed', err);
+                const orderId = orderRes.insertId;
+
+                // 4) Insert order_items
+                con.query('INSERT INTO order_items (order_id, item_type, item_ref, name, unit_price, quantity, subtotal) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                  [orderId, 'service', packageCode, pkg.name, totalPrice, 1, totalPrice], (err) => {
+                    if (err) return rollback(con, res, 'Order items insert failed', err);
+
+                    // 5) Insert service_bookings
+                    con.query(`INSERT INTO service_bookings (order_id, package_code, service_date, pickup_location, drop_location, notes)
+                               VALUES (?, ?, ?, ?, ?, ?)`,
+                      [orderId, packageCode, serviceDate, pickupLocation, dropLocation, notes], (err) => {
+                        if (err) return rollback(con, res, 'Service booking insert failed', err);
+
+                        con.commit(err => {
+                          if (err) return rollback(con, res, 'Commit failed', err);
+                          res.json({ orderId, status: 'pending', total: totalPrice, message: 'Service booking created' });
+                        });
+                      });
+                  });
+              });
+          });
+        };
+
+        if (rows.length) {
+          const customerId = rows[0].id;
+          con.query('UPDATE customers SET name=?, email=? WHERE id=?', [customer.name, customer.email, customerId], (err) => {
+            if (err) return rollback(con, res, 'Customer update failed', err);
+            handleCustomer(customerId);
+          });
+        } else {
+          con.query('INSERT INTO customers (name, phone, email) VALUES (?, ?, ?)', [customer.name, customer.phone, customer.email], (err, result) => {
+            if (err) return rollback(con, res, 'Customer insert failed', err);
+            handleCustomer(result.insertId);
+          });
+        }
+      });
+    });
+  } catch (error) {
+    console.error('service booking exception', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+
+
+
+// -------------------- The Funeral Company API End -----------------------
+
+// Helper rollback function
+function rollback(con, res, msg, err) {
+  console.error(msg, err);
+  con.rollback(() => {
+    res.status(500).json({ error: msg });
+  });
+}
+
 
 
 
