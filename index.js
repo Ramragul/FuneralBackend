@@ -7079,8 +7079,8 @@ app.post('/api/products/save-with-images', async (req, res) => {
       con.beginTransaction(err => (err ? reject(err) : resolve()))
     );
 
-    // Insert or update product
-    const productResult = await new Promise((resolve, reject) => {
+    // Insert/Update product
+    const [productResult] = await new Promise((resolve, reject) => {
       con.query(
         `INSERT INTO products (id, sku, name, description, base_price, inventory)
          VALUES (?, ?, ?, ?, ?, ?)
@@ -7090,58 +7090,52 @@ app.post('/api/products/save-with-images', async (req, res) => {
            description=VALUES(description),
            base_price=VALUES(base_price),
            inventory=VALUES(inventory)`,
-        [
-          id,
-          sku || null,
-          name,
-          description || null,
-          Number(base_price) || 0,
-          Number(inventory) || 0,
-        ],
-        (err, result) => {
-          if (err) return reject(err);
-          console.log("✅ Product insert/update:", result);
-          resolve(result);
-        }
+        [id, sku || null, name, description || null, Number(base_price) || 0, Number(inventory) || 0],
+        (err, result) => (err ? reject(err) : resolve([result]))
       );
     });
+    console.log("✅ Product query result:", productResult);
 
-    // Delete old images for product
-    const deleteResult = await new Promise((resolve, reject) => {
-      con.query(`DELETE FROM product_images WHERE product_id=?`, [id], (err, result) => {
-        if (err) return reject(err);
-        console.log("🗑️ Deleted old images:", result.affectedRows);
-        resolve(result);
-      });
+    // Delete old images
+    const [deleteResult] = await new Promise((resolve, reject) => {
+      con.query(`DELETE FROM product_images WHERE product_id=?`, [id], (err, result) =>
+        err ? reject(err) : resolve([result])
+      );
     });
+    console.log("🗑️ Deleted old images:", deleteResult.affectedRows);
 
     // Insert new images
     if (images && Array.isArray(images) && images.length > 0) {
       const values = images.map((img, idx) => [id, img.url, idx, img.s3Key || null]);
 
-      const imageResult = await new Promise((resolve, reject) => {
+      const [imageResult] = await new Promise((resolve, reject) => {
         con.query(
           `INSERT INTO product_images (product_id, url, position, s3_key) VALUES ?`,
           [values],
-          (err, result) => {
-            if (err) return reject(err);
-            console.log("🖼️ Inserted images:", result);
-            resolve(result);
-          }
+          (err, result) => (err ? reject(err) : resolve([result]))
         );
       });
+      console.log("🖼️ Inserted images:", imageResult);
     } else {
-      console.log("⚠️ No images provided in request.");
+      console.log("⚠️ No images provided.");
     }
 
     await new Promise((resolve, reject) =>
       con.commit(err => (err ? reject(err) : resolve()))
     );
 
-    res.json({
-      message: "Product + Images saved successfully",
-      productId: id,
+    // Final debug: check rows
+    con.query(`SELECT * FROM products WHERE id=?`, [id], (err, rows) => {
+      if (err) console.error("❌ Select products error:", err);
+      else console.log("📦 Product row after commit:", rows);
     });
+
+    con.query(`SELECT * FROM product_images WHERE product_id=?`, [id], (err, rows) => {
+      if (err) console.error("❌ Select images error:", err);
+      else console.log("🖼️ Product images after commit:", rows);
+    });
+
+    res.json({ message: "Product + Images saved successfully", productId: id });
   } catch (err) {
     await new Promise(resolve => con.rollback(() => resolve()));
     console.error("❌ Save-with-images error:", err);
@@ -7150,6 +7144,7 @@ app.post('/api/products/save-with-images', async (req, res) => {
     con.end();
   }
 });
+
 
 
 
