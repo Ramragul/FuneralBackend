@@ -6872,49 +6872,55 @@ app.post('/api/services/book', (req, res) => {
 });
 
 
-// Get all service bookings
-app.get('/api/admin/service-bookings', (req, res) => {
+// Get all orders with customer info
+app.get('/api/admin/orders', (req, res) => {
   const con = dbConnection();
   con.connect();
-  con.query('SELECT * FROM service_bookings ORDER BY id DESC', (err, results) => {
+
+  const query = `
+    SELECT o.id, o.order_type, o.total_price, o.currency, o.status, o.payment_status,
+           o.created_at, c.name as customer_name, c.phone as customer_phone
+    FROM orders o
+    LEFT JOIN customers c ON o.customer_id = c.id
+    ORDER BY o.created_at DESC
+  `;
+
+  con.query(query, (err, results) => {
     if (err) {
-      console.error('Error fetching service bookings', err.sqlMessage);
-      return res.status(500).json({ error: 'Error fetching service bookings' });
+      console.error('Error fetching orders', err.sqlMessage);
+      return res.status(500).json({ error: 'Error fetching orders' });
     }
     res.json(results);
   });
 });
 
-// Get all coffin purchases
-app.get('/api/admin/coffin-purchases', (req, res) => {
+// Update order status or payment status
+app.post('/api/admin/orders/update', (req, res) => {
+  const { id, status, payment_status } = req.body;
+  if (!id) return res.status(400).json({ error: "Order ID is required" });
+
   const con = dbConnection();
   con.connect();
-  con.query('SELECT * FROM product_orders ORDER BY id DESC', (err, results) => {
+
+  const fields = [];
+  const values = [];
+  if (status) { fields.push("status = ?"); values.push(status); }
+  if (payment_status) { fields.push("payment_status = ?"); values.push(payment_status); }
+
+  if (fields.length === 0) return res.status(400).json({ error: "Nothing to update" });
+
+  values.push(id);
+
+  const query = `UPDATE orders SET ${fields.join(", ")} WHERE id = ?`;
+  con.query(query, values, (err, result) => {
     if (err) {
-      console.error('Error fetching coffin purchases', err.sqlMessage);
-      return res.status(500).json({ error: 'Error fetching coffin purchases' });
+      console.error("Error updating order", err.sqlMessage);
+      return res.status(500).json({ error: "Error updating order" });
     }
-    res.json(results);
+    res.json({ message: "Order updated successfully" });
   });
 });
 
-// Update booking status (service or coffin)
-app.post('/api/admin/update-status', (req, res) => {
-  const { type, id, status, notes } = req.body;
-  if (!id || !type) return res.status(400).json({ error: 'Missing fields' });
-
-  const table = type === 'service' ? 'service_bookings' : 'coffin_orders';
-  const con = dbConnection();
-  con.connect();
-  con.query(
-    `UPDATE ${table} SET status = ?, notes = ? WHERE id = ?`,
-    [status, notes, id],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: 'Error updating status' });
-      res.json({ message: 'Status updated successfully' });
-    }
-  );
-});
 
 
 
