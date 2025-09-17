@@ -7070,53 +7070,59 @@ app.post('/api/products/:id/images', (req, res) => {
 });
 
 // Save product + images in one go
-app.post('/api/products/save-with-images', (req, res) => {
+app.post('/api/products/save-with-images', async (req, res) => {
   const { id, sku, name, description, base_price, inventory, images } = req.body;
   const con = dbConnection();
 
-  con.beginTransaction((err) => {
-    if (err) return res.status(500).json({ error: err.message });
+  try {
+    await new Promise((resolve, reject) => con.beginTransaction(err => err ? reject(err) : resolve()));
 
-    // Insert/Update product
-    con.query(
-      `INSERT INTO products (id, sku, name, description, base_price, inventory)
-       VALUES (?, ?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE 
-         sku=VALUES(sku),
-         name=VALUES(name), 
-         description=VALUES(description),
-         base_price=VALUES(base_price), 
-         inventory=VALUES(inventory)`,
-      [id, sku, name, description, base_price, inventory],
-      (err) => {
-        if (err) return con.rollback(() => res.status(500).json({ error: err.message }));
+    // Insert or update product
+    await new Promise((resolve, reject) => {
+      con.query(
+        `INSERT INTO products (id, sku, name, description, base_price, inventory)
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE
+           sku=VALUES(sku),
+           name=VALUES(name),
+           description=VALUES(description),
+           base_price=VALUES(base_price),
+           inventory=VALUES(inventory)`,
+        [id, sku, name, description, base_price, inventory],
+        (err, result) => err ? reject(err) : resolve(result)
+      );
+    });
 
-        // If images provided
-        if (images && images.length > 0) {
-          const values = images.map((img, idx) => [id, img.url, idx, img.s3Key || null]);
-          con.query(
-            `INSERT INTO product_images (product_id, url, position, s3_key) VALUES ?`,
-            [values],
-            (err) => {
-              if (err) return con.rollback(() => res.status(500).json({ error: err.message }));
+    // Clear old images for product
+    await new Promise((resolve, reject) => {
+      con.query(`DELETE FROM product_images WHERE product_id=?`, [id], (err) =>
+        err ? reject(err) : resolve()
+      );
+    });
 
-              con.commit((err) => {
-                if (err) return con.rollback(() => res.status(500).json({ error: err.message }));
-                res.json({ message: "✅ Product + Images saved successfully" });
-              });
-            }
-          );
-        } else {
-          // No images case
-          con.commit((err) => {
-            if (err) return con.rollback(() => res.status(500).json({ error: err.message }));
-            res.json({ message: "✅ Product saved (no images)" });
-          });
-        }
-      }
-    );
-  });
+    // Insert new images
+    if (images && images.length > 0) {
+      const values = images.map((img, idx) => [id, img.url, idx, img.s3Key]);
+      await new Promise((resolve, reject) => {
+        con.query(
+          `INSERT INTO product_images (product_id, url, position, s3_key) VALUES ?`,
+          [values],
+          (err, result) => err ? reject(err) : resolve(result)
+        );
+      });
+    }
+
+    await new Promise((resolve, reject) => con.commit(err => err ? reject(err) : resolve()));
+    res.json({ message: 'Product + Images saved successfully' });
+  } catch (err) {
+    await new Promise((resolve) => con.rollback(() => resolve()));
+    console.error('Save-with-images error:', err);
+    res.status(500).json({ error: 'Failed to save product with images' });
+  } finally {
+    con.end();
+  }
 });
+
 
 
 
