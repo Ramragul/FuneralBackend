@@ -6953,10 +6953,15 @@ app.post('/api/products/update', (req, res) => {
 });
 
 // Add product images
+// Add product images
 app.post('/api/products/:id/images', (req, res) => {
   const { id } = req.params;
   const { urls } = req.body; // array of uploaded S3 URLs
   const con = dbConnection();
+
+  if (!urls || !urls.length) {
+    return res.status(400).json({ error: "No image URLs provided" });
+  }
 
   const values = urls.map((url, idx) => [id, url, idx]);
   con.query(
@@ -6964,10 +6969,20 @@ app.post('/api/products/:id/images', (req, res) => {
     [values],
     (err, result) => {
       if (err) return res.status(500).json({ error: err.message });
-      res.json({ message: 'Images added' });
+
+      // Fetch inserted images (with ids)
+      con.query(
+        `SELECT * FROM product_images WHERE product_id=? ORDER BY position ASC`,
+        [id],
+        (err2, rows) => {
+          if (err2) return res.status(500).json({ error: err2.message });
+          res.json({ message: "Images added", images: rows });
+        }
+      );
     }
   );
 });
+
 
 // Reorder images
 app.post('/api/products/:id/images/reorder', (req, res) => {
