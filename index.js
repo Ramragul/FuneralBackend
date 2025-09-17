@@ -6889,7 +6889,7 @@ app.get('/api/admin/service-bookings', (req, res) => {
 app.get('/api/admin/coffin-purchases', (req, res) => {
   const con = dbConnection();
   con.connect();
-  con.query('SELECT * FROM coffin_purchases ORDER BY id DESC', (err, results) => {
+  con.query('SELECT * FROM product_orders ORDER BY id DESC', (err, results) => {
     if (err) {
       console.error('Error fetching coffin purchases', err.sqlMessage);
       return res.status(500).json({ error: 'Error fetching coffin purchases' });
