@@ -7047,23 +7047,29 @@ app.post('/aws/upload', upload.array('photos', 10), async (req, res) => {
 
 
 // ✅ Save product images in DB
+
 app.post('/api/products/:id/images', (req, res) => {
   const { id } = req.params;
-  const { urls } = req.body; // [{url,s3Key}]
-  if (!urls || !urls.length) return res.status(400).json({ error: "No images provided" });
-
+  const { images } = req.body; // [{url, s3Key}] expected
   const con = dbConnection();
-  const values = urls.map((u, idx) => [id, u.url, idx, u.s3Key]);
+
+  if (!images || !Array.isArray(images)) {
+    return res.status(400).json({ error: 'Images array is required' });
+  }
+
+  const values = images.map((img, idx) => [id, img.url, idx, img.s3Key]);
 
   con.query(
     `INSERT INTO product_images (product_id, url, position, s3_key) VALUES ?`,
     [values],
-    (err) => {
+    (err, result) => {
       if (err) return res.status(500).json({ error: err.message });
-      res.json({ message: 'Images added' });
+      res.json({ message: 'Images added', count: result.affectedRows });
     }
   );
 });
+
+
 
 
 // ✅ Reorder images
