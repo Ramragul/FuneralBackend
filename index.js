@@ -6876,23 +6876,23 @@ app.post('/api/services/book', (req, res) => {
 app.get('/api/admin/service-bookings', (req, res) => {
   const con = dbConnection();
   con.connect();
-  con.query('SELECT * FROM service_bookings ORDER BY created_at DESC', (err, results) => {
+  con.query('SELECT * FROM service_bookings ORDER BY id DESC', (err, results) => {
     if (err) {
-      console.error(err);
+      console.error('Error fetching service bookings', err.sqlMessage);
       return res.status(500).json({ error: 'Error fetching service bookings' });
     }
     res.json(results);
   });
 });
 
-// Get all coffin orders
-app.get('/api/admin/coffin-orders', (req, res) => {
+// Get all coffin purchases
+app.get('/api/admin/coffin-purchases', (req, res) => {
   const con = dbConnection();
   con.connect();
-  con.query('SELECT * FROM coffin_orders ORDER BY created_at DESC', (err, results) => {
+  con.query('SELECT * FROM coffin_purchases ORDER BY id DESC', (err, results) => {
     if (err) {
-      console.error(err);
-      return res.status(500).json({ error: 'Error fetching coffin orders' });
+      console.error('Error fetching coffin purchases', err.sqlMessage);
+      return res.status(500).json({ error: 'Error fetching coffin purchases' });
     }
     res.json(results);
   });
