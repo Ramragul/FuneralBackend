@@ -6923,6 +6923,106 @@ app.post('/api/admin/orders/update', (req, res) => {
 
 
 
+// Create Coffin product
+app.post('/api/products', (req, res) => {
+  const { id, sku, name, description, base_price, inventory } = req.body;
+  const con = dbConnection();
+  con.query(
+    `INSERT INTO products (id, sku, name, description, base_price, inventory)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [id, sku, name, description, base_price, inventory],
+    (err, result) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ message: 'Product created', id });
+    }
+  );
+});
+
+// Update Coffin product
+app.post('/api/products/update', (req, res) => {
+  const { id, name, description, base_price, inventory } = req.body;
+  const con = dbConnection();
+  con.query(
+    `UPDATE products SET name=?, description=?, base_price=?, inventory=? WHERE id=?`,
+    [name, description, base_price, inventory, id],
+    (err, result) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ message: 'Product updated' });
+    }
+  );
+});
+
+// Add product images
+app.post('/api/products/:id/images', (req, res) => {
+  const { id } = req.params;
+  const { urls } = req.body; // array of uploaded S3 URLs
+  const con = dbConnection();
+
+  const values = urls.map((url, idx) => [id, url, idx]);
+  con.query(
+    `INSERT INTO product_images (product_id, url, position) VALUES ?`,
+    [values],
+    (err, result) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ message: 'Images added' });
+    }
+  );
+});
+
+// Reorder images
+app.post('/api/products/:id/images/reorder', (req, res) => {
+  const { id } = req.params;
+  const { images } = req.body; // [{imageId, position}]
+  const con = dbConnection();
+
+  const updates = images.map(
+    (img) =>
+      new Promise((resolve, reject) => {
+        con.query(
+          `UPDATE product_images SET position=? WHERE id=? AND product_id=?`,
+          [img.position, img.imageId, id],
+          (err) => (err ? reject(err) : resolve())
+        );
+      })
+  );
+
+  Promise.all(updates)
+    .then(() => res.json({ message: 'Reordered' }))
+    .catch((err) => res.status(500).json({ error: err.message }));
+});
+
+// Delete image (DB + AWS)
+app.post('/api/products/:id/images/delete', async (req, res) => {
+  const { id } = req.params;
+  const { imageId, s3Key } = req.body; // s3Key = stored Key (not just URL)
+  const con = dbConnection();
+
+  try {
+    // Delete from S3
+    await s3
+      .deleteObject({
+        Bucket: 'snektoawsbucket',
+        Key: s3Key,
+      })
+      .promise();
+
+    // Delete from DB
+    con.query(
+      `DELETE FROM product_images WHERE id=? AND product_id=?`,
+      [imageId, id],
+      (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ message: 'Image deleted' });
+      }
+    );
+  } catch (error) {
+    console.error('AWS Delete error:', error);
+    res.status(500).json({ error: 'Failed to delete image' });
+  }
+});
+
+
+
 
 
 
