@@ -7092,26 +7092,28 @@ app.post('/api/products/save-with-images', async (req, res) => {
            inventory=VALUES(inventory)`,
         [
           id,
-          sku,
+          sku || null,
           name,
-          description,
-          Number(base_price), // force numeric
-          Number(inventory),
+          description || null,
+          Number(base_price) || 0,
+          Number(inventory) || 0,
         ],
-        (err, result) => (err ? reject(err) : resolve(result))
+        (err, result) => {
+          if (err) return reject(err);
+          console.log("✅ Product insert/update:", result);
+          resolve(result);
+        }
       );
     });
-
-    console.log("Product insert/update result:", productResult);
 
     // Delete old images for product
     const deleteResult = await new Promise((resolve, reject) => {
-      con.query(`DELETE FROM product_images WHERE product_id=?`, [id], (err, result) =>
-        err ? reject(err) : resolve(result)
-      );
+      con.query(`DELETE FROM product_images WHERE product_id=?`, [id], (err, result) => {
+        if (err) return reject(err);
+        console.log("🗑️ Deleted old images:", result.affectedRows);
+        resolve(result);
+      });
     });
-
-    console.log("Deleted old images:", deleteResult.affectedRows);
 
     // Insert new images
     if (images && Array.isArray(images) && images.length > 0) {
@@ -7121,13 +7123,15 @@ app.post('/api/products/save-with-images', async (req, res) => {
         con.query(
           `INSERT INTO product_images (product_id, url, position, s3_key) VALUES ?`,
           [values],
-          (err, result) => (err ? reject(err) : resolve(result))
+          (err, result) => {
+            if (err) return reject(err);
+            console.log("🖼️ Inserted images:", result);
+            resolve(result);
+          }
         );
       });
-
-      console.log("Inserted images:", imageResult.affectedRows);
     } else {
-      console.log("No images provided.");
+      console.log("⚠️ No images provided in request.");
     }
 
     await new Promise((resolve, reject) =>
@@ -7140,12 +7144,13 @@ app.post('/api/products/save-with-images', async (req, res) => {
     });
   } catch (err) {
     await new Promise(resolve => con.rollback(() => resolve()));
-    console.error("Save-with-images error:", err);
+    console.error("❌ Save-with-images error:", err);
     res.status(500).json({ error: "Failed to save product with images" });
   } finally {
     con.end();
   }
 });
+
 
 
 
