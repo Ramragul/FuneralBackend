@@ -6961,31 +6961,42 @@ app.post('/api/admin/orders/update', (req, res) => {
 });
 
 
+// ------------- COFFIN Catalogue Modifications --------------------------
 
-// Create Coffin product
-app.post('/api/products', (req, res) => {
+// ✅ Product save (create or update)
+app.post('/api/products/save', (req, res) => {
   const { id, sku, name, description, base_price, inventory } = req.body;
+  if (!id) return res.status(400).json({ error: "Product ID required" });
+
+  const safeId = id.replace(/\s+/g, '-').toLowerCase(); // enforce slug ID
   const con = dbConnection();
-  con.query(
-    `INSERT INTO products (id, sku, name, description, base_price, inventory)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-    [id, sku, name, description, base_price, inventory],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ message: 'Product created', id });
-    }
-  );
+
+  const sql = `
+    INSERT INTO products (id, sku, name, description, base_price, inventory)
+    VALUES (?, ?, ?, ?, ?, ?)
+    ON DUPLICATE KEY UPDATE
+      sku=VALUES(sku),
+      name=VALUES(name),
+      description=VALUES(description),
+      base_price=VALUES(base_price),
+      inventory=VALUES(inventory)
+  `;
+
+  con.query(sql, [safeId, sku, name, description, base_price, inventory], (err) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ message: "Product saved successfully", id: safeId });
+  });
 });
 
 
-
+// ✅ Get product with images
 app.get('/api/products/:id', (req, res) => {
   const { id } = req.params;
   const con = dbConnection();
 
   con.query(`SELECT * FROM products WHERE id=?`, [id], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
-    if (!rows.length) return res.status(404).json({ error: "Not found" });
+    if (!rows.length) return res.status(404).json({ error: `Product ${id} not found` });
 
     con.query(`SELECT * FROM product_images WHERE product_id=? ORDER BY position ASC`, [id], (err2, imgs) => {
       if (err2) return res.status(500).json({ error: err2.message });
@@ -6994,28 +7005,52 @@ app.get('/api/products/:id', (req, res) => {
   });
 });
 
-// Update Coffin product
-app.post('/api/products/update', (req, res) => {
-  const { id, name, description, base_price, inventory } = req.body;
-  const con = dbConnection();
-  con.query(
-    `UPDATE products SET name=?, description=?, base_price=?, inventory=? WHERE id=?`,
-    [name, description, base_price, inventory, id],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ message: 'Product updated' });
+
+// ✅ Upload to AWS
+app.post('/aws/upload', upload.array('photos', 10), async (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: "No files uploaded" });
     }
-  );
+
+    const uploaded = [];
+    const promises = req.files.map(async (file) => {
+      const resizedBuffer = await sharp(file.buffer)
+        .resize(800, 800, {
+          fit: sharp.fit.inside,
+          withoutEnlargement: true,
+        })
+        .toFormat('jpeg', { quality: 80 })
+        .toBuffer();
+
+      const key = `gb_ground/${uuidv4()}_${file.originalname}`;
+
+      const params = {
+        Bucket: 'mybucket',
+        Key: key,
+        Body: resizedBuffer,
+        ContentType: 'image/jpeg',
+        ACL: 'public-read',
+      };
+
+      const data = await s3.upload(params).promise();
+      uploaded.push({ url: data.Location, s3Key: key });
+    });
+
+    await Promise.all(promises);
+    res.status(200).json({ imageURLs: uploaded }); // [{url,s3Key}]
+  } catch (error) {
+    console.error('Error uploading images to AWS S3:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
 
-// Add product images
+
+// ✅ Save product images in DB
 app.post('/api/products/:id/images', (req, res) => {
   const { id } = req.params;
-  const { urls } = req.body; // [{url, s3Key}]
-
-  if (!urls || !urls.length) {
-    return res.status(400).json({ error: "No images provided" });
-  }
+  const { urls } = req.body; // [{url,s3Key}]
+  if (!urls || !urls.length) return res.status(400).json({ error: "No images provided" });
 
   const con = dbConnection();
   const values = urls.map((u, idx) => [id, u.url, idx, u.s3Key]);
@@ -7023,27 +7058,18 @@ app.post('/api/products/:id/images', (req, res) => {
   con.query(
     `INSERT INTO product_images (product_id, url, position, s3_key) VALUES ?`,
     [values],
-    (err, result) => {
+    (err) => {
       if (err) return res.status(500).json({ error: err.message });
-
-      con.query(
-        `SELECT * FROM product_images WHERE product_id=? ORDER BY position ASC`,
-        [id],
-        (err2, rows) => {
-          if (err2) return res.status(500).json({ error: err2.message });
-          res.json({ message: "Images added", images: rows });
-        }
-      );
+      res.json({ message: 'Images added' });
     }
   );
 });
 
 
-
-// Reorder images
+// ✅ Reorder images
 app.post('/api/products/:id/images/reorder', (req, res) => {
   const { id } = req.params;
-  const { images } = req.body; // [{imageId, position}]
+  const { images } = req.body; // [{imageId,position}]
   const con = dbConnection();
 
   const updates = images.map(
@@ -7062,22 +7088,16 @@ app.post('/api/products/:id/images/reorder', (req, res) => {
     .catch((err) => res.status(500).json({ error: err.message }));
 });
 
-// Delete image (DB + AWS)
+
+// ✅ Delete image (DB + AWS)
 app.post('/api/products/:id/images/delete', async (req, res) => {
   const { id } = req.params;
-  const { imageId, s3Key } = req.body; // s3Key = stored Key (not just URL)
+  const { imageId, s3Key } = req.body;
   const con = dbConnection();
 
   try {
-    // Delete from S3
-    await s3
-      .deleteObject({
-        Bucket: 'snektoawsbucket',
-        Key: s3Key,
-      })
-      .promise();
+    await s3.deleteObject({ Bucket: 'mybucket', Key: s3Key }).promise();
 
-    // Delete from DB
     con.query(
       `DELETE FROM product_images WHERE id=? AND product_id=?`,
       [imageId, id],
@@ -7091,6 +7111,7 @@ app.post('/api/products/:id/images/delete', async (req, res) => {
     res.status(500).json({ error: 'Failed to delete image' });
   }
 });
+
 
 
 
