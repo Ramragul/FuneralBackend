@@ -6872,6 +6872,52 @@ app.post('/api/services/book', (req, res) => {
 });
 
 
+// Get all service bookings
+app.get('/api/admin/service-bookings', (req, res) => {
+  const con = dbConnection();
+  con.connect();
+  con.query('SELECT * FROM service_bookings ORDER BY created_at DESC', (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: 'Error fetching service bookings' });
+    }
+    res.json(results);
+  });
+});
+
+// Get all coffin orders
+app.get('/api/admin/coffin-orders', (req, res) => {
+  const con = dbConnection();
+  con.connect();
+  con.query('SELECT * FROM coffin_orders ORDER BY created_at DESC', (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: 'Error fetching coffin orders' });
+    }
+    res.json(results);
+  });
+});
+
+// Update booking status (service or coffin)
+app.post('/api/admin/update-status', (req, res) => {
+  const { type, id, status, notes } = req.body;
+  if (!id || !type) return res.status(400).json({ error: 'Missing fields' });
+
+  const table = type === 'service' ? 'service_bookings' : 'coffin_orders';
+  const con = dbConnection();
+  con.connect();
+  con.query(
+    `UPDATE ${table} SET status = ?, notes = ? WHERE id = ?`,
+    [status, notes, id],
+    (err, result) => {
+      if (err) return res.status(500).json({ error: 'Error updating status' });
+      res.json({ message: 'Status updated successfully' });
+    }
+  );
+});
+
+
+
 
 
 // -------------------- The Funeral Company API End -----------------------
