@@ -1001,12 +1001,57 @@ const upload = multer();
 // });
 
 
+// app.post('/aws/upload', upload.array('photos', 10), async (req, res) => {
+//   try {
+//     const uploadedImageURLs = [];
+
+//     const promises = req.files.map(async (file) => {
+//       // Resize and compress the image using sharp
+//       const resizedBuffer = await sharp(file.buffer)
+//         .resize(800, 800, {
+//           fit: sharp.fit.inside,
+//           withoutEnlargement: true
+//         })
+//         .toFormat('jpeg', { quality: 80 })
+//         .toBuffer();
+
+//       const params = {
+//         Bucket: 'snektoawsbucket',
+//         Key: `gb_ground/${uuidv4()}_${file.originalname}`,
+//         Body: resizedBuffer,
+//         ContentType: 'image/jpeg', // assuming the output is JPEG
+//         ACL: 'public-read',
+//       };
+
+//       const data = await s3.upload(params).promise();
+//       uploadedImageURLs.push(data.Location);
+//     });
+
+//     await Promise.all(promises);
+
+//     let concatenatedString = "";
+//     for (let i = 0; i < uploadedImageURLs.length; i++) {
+//       concatenatedString += uploadedImageURLs[i];
+//       if (i !== uploadedImageURLs.length - 1) {
+//         concatenatedString += ', ';
+//       }
+//     }
+
+//     console.log("Concatenated Image URLs: " + concatenatedString);
+//     res.status(200).json({ imageURLs: uploadedImageURLs });
+
+//   } catch (error) {
+//     console.error('Error uploading images to AWS S3:', error);
+//     res.status(500).json({ error: 'Internal Server Error' });
+//   }
+// });
+
+
 app.post('/aws/upload', upload.array('photos', 10), async (req, res) => {
   try {
-    const uploadedImageURLs = [];
+    const uploaded = [];
 
     const promises = req.files.map(async (file) => {
-      // Resize and compress the image using sharp
       const resizedBuffer = await sharp(file.buffer)
         .resize(800, 800, {
           fit: sharp.fit.inside,
@@ -1015,36 +1060,30 @@ app.post('/aws/upload', upload.array('photos', 10), async (req, res) => {
         .toFormat('jpeg', { quality: 80 })
         .toBuffer();
 
+      const key = `gb_ground/${uuidv4()}_${file.originalname}`;
+
       const params = {
         Bucket: 'snektoawsbucket',
-        Key: `gb_ground/${uuidv4()}_${file.originalname}`,
+        Key: key,
         Body: resizedBuffer,
-        ContentType: 'image/jpeg', // assuming the output is JPEG
+        ContentType: 'image/jpeg',
         ACL: 'public-read',
       };
 
       const data = await s3.upload(params).promise();
-      uploadedImageURLs.push(data.Location);
+      uploaded.push({ url: data.Location, s3Key: key });
     });
 
     await Promise.all(promises);
 
-    let concatenatedString = "";
-    for (let i = 0; i < uploadedImageURLs.length; i++) {
-      concatenatedString += uploadedImageURLs[i];
-      if (i !== uploadedImageURLs.length - 1) {
-        concatenatedString += ', ';
-      }
-    }
-
-    console.log("Concatenated Image URLs: " + concatenatedString);
-    res.status(200).json({ imageURLs: uploadedImageURLs });
-
+    res.status(200).json({ imageURLs: uploaded }); 
+    // returns [{ url, s3Key }]
   } catch (error) {
     console.error('Error uploading images to AWS S3:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
 
 
 // AWS S3 Image Upload Logic Ends
@@ -6938,6 +6977,23 @@ app.post('/api/products', (req, res) => {
   );
 });
 
+
+
+app.get('/api/products/:id', (req, res) => {
+  const { id } = req.params;
+  const con = dbConnection();
+
+  con.query(`SELECT * FROM products WHERE id=?`, [id], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!rows.length) return res.status(404).json({ error: "Not found" });
+
+    con.query(`SELECT * FROM product_images WHERE product_id=? ORDER BY position ASC`, [id], (err2, imgs) => {
+      if (err2) return res.status(500).json({ error: err2.message });
+      res.json({ product: rows[0], images: imgs });
+    });
+  });
+});
+
 // Update Coffin product
 app.post('/api/products/update', (req, res) => {
   const { id, name, description, base_price, inventory } = req.body;
@@ -6953,24 +7009,23 @@ app.post('/api/products/update', (req, res) => {
 });
 
 // Add product images
-// Add product images
 app.post('/api/products/:id/images', (req, res) => {
   const { id } = req.params;
-  const { urls } = req.body; // array of uploaded S3 URLs
-  const con = dbConnection();
+  const { urls } = req.body; // [{url, s3Key}]
 
   if (!urls || !urls.length) {
-    return res.status(400).json({ error: "No image URLs provided" });
+    return res.status(400).json({ error: "No images provided" });
   }
 
-  const values = urls.map((url, idx) => [id, url, idx]);
+  const con = dbConnection();
+  const values = urls.map((u, idx) => [id, u.url, idx, u.s3Key]);
+
   con.query(
-    `INSERT INTO product_images (product_id, url, position) VALUES ?`,
+    `INSERT INTO product_images (product_id, url, position, s3_key) VALUES ?`,
     [values],
     (err, result) => {
       if (err) return res.status(500).json({ error: err.message });
 
-      // Fetch inserted images (with ids)
       con.query(
         `SELECT * FROM product_images WHERE product_id=? ORDER BY position ASC`,
         [id],
@@ -6982,6 +7037,7 @@ app.post('/api/products/:id/images', (req, res) => {
     }
   );
 });
+
 
 
 // Reorder images
