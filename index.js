@@ -6655,6 +6655,7 @@ app.post('/api/products/:id/images', upload.array('photos', 10), async (req, res
     const promises = req.files.map(async (file, index) => {
       // Resize and compress
       const resizedBuffer = await sharp(file.buffer)
+        .rotate()
         .resize(800, 800, { fit: sharp.fit.inside, withoutEnlargement: true })
         .toFormat('jpeg', { quality: 80 })
         .toBuffer();
