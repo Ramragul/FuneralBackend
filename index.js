@@ -7078,10 +7078,12 @@ app.post('/api/products/:id/images', (req, res) => {
 
 
 app.post('/api/products/create', (req, res) => {
+
+  console.log("Inside Product Creation Backend API")
   const { id, sku, name, description, base_price, inventory, images } = req.body || {};
   const con = dbConnection();
 
-  console.log("Inside Product Creation Backend API")
+  
 
   if (!id || !name) {
     return res.status(400).json({ error: 'id and name are required' });
@@ -7121,6 +7123,7 @@ app.post('/api/products/create', (req, res) => {
     }
   );
 });
+
 
 
 
