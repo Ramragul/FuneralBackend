@@ -7070,97 +7070,104 @@ app.post('/api/products/:id/images', (req, res) => {
 });
 
 // Save product + images in one go
-app.post('/api/products/save-with-images', async (req, res) => {
+
+
+app.post('/api/products/save-with-images', (req, res) => {
   const { id, sku, name, description, base_price, inventory, images } = req.body;
   const con = dbConnection();
 
   console.log("Incoming payload:", req.body);
 
-  try {
-    await new Promise((resolve, reject) =>
-      con.beginTransaction(err => err ? reject(err) : resolve())
-    );
-
-    // Insert/Update product
-    await new Promise((resolve, reject) => {
-      con.query(
-        `INSERT INTO products (id, sku, name, description, base_price, inventory)
-         VALUES (?, ?, ?, ?, ?, ?)
-         ON DUPLICATE KEY UPDATE
-           sku=VALUES(sku),
-           name=VALUES(name),
-           description=VALUES(description),
-           base_price=VALUES(base_price),
-           inventory=VALUES(inventory)`,
-        [
-          id,
-          sku || null,
-          name,
-          description || null,
-          Number(base_price),   // ✅ force numeric
-          Number(inventory)     // ✅ force numeric
-        ],
-        (err, result) => {
-          if (err) {
-            console.error("Product insert/update error:", err);
-            return reject(err);
-          }
-          console.log("Product result:", result);
-          resolve(result);
-        }
-      );
-    });
-
-    // Clear old images
-    await new Promise((resolve, reject) => {
-      con.query(
-        `DELETE FROM product_images WHERE product_id=?`,
-        [id],
-        (err, result) => {
-          if (err) {
-            console.error("Image delete error:", err);
-            return reject(err);
-          }
-          console.log("Deleted old images:", result.affectedRows);
-          resolve();
-        }
-      );
-    });
-
-    // Insert new images
-    if (images && Array.isArray(images) && images.length > 0) {
-      const values = images.map((img, idx) => [id, img.url, idx, img.s3Key]);
-      await new Promise((resolve, reject) => {
-        con.query(
-          `INSERT INTO product_images (product_id, url, position, s3_key) VALUES ?`,
-          [values],
-          (err, result) => {
-            if (err) {
-              console.error("Image insert error:", err);
-              return reject(err);
-            }
-            console.log("Inserted images:", result.affectedRows);
-            resolve(result);
-          }
-        );
-      });
+  con.beginTransaction(err => {
+    if (err) {
+      console.error("Transaction start error:", err);
+      return res.status(500).json({ error: 'Failed to start transaction' });
     }
 
-    await new Promise((resolve, reject) =>
-      con.commit(err => err ? reject(err) : resolve())
+    // Insert or update product
+    con.query(
+      `INSERT INTO products (id, sku, name, description, base_price, inventory)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+         sku=VALUES(sku),
+         name=VALUES(name),
+         description=VALUES(description),
+         base_price=VALUES(base_price),
+         inventory=VALUES(inventory)`,
+      [
+        id,
+        sku || null,
+        name,
+        description || null,
+        Number(base_price),
+        Number(inventory)
+      ],
+      (err, result) => {
+        if (err) {
+          console.error("Product insert/update error:", err);
+          return con.rollback(() => {
+            res.status(500).json({ error: 'Failed to save product' });
+          });
+        }
+        console.log("Product saved/updated:", result.affectedRows);
+
+        // Delete old images
+        con.query(`DELETE FROM product_images WHERE product_id=?`, [id], (err, delRes) => {
+          if (err) {
+            console.error("Image delete error:", err);
+            return con.rollback(() => {
+              res.status(500).json({ error: 'Failed to delete old images' });
+            });
+          }
+          console.log("Old images deleted:", delRes.affectedRows);
+
+          // Insert new images
+          if (images && Array.isArray(images) && images.length > 0) {
+            const values = images.map((img, idx) => [id, img.url, idx, img.s3Key]);
+            con.query(
+              `INSERT INTO product_images (product_id, url, position, s3_key) VALUES ?`,
+              [values],
+              (err, imgRes) => {
+                if (err) {
+                  console.error("Image insert error:", err);
+                  return con.rollback(() => {
+                    res.status(500).json({ error: 'Failed to save images' });
+                  });
+                }
+                console.log("Images inserted:", imgRes.affectedRows);
+
+                // Commit transaction
+                con.commit(err => {
+                  if (err) {
+                    console.error("Commit error:", err);
+                    return con.rollback(() => {
+                      res.status(500).json({ error: 'Commit failed' });
+                    });
+                  }
+                  console.log("Transaction committed ✅");
+                  res.json({ message: "Product + Images saved successfully" });
+                });
+              }
+            );
+          } else {
+            // No images → just commit
+            con.commit(err => {
+              if (err) {
+                console.error("Commit error:", err);
+                return con.rollback(() => {
+                  res.status(500).json({ error: 'Commit failed' });
+                });
+              }
+              console.log("Transaction committed ✅ (no images)");
+              res.json({ message: "Product saved successfully (no images)" });
+            });
+          }
+        });
+      }
     );
-
-    console.log("Transaction committed ✅");
-
-    res.json({ message: 'Product + Images saved successfully' });
-  } catch (err) {
-    await new Promise(resolve => con.rollback(() => resolve()));
-    console.error("Transaction rolled back ❌", err);
-    res.status(500).json({ error: 'Failed to save product with images' });
-  } finally {
-    con.end();
-  }
+  });
 });
+
 
 
 
