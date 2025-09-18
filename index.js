@@ -7075,117 +7075,53 @@ app.post('/api/products/:id/images', (req, res) => {
 // Backend: replace your current save-with-images handler with this
 
 // --- Simple create/update product + images (callback style) ---
-app.post('/api/products/create-simple', (req, res) => {
+
+
+app.post('/api/products/create', (req, res) => {
   const { id, sku, name, description, base_price, inventory, images } = req.body || {};
+  const con = dbConnection();
+
+  console.log("Inside Product Creation Backend API")
 
   if (!id || !name) {
     return res.status(400).json({ error: 'id and name are required' });
   }
 
-  const poolOrCon = dbConnection();
+  // Insert product
+  const productSql = `
+    INSERT INTO products (id, sku, name, description, base_price, inventory)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `;
+  con.query(
+    productSql,
+    [id, sku || null, name, description || null, base_price || 0, inventory || 0],
+    (err, productResult) => {
+      if (err) {
+        console.error("❌ Product insert error:", err);
+        return res.status(500).json({ error: 'Product save failed', details: err.message });
+      }
+      console.log("✅ Product inserted:", productResult.affectedRows);
 
-  // helper to get a connection (works for pool or single connection)
-  function withConn(cb) {
-    if (poolOrCon && typeof poolOrCon.getConnection === 'function') {
-      poolOrCon.getConnection((err, conn) => {
-        if (err) return cb(err);
-        cb(null, conn, true); // true means we should release
-      });
-    } else {
-      // assume direct connection object
-      cb(null, poolOrCon, false);
-    }
-  }
+      // Insert product images
+      if (images && Array.isArray(images) && images.length > 0) {
+        const values = images.map((img, idx) => [id, img.url, idx, img.s3Key || null]);
+        const imgSql = `INSERT INTO product_images (product_id, url, position, s3_key) VALUES ?`;
 
-  withConn((err, con, shouldRelease) => {
-    if (err) {
-      console.error("DB getConnection error:", err);
-      return res.status(500).json({ error: 'DB connection failed', details: err.message });
-    }
-
-    // optional: debug which DB & user
-    con.query('SELECT DATABASE() AS db, USER() AS user', (errDbg, info) => {
-      if (!errDbg) console.log('DB info:', info);
-    });
-
-    const bp = Number(base_price) || 0;
-    const inv = Number(inventory) || 0;
-
-    // 1) upsert product
-    con.query(
-      `INSERT INTO products (id, sku, name, description, base_price, inventory)
-       VALUES (?, ?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE
-         sku=VALUES(sku), name=VALUES(name), description=VALUES(description),
-         base_price=VALUES(base_price), inventory=VALUES(inventory)`,
-      [id, sku || null, name, description || null, bp, inv],
-      (errProduct, productResult) => {
-        if (errProduct) {
-          console.error('Product upsert error:', errProduct);
-          if (shouldRelease) try{ con.release(); }catch(e){ try{con.destroy();}catch(_){} }
-          return res.status(500).json({ error: 'Product save failed', details: errProduct.message });
-        }
-        console.log('Product upsert OK:', productResult.affectedRows);
-
-        // 2) delete old images for this product (if any)
-        con.query('DELETE FROM product_images WHERE product_id = ?', [id], (errDel, delRes) => {
-          if (errDel) {
-            console.error('Delete product_images error:', errDel);
-            if (shouldRelease) try{ con.release(); }catch(e){ try{con.destroy();}catch(_){} }
-            return res.status(500).json({ error: 'Failed to delete old images', details: errDel.message });
+        con.query(imgSql, [values], (errImg, imgResult) => {
+          if (errImg) {
+            console.error("❌ Insert images error:", errImg);
+            return res.status(500).json({ error: 'Insert images failed', details: errImg.message });
           }
-          console.log('Deleted old images:', delRes.affectedRows);
-
-          // 3) insert new images (if provided)
-          if (images && Array.isArray(images) && images.length > 0) {
-            const values = images.map((img, idx) => [id, img.url || null, idx, img.s3Key || null]);
-
-            con.query(
-              'INSERT INTO product_images (product_id, url, position, s3_key) VALUES ?',
-              [values],
-              (errImg, imgRes) => {
-                if (errImg) {
-                  console.error('Insert images error:', errImg);
-                  // Note: product is already saved; at least we tried images
-                  if (shouldRelease) try{ con.release(); }catch(e){ try{con.destroy();}catch(_){} }
-                  return res.status(500).json({ error: 'Failed to insert images', details: errImg.message });
-                }
-                console.log('Inserted images count:', imgRes.affectedRows);
-
-                // 4) return product + images (read back from DB to confirm)
-                con.query('SELECT * FROM products WHERE id = ?', [id], (errP2, prodRows) => {
-                  if (errP2) {
-                    console.error('Select product after save error:', errP2);
-                    if (shouldRelease) try{ con.release(); }catch(e){ try{con.destroy();}catch(_){} }
-                    return res.status(500).json({ error: 'Saved but verify failed' });
-                  }
-                  con.query('SELECT * FROM product_images WHERE product_id = ? ORDER BY position ASC', [id], (errI2, imgRows) => {
-                    if (shouldRelease) try{ con.release(); }catch(e){ try{con.destroy();}catch(_){} }
-                    if (errI2) {
-                      console.error('Select images after save error:', errI2);
-                      return res.status(500).json({ error: 'Saved but verify images failed' });
-                    }
-                    return res.json({ message: 'Product + images saved', product: prodRows[0] || null, images: imgRows });
-                  });
-                });
-              }
-            );
-          } else {
-            // no images to insert -> return product only
-            con.query('SELECT * FROM products WHERE id = ?', [id], (errP2, prodRows) => {
-              if (shouldRelease) try{ con.release(); }catch(e){ try{con.destroy();}catch(_){} }
-              if (errP2) {
-                console.error('Select product after save error (no images):', errP2);
-                return res.status(500).json({ error: 'Saved but verify failed' });
-              }
-              return res.json({ message: 'Product saved (no images)', product: prodRows[0] || null, images: [] });
-            });
-          }
-        }); // delete query
-      } // product query callback
-    ); // con.query product
-  }); // withConn
+          console.log("✅ Images inserted:", imgResult.affectedRows);
+          return res.json({ message: 'Product + Images created', productId: id });
+        });
+      } else {
+        return res.json({ message: 'Product created (no images)', productId: id });
+      }
+    }
+  );
 });
+
 
 
 
