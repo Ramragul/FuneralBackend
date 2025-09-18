@@ -6989,20 +6989,84 @@ app.post('/api/products/save', (req, res) => {
 });
 
 
-// ✅ Get product with images
-app.get('/api/tfc/products/:id', (req, res) => {
-  const id = req.params.id;
+// GET ALL COffin Products
+
+// Get all products for catalogue
+app.get('/api/tfc/products', (req, res) => {
   const con = dbConnection();
-  // works for pool / single connection
-  con.query('SELECT * FROM products WHERE id = ?', [id], (errP, pRows) => {
-    if (errP) return res.status(500).json({ error: errP.message });
-    if (!pRows.length) return res.status(404).json({ error: 'Product not found' });
-    con.query('SELECT * FROM product_images WHERE product_id = ? ORDER BY position ASC', [id], (errI, iRows) => {
+
+  const sql = `
+    SELECT p.id, p.name, p.base_price, 
+           (SELECT url FROM product_images WHERE product_id = p.id ORDER BY position LIMIT 1) AS thumbnail,
+           LEFT(p.description, 100) AS shortDescription
+    FROM products p
+    ORDER BY p.created_at DESC
+  `;
+
+  con.query(sql, (err, rows) => {
+    if (err) {
+      console.error("❌ Products fetch error:", err);
+      return res.status(500).json({ error: "Failed to fetch products" });
+    }
+    res.json(rows);
+  });
+});
+
+
+
+// ✅ Get product with images
+// app.get('/api/tfc/products/:id', (req, res) => {
+//   const id = req.params.id;
+//   const con = dbConnection();
+//   // works for pool / single connection
+//   con.query('SELECT * FROM products WHERE id = ?', [id], (errP, pRows) => {
+//     if (errP) return res.status(500).json({ error: errP.message });
+//     if (!pRows.length) return res.status(404).json({ error: 'Product not found' });
+//     con.query('SELECT * FROM product_images WHERE product_id = ? ORDER BY position ASC', [id], (errI, iRows) => {
+//       if (errI) return res.status(500).json({ error: errI.message });
+//       res.json({ product: pRows[0], images: iRows });
+//     });
+//   });
+// });
+
+// version 2 
+
+app.get('/api/tfc/products/:id', (req, res) => {
+  const { id } = req.params;
+  const con = dbConnection();
+
+  const queries = {
+    product: `SELECT * FROM products WHERE id=?`,
+    images: `SELECT * FROM product_images WHERE product_id=? ORDER BY position`,
+    sizes: `SELECT * FROM product_sizes WHERE product_id=?`,
+    customizations: `SELECT * FROM product_customizations WHERE product_id=?`
+  };
+
+  con.query(queries.product, [id], (err, productRows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!productRows.length) return res.status(404).json({ error: 'Not found' });
+
+    con.query(queries.images, [id], (errI, imageRows) => {
       if (errI) return res.status(500).json({ error: errI.message });
-      res.json({ product: pRows[0], images: iRows });
+
+      con.query(queries.sizes, [id], (errS, sizeRows) => {
+        if (errS) return res.status(500).json({ error: errS.message });
+
+        con.query(queries.customizations, [id], (errC, customRows) => {
+          if (errC) return res.status(500).json({ error: errC.message });
+
+          return res.json({
+            product: productRows[0],
+            images: imageRows,
+            sizes: sizeRows,
+            customizations: customRows
+          });
+        });
+      });
     });
   });
 });
+
 
 
 
