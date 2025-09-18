@@ -7156,33 +7156,66 @@ app.post('/api/tfc/products/create', (req, res) => {
         console.error("❌ Product insert error:", err);
         return res.status(500).json({ error: 'Product save failed', details: err.message });
       }
-      console.log("✅ Product inserted/updated");
+      console.log("✅ Product inserted/updated:", id);
 
-      // Images
+      // ---------------- Images ----------------
       if (images?.length) {
         const values = images.map((img, idx) => [id, img.url, idx, img.s3Key || null]);
-        con.query(`DELETE FROM product_images WHERE product_id=?`, [id]);
-        con.query(`INSERT INTO product_images (product_id, url, position, s3_key) VALUES ?`, [values]);
+        con.query(`DELETE FROM product_images WHERE product_id=?`, [id], () => {
+          con.query(
+            `INSERT INTO product_images (product_id, url, position, s3_key) VALUES ?`,
+            [values],
+            (errImg) => {
+              if (errImg) console.error("❌ Image insert error:", errImg);
+              else console.log("✅ Images inserted:", values.length);
+            }
+          );
+        });
       }
 
-      // Sizes
+      // ---------------- Sizes ----------------
       if (sizes?.length) {
         const values = sizes.map((s) => [id, s.label, s.multiplier]);
-        con.query(`DELETE FROM product_sizes WHERE product_id=?`, [id]);
-        con.query(`INSERT INTO product_sizes (product_id, label, multiplier) VALUES ?`, [values]);
+        con.query(`DELETE FROM product_sizes WHERE product_id=?`, [id], () => {
+          con.query(
+            `INSERT INTO product_sizes (product_id, label, multiplier) VALUES ?`,
+            [values],
+            (errSize) => {
+              if (errSize) console.error("❌ Sizes insert error:", errSize);
+              else console.log("✅ Sizes inserted:", values.length);
+            }
+          );
+        });
       }
 
-      // Customizations
+      // ---------------- Customizations ----------------
       if (customizations?.length) {
-        const values = customizations.map((c) => [id, c.label, c.price]);
-        con.query(`DELETE FROM product_customizations WHERE product_id=?`, [id]);
-        con.query(`INSERT INTO product_customizations (product_id, label, price) VALUES ?`, [values]);
+        // generate IDs automatically for each customization
+        const values = customizations.map((c, idx) => [
+          `${id}-cust-${idx + 1}`, // unique id for customization
+          id,                      // product_id
+          c.label,
+          Number(c.price) || 0,
+          JSON.stringify(c.meta || {})
+        ]);
+
+        con.query(`DELETE FROM product_customizations WHERE product_id=?`, [id], () => {
+          con.query(
+            `INSERT INTO product_customizations (id, product_id, label, price, meta) VALUES ?`,
+            [values],
+            (errCust) => {
+              if (errCust) console.error("❌ Customizations insert error:", errCust);
+              else console.log("✅ Customizations inserted:", values.length);
+            }
+          );
+        });
       }
 
       return res.json({ message: 'Product + Images + Options created', productId: id });
     }
   );
 });
+
 
 
 
