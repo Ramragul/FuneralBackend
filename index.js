@@ -7126,6 +7126,101 @@ app.post('/api/tfc/products/create', (req, res) => {
 
 
 
+// Save image api -trail and error 
+
+app.post('/api/products/save-with-images', (req, res) => {
+  const { id, sku, name, description, base_price, inventory, images } = req.body;
+  const con = dbConnection();
+
+  console.log("👉 Incoming payload:", req.body);
+
+  con.beginTransaction((err) => {
+    if (err) {
+      console.error("❌ Transaction start error:", err);
+      return res.status(500).json({ error: "Transaction start failed" });
+    }
+
+    // Insert or update product
+    con.query(
+      `INSERT INTO products (id, sku, name, description, base_price, inventory)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+         sku=VALUES(sku),
+         name=VALUES(name),
+         description=VALUES(description),
+         base_price=VALUES(base_price),
+         inventory=VALUES(inventory)`,
+      [id, sku, name, description, base_price, inventory],
+      (err, productResult) => {
+        if (err) {
+          console.error("❌ Product insert error:", err);
+          return con.rollback(() =>
+            res.status(500).json({ error: "Product insert failed" })
+          );
+        }
+        console.log("✅ Product upsert result:", productResult);
+
+        // Clear old images
+        con.query(`DELETE FROM product_images WHERE product_id=?`, [id], (err) => {
+          if (err) {
+            console.error("❌ Image delete error:", err);
+            return con.rollback(() =>
+              res.status(500).json({ error: "Image delete failed" })
+            );
+          }
+          console.log("🧹 Old images cleared for product:", id);
+
+          // Insert new images if any
+          if (images && images.length > 0) {
+            const values = images.map((img, idx) => [id, img.url, idx, img.s3Key]);
+            console.log("📸 Images to insert:", values);
+
+            con.query(
+              `INSERT INTO product_images (product_id, url, position, s3_key) VALUES ?`,
+              [values],
+              (err, imageResult) => {
+                if (err) {
+                  console.error("❌ Image insert error:", err);
+                  return con.rollback(() =>
+                    res.status(500).json({ error: "Image insert failed" })
+                  );
+                }
+                console.log("✅ Image insert result:", imageResult);
+
+                // Commit transaction
+                con.commit((err) => {
+                  if (err) {
+                    console.error("❌ Commit error:", err);
+                    return con.rollback(() =>
+                      res.status(500).json({ error: "Commit failed" })
+                    );
+                  }
+                  console.log("🎉 Transaction committed for product:", id);
+                  res.json({ message: "Product + Images saved successfully" });
+                });
+              }
+            );
+          } else {
+            // No images, just commit
+            con.commit((err) => {
+              if (err) {
+                console.error("❌ Commit error:", err);
+                return con.rollback(() =>
+                  res.status(500).json({ error: "Commit failed" })
+                );
+              }
+              console.log("🎉 Transaction committed (no images) for product:", id);
+              res.json({ message: "Product saved successfully (no images)" });
+            });
+          }
+        });
+      }
+    );
+  });
+});
+
+
+
 
 
 
