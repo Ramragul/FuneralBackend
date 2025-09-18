@@ -1052,13 +1052,23 @@ app.post('/aws/upload', upload.array('photos', 10), async (req, res) => {
     const uploaded = [];
 
     const promises = req.files.map(async (file) => {
+      // const resizedBuffer = await sharp(file.buffer)
+      //   .resize(800, 800, {
+      //     fit: sharp.fit.inside,
+      //     withoutEnlargement: true
+      //   })
+      //   .toFormat('jpeg', { quality: 80 })
+      //   .toBuffer();
+
       const resizedBuffer = await sharp(file.buffer)
-        .resize(800, 800, {
-          fit: sharp.fit.inside,
-          withoutEnlargement: true
-        })
-        .toFormat('jpeg', { quality: 80 })
-        .toBuffer();
+      .rotate() // <-- auto-rotate based on EXIF orientation
+      .resize(800, 800, {
+        fit: sharp.fit.inside,
+        withoutEnlargement: true
+      })
+      .toFormat('jpeg', { quality: 80 })
+      .toBuffer();
+
 
       const key = `gb_ground/${uuidv4()}_${file.originalname}`;
 
