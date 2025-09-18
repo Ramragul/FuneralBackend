@@ -7076,12 +7076,12 @@ app.post('/api/products/save-with-images', (req, res) => {
   const { id, sku, name, description, base_price, inventory, images } = req.body;
   const con = dbConnection();
 
-  console.log("Incoming payload:", req.body);
+  console.log("👉 Incoming payload:", req.body);
 
   con.beginTransaction(err => {
     if (err) {
-      console.error("Transaction start error:", err);
-      return res.status(500).json({ error: 'Failed to start transaction' });
+      console.error("❌ Transaction start error:", err);
+      return res.status(500).json({ error: "Transaction start failed" });
     }
 
     // Insert or update product
@@ -7094,71 +7094,67 @@ app.post('/api/products/save-with-images', (req, res) => {
          description=VALUES(description),
          base_price=VALUES(base_price),
          inventory=VALUES(inventory)`,
-      [
-        id,
-        sku || null,
-        name,
-        description || null,
-        Number(base_price),
-        Number(inventory)
-      ],
+      [id, sku, name, description, base_price, inventory],
       (err, result) => {
         if (err) {
-          console.error("Product insert/update error:", err);
-          return con.rollback(() => {
-            res.status(500).json({ error: 'Failed to save product' });
-          });
+          console.error("❌ Product insert error:", err);
+          return con.rollback(() =>
+            res.status(500).json({ error: "Product insert failed" })
+          );
         }
-        console.log("Product saved/updated:", result.affectedRows);
+        console.log("✅ Product insert/update result:", result);
 
-        // Delete old images
-        con.query(`DELETE FROM product_images WHERE product_id=?`, [id], (err, delRes) => {
+        // Clear old images
+        con.query(`DELETE FROM product_images WHERE product_id=?`, [id], (err) => {
           if (err) {
-            console.error("Image delete error:", err);
-            return con.rollback(() => {
-              res.status(500).json({ error: 'Failed to delete old images' });
-            });
+            console.error("❌ Image delete error:", err);
+            return con.rollback(() =>
+              res.status(500).json({ error: "Image delete failed" })
+            );
           }
-          console.log("Old images deleted:", delRes.affectedRows);
+
+          console.log("🧹 Old images cleared for product:", id);
 
           // Insert new images
-          if (images && Array.isArray(images) && images.length > 0) {
+          if (images && images.length > 0) {
             const values = images.map((img, idx) => [id, img.url, idx, img.s3Key]);
+            console.log("📸 Images to insert:", values);
+
             con.query(
               `INSERT INTO product_images (product_id, url, position, s3_key) VALUES ?`,
               [values],
-              (err, imgRes) => {
+              (err, result) => {
                 if (err) {
-                  console.error("Image insert error:", err);
-                  return con.rollback(() => {
-                    res.status(500).json({ error: 'Failed to save images' });
-                  });
+                  console.error("❌ Image insert error:", err);
+                  return con.rollback(() =>
+                    res.status(500).json({ error: "Image insert failed" })
+                  );
                 }
-                console.log("Images inserted:", imgRes.affectedRows);
+                console.log("✅ Image insert result:", result);
 
                 // Commit transaction
-                con.commit(err => {
+                con.commit((err) => {
                   if (err) {
-                    console.error("Commit error:", err);
-                    return con.rollback(() => {
-                      res.status(500).json({ error: 'Commit failed' });
-                    });
+                    console.error("❌ Commit error:", err);
+                    return con.rollback(() =>
+                      res.status(500).json({ error: "Commit failed" })
+                    );
                   }
-                  console.log("Transaction committed ✅");
+                  console.log("🎉 Transaction committed for product:", id);
                   res.json({ message: "Product + Images saved successfully" });
                 });
               }
             );
           } else {
-            // No images → just commit
-            con.commit(err => {
+            // No images, just commit
+            con.commit((err) => {
               if (err) {
-                console.error("Commit error:", err);
-                return con.rollback(() => {
-                  res.status(500).json({ error: 'Commit failed' });
-                });
+                console.error("❌ Commit error:", err);
+                return con.rollback(() =>
+                  res.status(500).json({ error: "Commit failed" })
+                );
               }
-              console.log("Transaction committed ✅ (no images)");
+              console.log("🎉 Transaction committed (no images) for product:", id);
               res.json({ message: "Product saved successfully (no images)" });
             });
           }
