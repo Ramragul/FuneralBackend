@@ -6990,7 +6990,7 @@ app.post('/api/products/save', (req, res) => {
 
 
 // ✅ Get product with images
-app.get('/api/products/:id', (req, res) => {
+app.get('/api/tfc/products/:id', (req, res) => {
   const id = req.params.id;
   const con = dbConnection();
   // works for pool / single connection
@@ -7048,7 +7048,7 @@ app.post('/aws/upload', upload.array('photos', 10), async (req, res) => {
 
 // ✅ Save product images in DB
 
-app.post('/api/products/:id/images', (req, res) => {
+app.post('/api/tfc/products/:id/images', (req, res) => {
   const { id } = req.params;
   const { images } = req.body; // [{url, s3Key}] expected
   const con = dbConnection();
@@ -7077,51 +7077,51 @@ app.post('/api/products/:id/images', (req, res) => {
 // --- Simple create/update product + images (callback style) ---
 
 
-app.post('/api/products/create', (req, res) => {
+app.post('/api/tfc/products/create', (req, res) => {
 
   console.log("Inside Product Creation Backend API")
-  // const { id, sku, name, description, base_price, inventory, images } = req.body || {};
-  // const con = dbConnection();
+  const { id, sku, name, description, base_price, inventory, images } = req.body || {};
+  const con = dbConnection();
 
   
 
-  // if (!id || !name) {
-  //   return res.status(400).json({ error: 'id and name are required' });
-  // }
+  if (!id || !name) {
+    return res.status(400).json({ error: 'id and name are required' });
+  }
 
-  // // Insert product
-  // const productSql = `
-  //   INSERT INTO products (id, sku, name, description, base_price, inventory)
-  //   VALUES (?, ?, ?, ?, ?, ?)
-  // `;
-  // con.query(
-  //   productSql,
-  //   [id, sku || null, name, description || null, base_price || 0, inventory || 0],
-  //   (err, productResult) => {
-  //     if (err) {
-  //       console.error("❌ Product insert error:", err);
-  //       return res.status(500).json({ error: 'Product save failed', details: err.message });
-  //     }
-  //     console.log("✅ Product inserted:", productResult.affectedRows);
+  // Insert product
+  const productSql = `
+    INSERT INTO products (id, sku, name, description, base_price, inventory)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `;
+  con.query(
+    productSql,
+    [id, sku || null, name, description || null, base_price || 0, inventory || 0],
+    (err, productResult) => {
+      if (err) {
+        console.error("❌ Product insert error:", err);
+        return res.status(500).json({ error: 'Product save failed', details: err.message });
+      }
+      console.log("✅ Product inserted:", productResult.affectedRows);
 
-  //     // Insert product images
-  //     if (images && Array.isArray(images) && images.length > 0) {
-  //       const values = images.map((img, idx) => [id, img.url, idx, img.s3Key || null]);
-  //       const imgSql = `INSERT INTO product_images (product_id, url, position, s3_key) VALUES ?`;
+      // Insert product images
+      if (images && Array.isArray(images) && images.length > 0) {
+        const values = images.map((img, idx) => [id, img.url, idx, img.s3Key || null]);
+        const imgSql = `INSERT INTO product_images (product_id, url, position, s3_key) VALUES ?`;
 
-  //       con.query(imgSql, [values], (errImg, imgResult) => {
-  //         if (errImg) {
-  //           console.error("❌ Insert images error:", errImg);
-  //           return res.status(500).json({ error: 'Insert images failed', details: errImg.message });
-  //         }
-  //         console.log("✅ Images inserted:", imgResult.affectedRows);
-  //         return res.json({ message: 'Product + Images created', productId: id });
-  //       });
-  //     } else {
-  //       return res.json({ message: 'Product created (no images)', productId: id });
-  //     }
-  //   }
-  // );
+        con.query(imgSql, [values], (errImg, imgResult) => {
+          if (errImg) {
+            console.error("❌ Insert images error:", errImg);
+            return res.status(500).json({ error: 'Insert images failed', details: errImg.message });
+          }
+          console.log("✅ Images inserted:", imgResult.affectedRows);
+          return res.json({ message: 'Product + Images created', productId: id });
+        });
+      } else {
+        return res.json({ message: 'Product created (no images)', productId: id });
+      }
+    }
+  );
 });
 
 
@@ -7138,7 +7138,7 @@ app.post('/api/products/create', (req, res) => {
 
 
 // ✅ Reorder images
-app.post('/api/products/:id/images/reorder', (req, res) => {
+app.post('/api/tfc/products/:id/images/reorder', (req, res) => {
   const { id } = req.params;
   const { images } = req.body; // [{imageId,position}]
   const con = dbConnection();
@@ -7161,7 +7161,7 @@ app.post('/api/products/:id/images/reorder', (req, res) => {
 
 
 // ✅ Delete image (DB + AWS)
-app.post('/api/products/:id/images/delete', async (req, res) => {
+app.post('/api/tfc/products/:id/images/delete', async (req, res) => {
   const { id } = req.params;
   const { imageId, s3Key } = req.body;
   const con = dbConnection();
