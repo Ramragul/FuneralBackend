@@ -7434,7 +7434,7 @@ app.post('/api/tfc/products/:id/images/delete', async (req, res) => {
 
 // Version 2 
 
-const pool = require("./db");
+// const pool = require("./db");
 
 app.get('/api/tfc/grounds', async (req, res) => {
   try {
