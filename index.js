@@ -7509,9 +7509,15 @@ app.post('/api/tfc/grounds/create', (req, res) => {
     name,
     address,
     city,
+    state,
     pincode,
-    contact,
+    phone,
+    email,
+    capacity,
+    parking,
+    water_facility,
     operating_hours,
+    description,
     religions_supported,
     services,
     procedures,
@@ -7519,13 +7525,12 @@ app.post('/api/tfc/grounds/create', (req, res) => {
   } = req.body;
 
   const con = dbConnection();
-
   const groundId = uuidv4();
 
   const sql = `
     INSERT INTO tfc_funeral_grounds
-    (id, name, address, city, pincode, contact, operating_hours, religions_supported, services, procedures, google_map_url)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (id, name, address, city, state, pincode, phone, email, capacity, parking, water_facility, operating_hours, description, religions_supported, services, procedures, google_map_url)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   con.query(
@@ -7535,9 +7540,15 @@ app.post('/api/tfc/grounds/create', (req, res) => {
       name,
       address,
       city,
+      state || null,
       pincode,
-      contact,
-      operating_hours,
+      phone || null,
+      email || null,
+      capacity || null,
+      parking ? 1 : 0,
+      water_facility ? 1 : 0,
+      operating_hours || null,
+      description || null,
       JSON.stringify(religions_supported || []),
       JSON.stringify(services || []),
       procedures || null,
@@ -7546,12 +7557,16 @@ app.post('/api/tfc/grounds/create', (req, res) => {
     (err, result) => {
       if (err) {
         console.error("❌ Ground insert error:", err);
-        return res.status(500).json({ error: "Failed to create ground", details: err.message });
+        return res.status(500).json({
+          error: "Failed to create ground",
+          details: err.message,
+        });
       }
       res.json({ message: "Ground created successfully", groundId });
     }
   );
 });
+
 
 
 // Attach images for a ground (accepts images payload [{url,s3Key}] or multipart via upload middleware)
