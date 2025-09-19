@@ -7441,6 +7441,57 @@ app.get('/api/tfc/grounds', (req, res) => {
 
 // Version 2 : 
 
+// app.get('/api/tfc/grounds/:id', (req, res) => {
+//   const { id } = req.params;
+//   const con = dbConnection();
+
+//   con.query(`SELECT * FROM tfc_funeral_grounds WHERE id=?`, [id], (err, rows) => {
+//     if (err) {
+//       console.error("❌ Fetch ground error:", err);
+//       return res.status(500).json({ error: "Failed to fetch ground" });
+//     }
+//     if (!rows.length) return res.status(404).json({ error: "Not found" });
+
+//     const ground = rows[0];
+
+//     try {
+//       ground.religions_supported = ground.religions_supported
+//         ? JSON.parse(ground.religions_supported.toString())
+//         : [];
+//     } catch (e) {
+//       ground.religions_supported = [];
+//     }
+
+//     try {
+//       ground.services = ground.services
+//         ? JSON.parse(ground.services.toString())
+//         : [];
+//     } catch (e) {
+//       ground.services = [];
+//     }
+
+//     // Optional: fetch images
+//     con.query(
+//       `SELECT id, url, s3_key, position 
+//        FROM tfc_ground_images 
+//        WHERE ground_id=? ORDER BY position ASC`,
+//       [id],
+//       (err2, imgs) => {
+//         if (err2) {
+//           console.error("❌ Fetch ground images error:", err2);
+//           return res.status(500).json({ error: "Failed to fetch ground images" });
+//         }
+
+//         ground.images = imgs || [];
+//         res.json(ground);
+//       }
+//     );
+//   });
+// });
+
+
+// Version 3 
+
 app.get('/api/tfc/grounds/:id', (req, res) => {
   const { id } = req.params;
   const con = dbConnection();
@@ -7454,23 +7505,35 @@ app.get('/api/tfc/grounds/:id', (req, res) => {
 
     const ground = rows[0];
 
-    try {
-      ground.religions_supported = ground.religions_supported
-        ? JSON.parse(ground.religions_supported.toString())
-        : [];
-    } catch (e) {
+    // 🟢 Parse religions_supported safely
+    if (ground.religions_supported) {
+      try {
+        if (typeof ground.religions_supported === "string") {
+          ground.religions_supported = JSON.parse(ground.religions_supported);
+        }
+      } catch (e) {
+        console.warn("⚠️ religions_supported parse error", e);
+        ground.religions_supported = [];
+      }
+    } else {
       ground.religions_supported = [];
     }
 
-    try {
-      ground.services = ground.services
-        ? JSON.parse(ground.services.toString())
-        : [];
-    } catch (e) {
+    // 🟢 Parse services safely
+    if (ground.services) {
+      try {
+        if (typeof ground.services === "string") {
+          ground.services = JSON.parse(ground.services);
+        }
+      } catch (e) {
+        console.warn("⚠️ services parse error", e);
+        ground.services = [];
+      }
+    } else {
       ground.services = [];
     }
 
-    // Optional: fetch images
+    // Fetch images
     con.query(
       `SELECT id, url, s3_key, position 
        FROM tfc_ground_images 
