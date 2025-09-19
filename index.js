@@ -7536,6 +7536,67 @@ app.get('/api/tfc/grounds/:id', (req, res) => {
 
 
 
+// app.post("/api/tfc/grounds/create", (req, res) => {
+//   const {
+//     name,
+//     address,
+//     city,
+//     pincode,
+//     phone,
+//     email,
+//     parking,
+//     water_facility,
+//     operating_hours,
+//     description,
+//     religions_supported,
+//     services,
+//     procedures,
+//     google_map_url,
+//   } = req.body;
+
+//   const con = dbConnection();
+//   const groundId = uuidv4(); // ✅ Backend generates ID
+
+//   const sql = `
+//     INSERT INTO tfc_funeral_grounds
+//     (id, name, address, city, pincode, phone, email, parking, water_facility,
+//      operating_hours, description, religions_supported, services, procedures, google_map_url)
+//     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+//   `;
+
+//   con.query(
+//     sql,
+//     [
+//       groundId,
+//       name,
+//       address,
+//       city,
+//       pincode,
+//       phone,
+//       email,
+//       parking ? 1 : 0,
+//       water_facility ? 1 : 0,
+//       operating_hours,
+//       description,
+//       JSON.stringify(religions_supported || []),
+//       JSON.stringify(services || []),
+//       procedures || null,
+//       google_map_url || null,
+//     ],
+//     (err) => {
+//       if (err) {
+//         console.error("❌ Ground insert error:", err);
+//         return res.status(500).json({ error: "Failed to create ground", details: err.message });
+//       }
+//       console.log("✅ Ground inserted:", groundId);
+//       res.json({ message: "Ground created successfully", groundId });
+//     }
+//   );
+// });
+
+
+// version 3 
+
 app.post("/api/tfc/grounds/create", (req, res) => {
   const {
     name,
@@ -7557,11 +7618,27 @@ app.post("/api/tfc/grounds/create", (req, res) => {
   const con = dbConnection();
   const groundId = uuidv4(); // ✅ Backend generates ID
 
+  // ✅ Ensure religions/services are proper JSON objects/arrays
+  let religionsJSON = null;
+  let servicesJSON = null;
+
+  try {
+    religionsJSON = religions_supported ? JSON.stringify(religions_supported) : JSON.stringify([]);
+  } catch {
+    religionsJSON = JSON.stringify([]);
+  }
+
+  try {
+    servicesJSON = services ? JSON.stringify(services) : JSON.stringify([]);
+  } catch {
+    servicesJSON = JSON.stringify([]);
+  }
+
   const sql = `
     INSERT INTO tfc_funeral_grounds
     (id, name, address, city, pincode, phone, email, parking, water_facility,
      operating_hours, description, religions_supported, services, procedures, google_map_url)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CAST(? AS JSON), CAST(? AS JSON), ?, ?)
   `;
 
   con.query(
@@ -7578,8 +7655,8 @@ app.post("/api/tfc/grounds/create", (req, res) => {
       water_facility ? 1 : 0,
       operating_hours,
       description,
-      JSON.stringify(religions_supported || []),
-      JSON.stringify(services || []),
+      religionsJSON,
+      servicesJSON,
       procedures || null,
       google_map_url || null,
     ],
@@ -7593,6 +7670,7 @@ app.post("/api/tfc/grounds/create", (req, res) => {
     }
   );
 });
+
 
 
 
