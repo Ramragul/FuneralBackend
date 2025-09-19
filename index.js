@@ -7453,12 +7453,42 @@ app.get('/api/tfc/grounds/:id', (req, res) => {
     if (!rows.length) return res.status(404).json({ error: "Not found" });
 
     const ground = rows[0];
-    ground.religions_supported = ground.religions_supported ? JSON.parse(ground.religions_supported) : [];
-    ground.services = ground.services ? JSON.parse(ground.services) : [];
 
-    res.json(ground);
+    try {
+      ground.religions_supported = ground.religions_supported
+        ? JSON.parse(ground.religions_supported.toString())
+        : [];
+    } catch (e) {
+      ground.religions_supported = [];
+    }
+
+    try {
+      ground.services = ground.services
+        ? JSON.parse(ground.services.toString())
+        : [];
+    } catch (e) {
+      ground.services = [];
+    }
+
+    // Optional: fetch images
+    con.query(
+      `SELECT id, url, s3_key, position 
+       FROM tfc_ground_images 
+       WHERE ground_id=? ORDER BY position ASC`,
+      [id],
+      (err2, imgs) => {
+        if (err2) {
+          console.error("❌ Fetch ground images error:", err2);
+          return res.status(500).json({ error: "Failed to fetch ground images" });
+        }
+
+        ground.images = imgs || [];
+        res.json(ground);
+      }
+    );
   });
 });
+
 
 
 // Create or update ground (simple upsert)
