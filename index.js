@@ -7380,120 +7380,121 @@ app.post('/api/tfc/products/:id/images/delete', async (req, res) => {
 // GET list with search/filter/pagination
 // Version 1
 
-// app.get('/api/tfc/grounds', (req, res) => {
-//   const q = (req.query.q || '').trim();
-//   const city = req.query.city || '';
-//   const pincode = req.query.pincode || '';
-//   const page = parseInt(req.query.page || '1', 10);
-//   const perPage = parseInt(req.query.perPage || '20', 10);
-//   const offset = (page - 1) * perPage;
+app.get('/api/tfc/grounds', (req, res) => {
+  const q = (req.query.q || '').trim();
+  const city = req.query.city || '';
+  const pincode = req.query.pincode || '';
+  const page = parseInt(req.query.page || '1', 10);
+  const perPage = parseInt(req.query.perPage || '20', 10);
+  const offset = (page - 1) * perPage;
 
-//   let where = [];
-//   let params = [];
+  let where = [];
+  let params = [];
 
-//   if (q) {
-//     where.push('(name LIKE ? OR address LIKE ? OR city LIKE ?)');
-//     const like = `%${q}%`;
-//     params.push(like, like, like);
-//   }
-//   if (city) {
-//     where.push('city = ?'); params.push(city);
-//   }
-//   if (pincode) {
-//     where.push('pincode = ?'); params.push(pincode);
-//   }
+  if (q) {
+    where.push('(name LIKE ? OR address LIKE ? OR city LIKE ?)');
+    const like = `%${q}%`;
+    params.push(like, like, like);
+  }
+  if (city) {
+    where.push('city = ?'); params.push(city);
+  }
+  if (pincode) {
+    where.push('pincode = ?'); params.push(pincode);
+  }
 
-//   const whereSql = where.length ? 'WHERE ' + where.join(' AND ') : '';
+  const whereSql = where.length ? 'WHERE ' + where.join(' AND ') : '';
 
-//   const con = dbConnection();
-//   const sql = `SELECT id, name, address, city, state, pincode, phone, created_at
-//                FROM tfc_funeral_grounds ${whereSql}
-//                ORDER BY created_at DESC
-//                LIMIT ? OFFSET ?`;
-//   params.push(perPage, offset);
+  const con = dbConnection();
+  const sql = `SELECT id, name, address, city, state, pincode, phone, created_at
+               FROM tfc_funeral_grounds ${whereSql}
+               ORDER BY created_at DESC
+               LIMIT ? OFFSET ?`;
+  params.push(perPage, offset);
 
-//   con.query(sql, params, (err, rows) => {
-//     if (err) return res.status(500).json({ error: err.message });
-//     // fetch first image for each ground
-//     const ids = rows.map(r => r.id);
-//     if (!ids.length) return res.json({ grounds: [], page, perPage });
+  con.query(sql, params, (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    // fetch first image for each ground
+    const ids = rows.map(r => r.id);
+    if (!ids.length) return res.json({ grounds: [], page, perPage });
 
-//     con.query(
-//       `SELECT ground_id, url FROM tfc_ground_images WHERE ground_id IN (?) AND position = 0`,
-//       [ids],
-//       (err2, imgs) => {
-//         if (err2) return res.status(500).json({ error: err2.message });
-//         const map = {};
-//         imgs.forEach(i => map[i.ground_id] = i.url);
-//         const grounds = rows.map(r => ({ ...r, thumbnail: map[r.id] || null }));
-//         return res.json({ grounds, page, perPage });
-//       }
-//     );
-//   });
-// });
+    con.query(
+      `SELECT ground_id, url FROM tfc_ground_images WHERE ground_id IN (?) AND position = 0`,
+      [ids],
+      (err2, imgs) => {
+        if (err2) return res.status(500).json({ error: err2.message });
+        const map = {};
+        imgs.forEach(i => map[i.ground_id] = i.url);
+        const grounds = rows.map(r => ({ ...r, thumbnail: map[r.id] || null }));
+        return res.json({ grounds, page, perPage });
+      }
+    );
+  });
+  con.end ();
+} );
 
 // Version 2 
 
 // const pool = require("./db");
 
-app.get('/api/tfc/grounds', async (req, res) => {
-  try {
-    const q = (req.query.q || '').trim();
-    const city = req.query.city || '';
-    const pincode = req.query.pincode || '';
-    const page = parseInt(req.query.page || '1', 10);
-    const perPage = parseInt(req.query.perPage || '20', 10);
-    const offset = (page - 1) * perPage;
+// app.get('/api/tfc/grounds', async (req, res) => {
+//   try {
+//     const q = (req.query.q || '').trim();
+//     const city = req.query.city || '';
+//     const pincode = req.query.pincode || '';
+//     const page = parseInt(req.query.page || '1', 10);
+//     const perPage = parseInt(req.query.perPage || '20', 10);
+//     const offset = (page - 1) * perPage;
 
-    let where = [];
-    let params = [];
+//     let where = [];
+//     let params = [];
 
-    if (q) {
-      where.push('(id LIKE ? OR name LIKE ? OR address LIKE ? OR city LIKE ? OR pincode LIKE ?)');
-      const like = `%${q}%`;
-      params.push(like, like, like, like, like);
-    }
-    if (city) {
-      where.push('city LIKE ?'); params.push(`%${city}%`);
-    }
-    if (pincode) {
-      where.push('pincode LIKE ?'); params.push(`%${pincode}%`);
-    }
+//     if (q) {
+//       where.push('(id LIKE ? OR name LIKE ? OR address LIKE ? OR city LIKE ? OR pincode LIKE ?)');
+//       const like = `%${q}%`;
+//       params.push(like, like, like, like, like);
+//     }
+//     if (city) {
+//       where.push('city LIKE ?'); params.push(`%${city}%`);
+//     }
+//     if (pincode) {
+//       where.push('pincode LIKE ?'); params.push(`%${pincode}%`);
+//     }
 
-    const whereSql = where.length ? 'WHERE ' + where.join(' AND ') : '';
+//     const whereSql = where.length ? 'WHERE ' + where.join(' AND ') : '';
 
-    // 🔹 Fetch grounds
-    const [rows] = await pool.query(
-      `SELECT id, name, address, city, state, pincode, phone, created_at
-       FROM tfc_funeral_grounds ${whereSql}
-       ORDER BY created_at DESC
-       LIMIT ? OFFSET ?`,
-      [...params, perPage, offset]
-    );
+//     // 🔹 Fetch grounds
+//     const [rows] = await pool.query(
+//       `SELECT id, name, address, city, state, pincode, phone, created_at
+//        FROM tfc_funeral_grounds ${whereSql}
+//        ORDER BY created_at DESC
+//        LIMIT ? OFFSET ?`,
+//       [...params, perPage, offset]
+//     );
 
-    if (!rows.length) return res.json({ grounds: [], page, perPage });
+//     if (!rows.length) return res.json({ grounds: [], page, perPage });
 
-    // 🔹 Fetch first image per ground
-    const ids = rows.map(r => r.id);
-    const [imgs] = await pool.query(
-      `SELECT ground_id, url 
-       FROM tfc_ground_images 
-       WHERE ground_id IN (?) AND position = 0`,
-      [ids]
-    );
+//     // 🔹 Fetch first image per ground
+//     const ids = rows.map(r => r.id);
+//     const [imgs] = await pool.query(
+//       `SELECT ground_id, url 
+//        FROM tfc_ground_images 
+//        WHERE ground_id IN (?) AND position = 0`,
+//       [ids]
+//     );
 
-    const map = {};
-    imgs.forEach(i => map[i.ground_id] = i.url);
+//     const map = {};
+//     imgs.forEach(i => map[i.ground_id] = i.url);
 
-    const grounds = rows.map(r => ({ ...r, thumbnail: map[r.id] || null }));
+//     const grounds = rows.map(r => ({ ...r, thumbnail: map[r.id] || null }));
 
-    return res.json({ grounds, page, perPage });
+//     return res.json({ grounds, page, perPage });
 
-  } catch (err) {
-    console.error("❌ Grounds fetch error:", err);
-    res.status(500).json({ error: "Internal Server Error", details: err.message });
-  }
-});
+//   } catch (err) {
+//     console.error("❌ Grounds fetch error:", err);
+//     res.status(500).json({ error: "Internal Server Error", details: err.message });
+//   }
+// });
 
 
 // GET single ground with images and requirements
