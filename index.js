@@ -7418,61 +7418,141 @@ app.get('/api/tfc/grounds', (req, res) => {
 });
 
 // GET single ground with images and requirements
+
+// Version 1 
+
+// app.get('/api/tfc/grounds/:id', (req, res) => {
+//   const id = req.params.id;
+//   const con = dbConnection();
+
+//   con.query('SELECT * FROM tfc_funeral_grounds WHERE id = ?', [id], (err, rows) => {
+//     if (err) return res.status(500).json({ error: err.message });
+//     if (!rows || rows.length === 0) return res.status(404).json({ error: 'Ground not found' });
+//     const product = rows[0];
+//     con.query('SELECT id, url, position, s3_key FROM tfc_ground_images WHERE ground_id = ? ORDER BY position ASC', [id], (err2, imgs) => {
+//       if (err2) return res.status(500).json({ error: err2.message });
+//       con.query('SELECT id, title, description, mandatory, order_index FROM tfc_ground_requirements WHERE ground_id = ? ORDER BY order_index ASC', [id], (err3, reqs) => {
+//         if (err3) return res.status(500).json({ error: err3.message });
+//         return res.json({ ground: product, images: imgs, requirements: reqs });
+//       });
+//     });
+//   });
+// });
+
+// Version 2 : 
+
 app.get('/api/tfc/grounds/:id', (req, res) => {
-  const id = req.params.id;
+  const { id } = req.params;
   const con = dbConnection();
 
-  con.query('SELECT * FROM tfc_funeral_grounds WHERE id = ?', [id], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (!rows || rows.length === 0) return res.status(404).json({ error: 'Ground not found' });
-    const product = rows[0];
-    con.query('SELECT id, url, position, s3_key FROM tfc_ground_images WHERE ground_id = ? ORDER BY position ASC', [id], (err2, imgs) => {
-      if (err2) return res.status(500).json({ error: err2.message });
-      con.query('SELECT id, title, description, mandatory, order_index FROM tfc_ground_requirements WHERE ground_id = ? ORDER BY order_index ASC', [id], (err3, reqs) => {
-        if (err3) return res.status(500).json({ error: err3.message });
-        return res.json({ ground: product, images: imgs, requirements: reqs });
-      });
-    });
+  con.query(`SELECT * FROM tfc_funeral_grounds WHERE id=?`, [id], (err, rows) => {
+    if (err) {
+      console.error("❌ Fetch ground error:", err);
+      return res.status(500).json({ error: "Failed to fetch ground" });
+    }
+    if (!rows.length) return res.status(404).json({ error: "Not found" });
+
+    const ground = rows[0];
+    ground.religions_supported = ground.religions_supported ? JSON.parse(ground.religions_supported) : [];
+    ground.services = ground.services ? JSON.parse(ground.services) : [];
+
+    res.json(ground);
   });
 });
 
+
 // Create or update ground (simple upsert)
+
+// Version 1
+
+// app.post('/api/tfc/grounds/create', (req, res) => {
+//   const { id, name, address, city, state, pincode, phone, email, capacity, parking, water_facility, operating_hours, description, requirements } = req.body || {};
+//   if (!id || !name) return res.status(400).json({ error: 'id and name required' });
+
+//   const con = dbConnection();
+//   con.query(
+//     `INSERT INTO tfc_funeral_grounds (id,name,address,city,state,pincode,phone,email,capacity,parking,water_facility,operating_hours,description)
+//      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+//      ON DUPLICATE KEY UPDATE
+//        name=VALUES(name), address=VALUES(address), city=VALUES(city),
+//        state=VALUES(state), pincode=VALUES(pincode), phone=VALUES(phone), email=VALUES(email),
+//        capacity=VALUES(capacity), parking=VALUES(parking), water_facility=VALUES(water_facility),
+//        operating_hours=VALUES(operating_hours), description=VALUES(description)`,
+//     [id, name, address, city, state, pincode, phone, email, capacity || null, parking ? 1 : 0, water_facility ? 1 : 0, operating_hours || null, description || null],
+//     (err, result) => {
+//       if (err) return res.status(500).json({ error: err.message });
+
+//       // requirements: optional array [{title, description, mandatory, order_index}]
+//       if (Array.isArray(requirements)) {
+//         // remove old requirements and insert new ones
+//         con.query('DELETE FROM tfc_ground_requirements WHERE ground_id = ?', [id], (errD) => {
+//           if (errD) return res.status(500).json({ error: errD.message });
+//           if (requirements.length === 0) return res.json({ message: 'Ground saved' });
+
+//           const vals = requirements.map(r => [id, r.title, r.description || null, r.mandatory ? 1 : 0, r.order_index || 0]);
+//           con.query('INSERT INTO tfc_ground_requirements (ground_id, title, description, mandatory, order_index) VALUES ?', [vals], (errI) => {
+//             if (errI) return res.status(500).json({ error: errI.message });
+//             return res.json({ message: 'Ground saved with requirements' });
+//           });
+//         });
+//       } else {
+//         return res.json({ message: 'Ground saved' });
+//       }
+//     }
+//   );
+// });
+
+// Version 2 
+
 app.post('/api/tfc/grounds/create', (req, res) => {
-  const { id, name, address, city, state, pincode, phone, email, capacity, parking, water_facility, operating_hours, description, requirements } = req.body || {};
-  if (!id || !name) return res.status(400).json({ error: 'id and name required' });
+  const {
+    name,
+    address,
+    city,
+    pincode,
+    contact,
+    operating_hours,
+    religions_supported,
+    services,
+    procedures,
+    google_map_url
+  } = req.body;
 
   const con = dbConnection();
+
+  const groundId = uuidv4();
+
+  const sql = `
+    INSERT INTO tfc_funeral_grounds
+    (id, name, address, city, pincode, contact, operating_hours, religions_supported, services, procedures, google_map_url)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
   con.query(
-    `INSERT INTO tfc_funeral_grounds (id,name,address,city,state,pincode,phone,email,capacity,parking,water_facility,operating_hours,description)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-     ON DUPLICATE KEY UPDATE
-       name=VALUES(name), address=VALUES(address), city=VALUES(city),
-       state=VALUES(state), pincode=VALUES(pincode), phone=VALUES(phone), email=VALUES(email),
-       capacity=VALUES(capacity), parking=VALUES(parking), water_facility=VALUES(water_facility),
-       operating_hours=VALUES(operating_hours), description=VALUES(description)`,
-    [id, name, address, city, state, pincode, phone, email, capacity || null, parking ? 1 : 0, water_facility ? 1 : 0, operating_hours || null, description || null],
+    sql,
+    [
+      groundId,
+      name,
+      address,
+      city,
+      pincode,
+      contact,
+      operating_hours,
+      JSON.stringify(religions_supported || []),
+      JSON.stringify(services || []),
+      procedures || null,
+      google_map_url || null
+    ],
     (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-
-      // requirements: optional array [{title, description, mandatory, order_index}]
-      if (Array.isArray(requirements)) {
-        // remove old requirements and insert new ones
-        con.query('DELETE FROM tfc_ground_requirements WHERE ground_id = ?', [id], (errD) => {
-          if (errD) return res.status(500).json({ error: errD.message });
-          if (requirements.length === 0) return res.json({ message: 'Ground saved' });
-
-          const vals = requirements.map(r => [id, r.title, r.description || null, r.mandatory ? 1 : 0, r.order_index || 0]);
-          con.query('INSERT INTO tfc_ground_requirements (ground_id, title, description, mandatory, order_index) VALUES ?', [vals], (errI) => {
-            if (errI) return res.status(500).json({ error: errI.message });
-            return res.json({ message: 'Ground saved with requirements' });
-          });
-        });
-      } else {
-        return res.json({ message: 'Ground saved' });
+      if (err) {
+        console.error("❌ Ground insert error:", err);
+        return res.status(500).json({ error: "Failed to create ground", details: err.message });
       }
+      res.json({ message: "Ground created successfully", groundId });
     }
   );
 });
+
 
 // Attach images for a ground (accepts images payload [{url,s3Key}] or multipart via upload middleware)
 // (If you already have /aws/upload, best practice: upload first to /aws/upload -> returns [{url,s3Key}] -> call this endpoint with images in body.)
