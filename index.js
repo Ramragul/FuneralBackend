@@ -7504,16 +7504,16 @@ app.get('/api/tfc/grounds/:id', (req, res) => {
 
 // Version 2 
 
-app.post('/api/tfc/grounds/create', (req, res) => {
+
+
+app.post("/api/tfc/grounds/create", (req, res) => {
   const {
     name,
     address,
     city,
-    state,
     pincode,
     phone,
     email,
-    capacity,
     parking,
     water_facility,
     operating_hours,
@@ -7521,16 +7521,17 @@ app.post('/api/tfc/grounds/create', (req, res) => {
     religions_supported,
     services,
     procedures,
-    google_map_url
+    google_map_url,
   } = req.body;
 
   const con = dbConnection();
-  const groundId = uuidv4();
+  const groundId = uuidv4(); // ✅ Backend generates ID
 
   const sql = `
     INSERT INTO tfc_funeral_grounds
-    (id, name, address, city, state, pincode, phone, email, capacity, parking, water_facility, operating_hours, description, religions_supported, services, procedures, google_map_url)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (id, name, address, city, pincode, phone, email, parking, water_facility,
+     operating_hours, description, religions_supported, services, procedures, google_map_url)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   con.query(
@@ -7540,32 +7541,29 @@ app.post('/api/tfc/grounds/create', (req, res) => {
       name,
       address,
       city,
-      state || null,
       pincode,
-      phone || null,
-      email || null,
-      capacity || null,
+      phone,
+      email,
       parking ? 1 : 0,
       water_facility ? 1 : 0,
-      operating_hours || null,
-      description || null,
+      operating_hours,
+      description,
       JSON.stringify(religions_supported || []),
       JSON.stringify(services || []),
       procedures || null,
-      google_map_url || null
+      google_map_url || null,
     ],
-    (err, result) => {
+    (err) => {
       if (err) {
         console.error("❌ Ground insert error:", err);
-        return res.status(500).json({
-          error: "Failed to create ground",
-          details: err.message,
-        });
+        return res.status(500).json({ error: "Failed to create ground", details: err.message });
       }
+      console.log("✅ Ground inserted:", groundId);
       res.json({ message: "Ground created successfully", groundId });
     }
   );
 });
+
 
 
 
