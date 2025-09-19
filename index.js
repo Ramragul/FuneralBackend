@@ -7110,7 +7110,7 @@ app.post('/aws/upload', upload.array('photos', 10), async (req, res) => {
       const key = `gb_ground/${uuidv4()}_${file.originalname}`;
 
       const params = {
-        Bucket: 'mybucket',
+        Bucket: 'snektoawsbucket',
         Key: key,
         Body: resizedBuffer,
         ContentType: 'image/jpeg',
@@ -7344,7 +7344,7 @@ app.post('/api/tfc/products/:id/images/delete', async (req, res) => {
   const con = dbConnection();
 
   try {
-    await s3.deleteObject({ Bucket: 'mybucket', Key: s3Key }).promise();
+    await s3.deleteObject({ Bucket: 'snektoawsbucket', Key: s3Key }).promise();
 
     con.query(
       `DELETE FROM product_images WHERE id=? AND product_id=?`,
@@ -7358,6 +7358,202 @@ app.post('/api/tfc/products/:id/images/delete', async (req, res) => {
     console.error('AWS Delete error:', error);
     res.status(500).json({ error: 'Failed to delete image' });
   }
+});
+
+
+// ---- Funeral Ground Apis ----
+
+// --- Backend: tfc funeral grounds APIs ---
+// GET list with search/filter/pagination
+app.get('/api/tfc/grounds', (req, res) => {
+  const q = (req.query.q || '').trim();
+  const city = req.query.city || '';
+  const pincode = req.query.pincode || '';
+  const page = parseInt(req.query.page || '1', 10);
+  const perPage = parseInt(req.query.perPage || '20', 10);
+  const offset = (page - 1) * perPage;
+
+  let where = [];
+  let params = [];
+
+  if (q) {
+    where.push('(name LIKE ? OR address LIKE ? OR city LIKE ?)');
+    const like = `%${q}%`;
+    params.push(like, like, like);
+  }
+  if (city) {
+    where.push('city = ?'); params.push(city);
+  }
+  if (pincode) {
+    where.push('pincode = ?'); params.push(pincode);
+  }
+
+  const whereSql = where.length ? 'WHERE ' + where.join(' AND ') : '';
+
+  const con = dbConnection();
+  const sql = `SELECT id, name, address, city, state, pincode, phone, created_at
+               FROM tfc_funeral_grounds ${whereSql}
+               ORDER BY created_at DESC
+               LIMIT ? OFFSET ?`;
+  params.push(perPage, offset);
+
+  con.query(sql, params, (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    // fetch first image for each ground
+    const ids = rows.map(r => r.id);
+    if (!ids.length) return res.json({ grounds: [], page, perPage });
+
+    con.query(
+      `SELECT ground_id, url FROM tfc_ground_images WHERE ground_id IN (?) AND position = 0`,
+      [ids],
+      (err2, imgs) => {
+        if (err2) return res.status(500).json({ error: err2.message });
+        const map = {};
+        imgs.forEach(i => map[i.ground_id] = i.url);
+        const grounds = rows.map(r => ({ ...r, thumbnail: map[r.id] || null }));
+        return res.json({ grounds, page, perPage });
+      }
+    );
+  });
+});
+
+// GET single ground with images and requirements
+app.get('/api/tfc/grounds/:id', (req, res) => {
+  const id = req.params.id;
+  const con = dbConnection();
+
+  con.query('SELECT * FROM tfc_funeral_grounds WHERE id = ?', [id], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!rows || rows.length === 0) return res.status(404).json({ error: 'Ground not found' });
+    const product = rows[0];
+    con.query('SELECT id, url, position, s3_key FROM tfc_ground_images WHERE ground_id = ? ORDER BY position ASC', [id], (err2, imgs) => {
+      if (err2) return res.status(500).json({ error: err2.message });
+      con.query('SELECT id, title, description, mandatory, order_index FROM tfc_ground_requirements WHERE ground_id = ? ORDER BY order_index ASC', [id], (err3, reqs) => {
+        if (err3) return res.status(500).json({ error: err3.message });
+        return res.json({ ground: product, images: imgs, requirements: reqs });
+      });
+    });
+  });
+});
+
+// Create or update ground (simple upsert)
+app.post('/api/tfc/grounds/create', (req, res) => {
+  const { id, name, address, city, state, pincode, phone, email, capacity, parking, water_facility, operating_hours, description, requirements } = req.body || {};
+  if (!id || !name) return res.status(400).json({ error: 'id and name required' });
+
+  const con = dbConnection();
+  con.query(
+    `INSERT INTO tfc_funeral_grounds (id,name,address,city,state,pincode,phone,email,capacity,parking,water_facility,operating_hours,description)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE
+       name=VALUES(name), address=VALUES(address), city=VALUES(city),
+       state=VALUES(state), pincode=VALUES(pincode), phone=VALUES(phone), email=VALUES(email),
+       capacity=VALUES(capacity), parking=VALUES(parking), water_facility=VALUES(water_facility),
+       operating_hours=VALUES(operating_hours), description=VALUES(description)`,
+    [id, name, address, city, state, pincode, phone, email, capacity || null, parking ? 1 : 0, water_facility ? 1 : 0, operating_hours || null, description || null],
+    (err, result) => {
+      if (err) return res.status(500).json({ error: err.message });
+
+      // requirements: optional array [{title, description, mandatory, order_index}]
+      if (Array.isArray(requirements)) {
+        // remove old requirements and insert new ones
+        con.query('DELETE FROM tfc_ground_requirements WHERE ground_id = ?', [id], (errD) => {
+          if (errD) return res.status(500).json({ error: errD.message });
+          if (requirements.length === 0) return res.json({ message: 'Ground saved' });
+
+          const vals = requirements.map(r => [id, r.title, r.description || null, r.mandatory ? 1 : 0, r.order_index || 0]);
+          con.query('INSERT INTO tfc_ground_requirements (ground_id, title, description, mandatory, order_index) VALUES ?', [vals], (errI) => {
+            if (errI) return res.status(500).json({ error: errI.message });
+            return res.json({ message: 'Ground saved with requirements' });
+          });
+        });
+      } else {
+        return res.json({ message: 'Ground saved' });
+      }
+    }
+  );
+});
+
+// Attach images for a ground (accepts images payload [{url,s3Key}] or multipart via upload middleware)
+// (If you already have /aws/upload, best practice: upload first to /aws/upload -> returns [{url,s3Key}] -> call this endpoint with images in body.)
+app.post('/api/tfc/grounds/:id/images', (req, res) => {
+  const id = req.params.id;
+  const images = req.body.images; // expect [{ url, s3Key }]
+  if (!Array.isArray(images) || images.length === 0) {
+    return res.status(400).json({ error: 'images array required' });
+  }
+  const con = dbConnection();
+
+  // compute starting position (max existing + 1)
+  con.query('SELECT MAX(position) AS maxpos FROM tfc_ground_images WHERE ground_id = ?', [id], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    const start = (rows && rows[0] && rows[0].maxpos != null) ? rows[0].maxpos + 1 : 0;
+    const vals = images.map((img, i) => [id, img.url, start + i, img.s3Key || null]);
+    con.query('INSERT INTO tfc_ground_images (ground_id, url, position, s3_key) VALUES ?', [vals], (err2, res2) => {
+      if (err2) return res.status(500).json({ error: err2.message });
+      return res.json({ message: 'Images added', count: res2.affectedRows });
+    });
+  });
+});
+
+// Reorder images: payload { images: [{ imageId, position }] }
+app.post('/api/tfc/grounds/:id/images/reorder', (req, res) => {
+  const id = req.params.id;
+  const images = req.body.images;
+  if (!Array.isArray(images)) return res.status(400).json({ error: 'images array required' });
+  const con = dbConnection();
+
+  // perform sequential updates (callback style)
+  let idx = 0;
+  function nextUpdate() {
+    if (idx >= images.length) return res.json({ message: 'Reorder done' });
+    const it = images[idx++];
+    con.query('UPDATE tfc_ground_images SET position = ? WHERE id = ? AND ground_id = ?', [it.position, it.imageId, id], (err) => {
+      if (err) return res.status(500).json({ error: err.message });
+      nextUpdate();
+    });
+  }
+  nextUpdate();
+});
+
+// Delete image (also delete from s3)
+app.post('/api/tfc/grounds/:id/images/delete', (req, res) => {
+  const id = req.params.id;
+  const { imageId, s3Key } = req.body;
+  if (!imageId) return res.status(400).json({ error: 'imageId required' });
+
+  const con = dbConnection();
+
+  if (s3Key) {
+    s3.deleteObject({ Bucket: 'snektoawsbucket', Key: s3Key }).promise().catch(err => {
+      console.error('S3 delete warning:', err);
+    });
+  }
+
+  con.query('DELETE FROM tfc_ground_images WHERE id = ? AND ground_id = ?', [imageId, id], (err, result) => {
+    if (err) return res.status(500).json({ error: err.message });
+    return res.json({ message: 'Image deleted' });
+  });
+});
+
+// Delete ground
+app.delete('/api/tfc/grounds/:id', (req, res) => {
+  const id = req.params.id;
+  const con = dbConnection();
+  con.query('SELECT s3_key FROM tfc_ground_images WHERE ground_id = ?', [id], (err, imgs) => {
+    if (err) return res.status(500).json({ error: err.message });
+    // delete from s3 best-effort
+    imgs.forEach(i => {
+      if (i.s3_key) {
+        s3.deleteObject({ Bucket: 'snektoawsbucket', Key: i.s3_key }).promise().catch(err => console.error('S3 delete:', err));
+      }
+    });
+    // delete ground (images, reqs will cascade)
+    con.query('DELETE FROM tfc_funeral_grounds WHERE id = ?', [id], (err2) => {
+      if (err2) return res.status(500).json({ error: err2.message });
+      return res.json({ message: 'Ground deleted' });
+    });
+  });
 });
 
 
