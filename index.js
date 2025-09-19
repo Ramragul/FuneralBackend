@@ -7430,7 +7430,7 @@ app.get('/api/tfc/grounds', (req, res) => {
       }
     );
   });
-  con.end ();
+  
 } );
 
 // Version 2 
