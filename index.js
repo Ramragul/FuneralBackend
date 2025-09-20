@@ -7139,29 +7139,35 @@ app.post('/api/admin/orders/update', (req, res) => {
 
 // Version 2
 // GET list (optional category filter) - returns richer fields
+
 app.get('/api/services/list', (req, res) => {
   const { category } = req.query;
-  let con;
-  try {
-    con = dbConnection();
-    con.connect();
+  const con = dbConnection(); con.connect();
+  let sql =
+    `SELECT sp.code, sp.name, sp.price, sp.description, sp.category, sp.image, sp.images, sp.pricing_type
+     FROM service_packages sp`;
+  const params = [];
+  if (category) { sql += ' WHERE sp.category = ?'; params.push(category); }
 
-    let sql = `SELECT code, name, price, description, category, image, images, variants, pricing_type
-               FROM service_packages`;
-    const params = [];
-    if (category) {
-      sql += ' WHERE category = ?';
-      params.push(category);
-    }
+  con.query(sql, params, (err, rows) => {
+    if (err) return res.status(500).json({ error: 'Could not fetch services' });
 
-    con.query(sql, params, (err, rows) => {
-      if (err) {
-        console.error('services list error', err);
-        return res.status(500).json({ error: 'Could not fetch services' });
-      }
+    // build list and attach variants from service_variants table
+    const codes = rows.map(r => r.code);
+    if (!codes.length) return res.json({ services: [] });
 
-      // Parse JSON columns (images, variants) because mysql returns strings for JSON columns in some drivers
-      const services = (rows || []).map(r => ({
+    con.query('SELECT service_code, variant_code, label, price, image FROM service_variants WHERE service_code IN (?)', [codes], (err2, vrows) => {
+      if (err2) return res.status(500).json({ error: 'Could not fetch variants' });
+
+      const variantsByService = {};
+      (vrows || []).forEach(v => {
+        variantsByService[v.service_code] = variantsByService[v.service_code] || [];
+        variantsByService[v.service_code].push({
+          variant_code: v.variant_code, label: v.label, price: Number(v.price), image: v.image
+        });
+      });
+
+      const services = rows.map(r => ({
         code: r.code,
         name: r.name,
         price: Number(r.price),
@@ -7169,38 +7175,30 @@ app.get('/api/services/list', (req, res) => {
         category: r.category,
         image: r.image || null,
         images: r.images ? (typeof r.images === 'string' ? JSON.parse(r.images) : r.images) : [],
-        variants: r.variants ? (typeof r.variants === 'string' ? JSON.parse(r.variants) : r.variants) : [],
         pricingType: r.pricing_type || 'flat',
+        variants: variantsByService[r.code] || []
       }));
 
       res.json({ services });
     });
-  } catch (error) {
-    console.error('services list exception', error);
-    res.status(500).json({ error: 'Server error' });
-  }
+  });
 });
 
+
 // GET single service by code (reliable for ServiceDetail)
+
 app.get('/api/services/get', (req, res) => {
   const { code } = req.query;
   if (!code) return res.status(400).json({ error: 'Missing code' });
 
-  let con;
-  try {
-    con = dbConnection();
-    con.connect();
-
-    const sql = `SELECT code, name, price, description, category, image, images, variants, pricing_type
-                 FROM service_packages WHERE code = ? LIMIT 1`;
-    con.query(sql, [code], (err, rows) => {
-      if (err) {
-        console.error('service get error', err);
-        return res.status(500).json({ error: 'Could not fetch service' });
-      }
-      if (!rows || !rows.length) return res.status(404).json({ error: 'Service not found' });
-
-      const r = rows[0];
+  const con = dbConnection(); con.connect();
+  const sql = `SELECT code, name, price, description, category, image, images, pricing_type FROM service_packages WHERE code = ? LIMIT 1`;
+  con.query(sql, [code], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'DB error' });
+    if (!rows.length) return res.status(404).json({ error: 'Service not found' });
+    const r = rows[0];
+    con.query('SELECT variant_code, label, price, image FROM service_variants WHERE service_code = ?', [code], (err2, vrows) => {
+      if (err2) return res.status(500).json({ error: 'Variant fetch failed' });
       const service = {
         code: r.code,
         name: r.name,
@@ -7209,17 +7207,39 @@ app.get('/api/services/get', (req, res) => {
         category: r.category,
         image: r.image || null,
         images: r.images ? (typeof r.images === 'string' ? JSON.parse(r.images) : r.images) : [],
-        variants: r.variants ? (typeof r.variants === 'string' ? JSON.parse(r.variants) : r.variants) : [],
         pricingType: r.pricing_type || 'flat',
+        variants: (vrows || []).map(v => ({ variant_code: v.variant_code, label: v.label, price: Number(v.price), image: v.image }))
       };
-
       res.json({ service });
     });
-  } catch (error) {
-    console.error('service get exception', error);
-    res.status(500).json({ error: 'Server error' });
-  }
+  });
 });
+
+
+// List
+app.get('/api/services/:serviceCode/variants', (req,res) => {
+  const con = dbConnection(); con.connect();
+  con.query('SELECT variant_code AS code, label, price, image, extra, stock FROM service_variants WHERE service_code = ?', [req.params.serviceCode], (err, rows) => {
+    if (err) return res.status(500).json({ error: 'could not fetch' });
+    res.json({ variants: rows });
+  });
+});
+
+// Create
+app.post('/api/services/:serviceCode/variants', (req,res) => {
+  const { variant_code, label, price, image, extra, stock } = req.body;
+  if (!variant_code || !label) return res.status(400).json({ error:'variant_code and label required' });
+  const con = dbConnection(); con.connect();
+  con.query('INSERT INTO service_variants (service_code, variant_code, label, price, image, extra, stock) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [req.params.serviceCode, variant_code, label, price||0, image||null, JSON.stringify(extra||{}), stock||null],
+    (err,result) => {
+      if (err) return res.status(500).json({ error:'create failed' });
+      res.json({ id: result.insertId });
+    });
+});
+
+// Update & Delete similar to earlier skeleton I provided
+
 
 
 
