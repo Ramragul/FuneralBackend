@@ -6940,7 +6940,7 @@ app.post('/api/coffins/purchase', (req, res) => {
 // Version 2 
 
 app.post('/api/services/book', (req, res) => {
-  const { customer, packageCode, services = [], serviceDate, pickupLocation, dropLocation, notes } = req.body;
+  const { customer, packageCode, services = [], serviceDate, pickupLocation, dropLocation, notes , address } = req.body;
 
   if ((!packageCode && (!Array.isArray(services) || services.length === 0)) || !serviceDate || !customer?.phone) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -7017,9 +7017,9 @@ app.post('/api/services/book', (req, res) => {
                   // Insert into service_bookings
                   // Note: package_code nullable, for service-based bookings we leave it NULL.
                   con.query(
-                    `INSERT INTO service_bookings (order_id, package_code, service_date, pickup_location, drop_location, notes)
-                     VALUES (?, ?, ?, ?, ?, ?)`,
-                    [orderId, packageCodeForBooking || null, serviceDate, pickupLocation || null, dropLocation || null, notes || null],
+                    `INSERT INTO service_bookings (order_id, package_code, service_date, address, pickup_location, drop_location, notes)
+                     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                    [orderId, packageCodeForBooking || null, serviceDate,address || null, pickupLocation || null, dropLocation || null, notes || null],
                     (err) => {
                       if (err) return rollback(con, res, 'Service booking insert failed', err);
 
