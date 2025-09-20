@@ -7140,49 +7140,69 @@ app.post('/api/admin/orders/update', (req, res) => {
 // Version 2
 // GET list (optional category filter) - returns richer fields
 
-app.get('/api/services/list', (req, res) => {
-  const { category } = req.query;
-  const con = dbConnection(); con.connect();
-  let sql =
-    `SELECT sp.code, sp.name, sp.price, sp.description, sp.category, sp.image, sp.images, sp.pricing_type
-     FROM service_packages sp`;
-  const params = [];
-  if (category) { sql += ' WHERE sp.category = ?'; params.push(category); }
+// GET single service by code (robust)
+app.get('/api/services/get', (req, res) => {
+  const { code, debug } = req.query;
+  console.log('[API] GET /api/services/get code=', code, ' debug=', debug);
 
-  con.query(sql, params, (err, rows) => {
-    if (err) return res.status(500).json({ error: 'Could not fetch services' });
+  if (!code) return res.status(400).json({ error: 'Missing code' });
 
-    // build list and attach variants from service_variants table
-    const codes = rows.map(r => r.code);
-    if (!codes.length) return res.json({ services: [] });
+  const con = dbConnection();
+  con.connect();
 
-    con.query('SELECT service_code, variant_code, label, price, image FROM service_variants WHERE service_code IN (?)', [codes], (err2, vrows) => {
-      if (err2) return res.status(500).json({ error: 'Could not fetch variants' });
+  const sql = `SELECT code, name, price, description, category, image, images, pricing_type
+               FROM service_packages WHERE code = ? LIMIT 1`;
 
-      const variantsByService = {};
-      (vrows || []).forEach(v => {
-        variantsByService[v.service_code] = variantsByService[v.service_code] || [];
-        variantsByService[v.service_code].push({
-          variant_code: v.variant_code, label: v.label, price: Number(v.price), image: v.image
-        });
-      });
+  con.query(sql, [code], (err, rows) => {
+    if (err) {
+      console.error('[API] service get DB error', err);
+      return res.status(500).json({ error: 'DB error', detail: String(err) });
+    }
+    if (!rows || !rows.length) {
+      console.log('[API] service not found for code=', code);
+      return res.status(404).json({ error: 'Service not found' });
+    }
 
-      const services = rows.map(r => ({
+    const r = rows[0];
+
+    // safe parse helper
+    const safeParseJson = (val) => {
+      if (!val) return [];
+      if (Array.isArray(val)) return val;
+      try { return JSON.parse(val); } catch (e) {
+        console.warn('[API] JSON parse failed for service', code, e);
+        return [];
+      }
+    };
+
+    // fetch variants for this service (if table exists)
+    con.query('SELECT variant_code, label, price, image FROM service_variants WHERE service_code = ?', [code], (err2, vrows) => {
+      if (err2) {
+        console.error('[API] variant fetch failed', err2);
+        // don't block the response — return service without variants
+        vrows = [];
+      }
+
+      const service = {
         code: r.code,
         name: r.name,
-        price: Number(r.price),
+        price: (r.price !== null && r.price !== undefined) ? Number(r.price) : null,
         description: r.description,
         category: r.category,
         image: r.image || null,
-        images: r.images ? (typeof r.images === 'string' ? JSON.parse(r.images) : r.images) : [],
+        images: safeParseJson(r.images),
         pricingType: r.pricing_type || 'flat',
-        variants: variantsByService[r.code] || []
-      }));
+        variants: (vrows || []).map(v => ({ variant_code: v.variant_code, label: v.label, price: Number(v.price), image: v.image }))
+      };
 
-      res.json({ services });
+      if (debug === '1') {
+        return res.json({ debug: true, dbRow: r, variantsRaw: vrows || [], service });
+      }
+      return res.json({ service });
     });
   });
 });
+
 
 
 // GET single service by code (reliable for ServiceDetail)
