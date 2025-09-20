@@ -6860,11 +6860,89 @@ app.post('/api/coffins/purchase', (req, res) => {
 
 // Service Booking API 
 
+// Version 1 
+
+
+// app.post('/api/services/book', (req, res) => {
+//   const { customer, packageCode, serviceDate, pickupLocation, dropLocation, notes } = req.body;
+
+//   if (!packageCode || !serviceDate || !customer?.phone) {
+//     return res.status(400).json({ error: 'Missing required fields' });
+//   }
+
+//   let con;
+//   try {
+//     con = dbConnection();
+//     con.connect();
+
+//     con.beginTransaction(err => {
+//       if (err) return res.status(500).json({ error: 'Transaction start failed' });
+
+//       // 1) Upsert customer
+//       con.query('SELECT id FROM customers WHERE phone = ? LIMIT 1', [customer.phone], (err, rows) => {
+//         if (err) return rollback(con, res, 'Customer lookup failed', err);
+
+//         const handleCustomer = (customerId) => {
+//           // 2) Get service package
+//           con.query('SELECT * FROM service_packages WHERE code = ? LIMIT 1', [packageCode], (err, pkgRows) => {
+//             if (err || !pkgRows.length) return rollback(con, res, 'Service package not found', err);
+//             const pkg = pkgRows[0];
+//             const totalPrice = Number(pkg.price);
+
+//             // 3) Insert order
+//             con.query('INSERT INTO orders (customer_id, order_type, total_price, status, payment_status) VALUES (?, ?, ?, ?, ?)',
+//               [customerId, 'service', totalPrice, 'pending', 'unpaid'], (err, orderRes) => {
+//                 if (err) return rollback(con, res, 'Order insert failed', err);
+//                 const orderId = orderRes.insertId;
+
+//                 // 4) Insert order_items
+//                 con.query('INSERT INTO order_items (order_id, item_type, item_ref, name, unit_price, quantity, subtotal) VALUES (?, ?, ?, ?, ?, ?, ?)',
+//                   [orderId, 'service', packageCode, pkg.name, totalPrice, 1, totalPrice], (err) => {
+//                     if (err) return rollback(con, res, 'Order items insert failed', err);
+
+//                     // 5) Insert service_bookings
+//                     con.query(`INSERT INTO service_bookings (order_id, package_code, service_date, pickup_location, drop_location, notes)
+//                                VALUES (?, ?, ?, ?, ?, ?)`,
+//                       [orderId, packageCode, serviceDate, pickupLocation, dropLocation, notes], (err) => {
+//                         if (err) return rollback(con, res, 'Service booking insert failed', err);
+
+//                         con.commit(err => {
+//                           if (err) return rollback(con, res, 'Commit failed', err);
+//                           res.json({ orderId, status: 'pending', total: totalPrice, message: 'Service booking created' });
+//                         });
+//                       });
+//                   });
+//               });
+//           });
+//         };
+
+//         if (rows.length) {
+//           const customerId = rows[0].id;
+//           con.query('UPDATE customers SET name=?, email=? WHERE id=?', [customer.name, customer.email, customerId], (err) => {
+//             if (err) return rollback(con, res, 'Customer update failed', err);
+//             handleCustomer(customerId);
+//           });
+//         } else {
+//           con.query('INSERT INTO customers (name, phone, email) VALUES (?, ?, ?)', [customer.name, customer.phone, customer.email], (err, result) => {
+//             if (err) return rollback(con, res, 'Customer insert failed', err);
+//             handleCustomer(result.insertId);
+//           });
+//         }
+//       });
+//     });
+//   } catch (error) {
+//     console.error('service booking exception', error);
+//     res.status(500).json({ error: 'Server error' });
+//   }
+// });
+
+
+// Version 2 
 
 app.post('/api/services/book', (req, res) => {
-  const { customer, packageCode, serviceDate, pickupLocation, dropLocation, notes } = req.body;
+  const { customer, packageCode, services = [], serviceDate, pickupLocation, dropLocation, notes } = req.body;
 
-  if (!packageCode || !serviceDate || !customer?.phone) {
+  if ((!packageCode && (!Array.isArray(services) || services.length === 0)) || !serviceDate || !customer?.phone) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
@@ -6881,39 +6959,83 @@ app.post('/api/services/book', (req, res) => {
         if (err) return rollback(con, res, 'Customer lookup failed', err);
 
         const handleCustomer = (customerId) => {
-          // 2) Get service package
-          con.query('SELECT * FROM service_packages WHERE code = ? LIMIT 1', [packageCode], (err, pkgRows) => {
-            if (err || !pkgRows.length) return rollback(con, res, 'Service package not found', err);
-            const pkg = pkgRows[0];
-            const totalPrice = Number(pkg.price);
+          // If packageCode provided -> existing package flow
+          if (packageCode) {
+            con.query('SELECT * FROM service_packages WHERE code = ? LIMIT 1', [packageCode], (err, pkgRows) => {
+              if (err || !pkgRows.length) return rollback(con, res, 'Service package not found', err);
+              const pkg = pkgRows[0];
+              const totalPrice = Number(pkg.price);
 
-            // 3) Insert order
-            con.query('INSERT INTO orders (customer_id, order_type, total_price, status, payment_status) VALUES (?, ?, ?, ?, ?)',
-              [customerId, 'service', totalPrice, 'pending', 'unpaid'], (err, orderRes) => {
-                if (err) return rollback(con, res, 'Order insert failed', err);
-                const orderId = orderRes.insertId;
+              createOrder(customerId, [{ code: pkg.code, name: pkg.name, price: Number(pkg.price), quantity: 1 }], totalPrice, packageCode);
+            });
+            return;
+          }
 
-                // 4) Insert order_items
-                con.query('INSERT INTO order_items (order_id, item_type, item_ref, name, unit_price, quantity, subtotal) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                  [orderId, 'service', packageCode, pkg.name, totalPrice, 1, totalPrice], (err) => {
-                    if (err) return rollback(con, res, 'Order items insert failed', err);
+          // Otherwise handle services[] (multiple standalone services)
+          const codes = services.map(s => s.code);
+          if (!codes.length) return rollback(con, res, 'No services provided');
 
-                    // 5) Insert service_bookings
-                    con.query(`INSERT INTO service_bookings (order_id, package_code, service_date, pickup_location, drop_location, notes)
-                               VALUES (?, ?, ?, ?, ?, ?)`,
-                      [orderId, packageCode, serviceDate, pickupLocation, dropLocation, notes], (err) => {
-                        if (err) return rollback(con, res, 'Service booking insert failed', err);
+          con.query('SELECT * FROM service_packages WHERE code IN (?)', [codes], (err, svcRows) => {
+            if (err) return rollback(con, res, 'Service lookup failed', err);
+            if (!svcRows.length) return rollback(con, res, 'Services not found');
 
-                        con.commit(err => {
-                          if (err) return rollback(con, res, 'Commit failed', err);
-                          res.json({ orderId, status: 'pending', total: totalPrice, message: 'Service booking created' });
-                        });
-                      });
-                  });
-              });
+            // Map each returned row to requested quantity
+            let totalPrice = 0;
+            const items = svcRows.map(row => {
+              const requested = services.find(s => s.code === row.code) || { quantity: 1 };
+              const qty = Number(requested.quantity) || 1;
+              const unit = Number(row.price);
+              const subtotal = unit * qty;
+              totalPrice += subtotal;
+              return { code: row.code, name: row.name, price: unit, quantity: qty, subtotal };
+            });
+
+            createOrder(customerId, items, totalPrice, null);
           });
         };
 
+        function createOrder(customerId, items, totalPrice, packageCodeForBooking = null) {
+          // Insert into orders
+          con.query(
+            'INSERT INTO orders (customer_id, order_type, total_price, status, payment_status) VALUES (?, ?, ?, ?, ?)',
+            [customerId, 'service', totalPrice, 'pending', 'unpaid'],
+            (err, orderRes) => {
+              if (err) return rollback(con, res, 'Order insert failed', err);
+              const orderId = orderRes.insertId;
+
+              // Prepare bulk insert for order_items
+              const itemInserts = items.map(it => [
+                orderId, 'service', it.code, it.name, it.price, it.quantity, it.subtotal
+              ]);
+
+              con.query(
+                'INSERT INTO order_items (order_id, item_type, item_ref, name, unit_price, quantity, subtotal) VALUES ?',
+                [itemInserts],
+                (err) => {
+                  if (err) return rollback(con, res, 'Order items insert failed', err);
+
+                  // Insert into service_bookings
+                  // Note: package_code nullable, for service-based bookings we leave it NULL.
+                  con.query(
+                    `INSERT INTO service_bookings (order_id, package_code, service_date, pickup_location, drop_location, notes)
+                     VALUES (?, ?, ?, ?, ?, ?)`,
+                    [orderId, packageCodeForBooking || null, serviceDate, pickupLocation || null, dropLocation || null, notes || null],
+                    (err) => {
+                      if (err) return rollback(con, res, 'Service booking insert failed', err);
+
+                      con.commit(err => {
+                        if (err) return rollback(con, res, 'Commit failed', err);
+                        res.json({ orderId, status: 'pending', total: totalPrice, message: 'Service booking created' });
+                      });
+                    }
+                  );
+                }
+              );
+            }
+          );
+        }
+
+        // upsert customer
         if (rows.length) {
           const customerId = rows[0].id;
           con.query('UPDATE customers SET name=?, email=? WHERE id=?', [customer.name, customer.email, customerId], (err) => {
@@ -6933,6 +7055,7 @@ app.post('/api/services/book', (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 
 // Get all orders with customer info
@@ -6983,6 +7106,38 @@ app.post('/api/admin/orders/update', (req, res) => {
     res.json({ message: "Order updated successfully" });
   });
 });
+
+
+
+// GET /api/services/list?category=standalone
+app.get('/api/services/list', (req, res) => {
+  const { category } = req.query;
+  let con;
+  try {
+    con = dbConnection();
+    con.connect();
+
+    let sql = 'SELECT code, name, price, description, category FROM service_packages';
+    const params = [];
+    if (category) {
+      sql += ' WHERE category = ?';
+      params.push(category);
+    }
+
+    con.query(sql, params, (err, rows) => {
+      if (err) {
+        console.error('services list error', err);
+        return res.status(500).json({ error: 'Could not fetch services' });
+      }
+      res.json({ services: rows });
+    });
+  } catch (error) {
+    console.error('services list exception', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+
 
 
 // ------------- COFFIN Catalogue Modifications --------------------------
