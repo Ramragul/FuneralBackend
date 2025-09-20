@@ -7110,6 +7110,35 @@ app.post('/api/admin/orders/update', (req, res) => {
 
 
 // GET /api/services/list?category=standalone
+// app.get('/api/services/list', (req, res) => {
+//   const { category } = req.query;
+//   let con;
+//   try {
+//     con = dbConnection();
+//     con.connect();
+
+//     let sql = 'SELECT code, name, price, description, category FROM service_packages';
+//     const params = [];
+//     if (category) {
+//       sql += ' WHERE category = ?';
+//       params.push(category);
+//     }
+
+//     con.query(sql, params, (err, rows) => {
+//       if (err) {
+//         console.error('services list error', err);
+//         return res.status(500).json({ error: 'Could not fetch services' });
+//       }
+//       res.json({ services: rows });
+//     });
+//   } catch (error) {
+//     console.error('services list exception', error);
+//     res.status(500).json({ error: 'Server error' });
+//   }
+// });
+
+// Version 2
+// GET list (optional category filter) - returns richer fields
 app.get('/api/services/list', (req, res) => {
   const { category } = req.query;
   let con;
@@ -7117,7 +7146,8 @@ app.get('/api/services/list', (req, res) => {
     con = dbConnection();
     con.connect();
 
-    let sql = 'SELECT code, name, price, description, category FROM service_packages';
+    let sql = `SELECT code, name, price, description, category, image, images, variants, pricing_type
+               FROM service_packages`;
     const params = [];
     if (category) {
       sql += ' WHERE category = ?';
@@ -7129,13 +7159,68 @@ app.get('/api/services/list', (req, res) => {
         console.error('services list error', err);
         return res.status(500).json({ error: 'Could not fetch services' });
       }
-      res.json({ services: rows });
+
+      // Parse JSON columns (images, variants) because mysql returns strings for JSON columns in some drivers
+      const services = (rows || []).map(r => ({
+        code: r.code,
+        name: r.name,
+        price: Number(r.price),
+        description: r.description,
+        category: r.category,
+        image: r.image || null,
+        images: r.images ? (typeof r.images === 'string' ? JSON.parse(r.images) : r.images) : [],
+        variants: r.variants ? (typeof r.variants === 'string' ? JSON.parse(r.variants) : r.variants) : [],
+        pricingType: r.pricing_type || 'flat',
+      }));
+
+      res.json({ services });
     });
   } catch (error) {
     console.error('services list exception', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
+
+// GET single service by code (reliable for ServiceDetail)
+app.get('/api/services/get', (req, res) => {
+  const { code } = req.query;
+  if (!code) return res.status(400).json({ error: 'Missing code' });
+
+  let con;
+  try {
+    con = dbConnection();
+    con.connect();
+
+    const sql = `SELECT code, name, price, description, category, image, images, variants, pricing_type
+                 FROM service_packages WHERE code = ? LIMIT 1`;
+    con.query(sql, [code], (err, rows) => {
+      if (err) {
+        console.error('service get error', err);
+        return res.status(500).json({ error: 'Could not fetch service' });
+      }
+      if (!rows || !rows.length) return res.status(404).json({ error: 'Service not found' });
+
+      const r = rows[0];
+      const service = {
+        code: r.code,
+        name: r.name,
+        price: Number(r.price),
+        description: r.description,
+        category: r.category,
+        image: r.image || null,
+        images: r.images ? (typeof r.images === 'string' ? JSON.parse(r.images) : r.images) : [],
+        variants: r.variants ? (typeof r.variants === 'string' ? JSON.parse(r.variants) : r.variants) : [],
+        pricingType: r.pricing_type || 'flat',
+      };
+
+      res.json({ service });
+    });
+  } catch (error) {
+    console.error('service get exception', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 
 
 
