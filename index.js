@@ -7155,7 +7155,7 @@ app.get('/api/services/list', (req, res) => {
   `;
   const params = [];
   if (category) {
-    sql += ' WHERE c.code = ?';   // ✅ FIX: use c.code, not slug
+    sql += ' WHERE c.code = ?';
     params.push(category);
   }
 
@@ -7166,7 +7166,9 @@ app.get('/api/services/list', (req, res) => {
     }
 
     const codes = rows.map(r => r.code);
-    if (!codes.length) return res.json({ services: [] });
+    if (!codes.length) {
+      return res.json({ services: [] }); // ✅ return empty cleanly
+    }
 
     con.query(
       'SELECT service_code, variant_code, label, price, image FROM service_variants WHERE service_code IN (?)',
@@ -7174,7 +7176,7 @@ app.get('/api/services/list', (req, res) => {
       (err2, vrows) => {
         if (err2) {
           console.error('[API] variant fetch error', err2);
-          return res.status(500).json({ error: 'Could not fetch variants' });
+          return res.json({ services: [] }); // ✅ safe fallback
         }
 
         const variantsByService = {};
@@ -7188,6 +7190,12 @@ app.get('/api/services/list', (req, res) => {
           });
         });
 
+        const safeParseJson = (val) => {
+          if (!val) return [];
+          if (Array.isArray(val)) return val;
+          try { return JSON.parse(val); } catch { return []; }
+        };
+
         const services = rows.map(r => ({
           code: r.code,
           name: r.name,
@@ -7196,7 +7204,7 @@ app.get('/api/services/list', (req, res) => {
           category: r.categoryCode || null,
           categoryName: r.categoryName || null,
           image: r.image || null,
-          images: r.images ? (typeof r.images === 'string' ? JSON.parse(r.images) : r.images) : [],
+          images: safeParseJson(r.images),
           pricingType: r.pricing_type || 'flat',
           variants: variantsByService[r.code] || []
         }));
@@ -7206,6 +7214,7 @@ app.get('/api/services/list', (req, res) => {
     );
   });
 });
+
 
 
 // --- Get single service ---
