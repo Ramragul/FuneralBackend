@@ -8529,6 +8529,103 @@ app.post('/api/services/:serviceCode/variants', (req,res) => {
 
 
 
+// Service Variants , category , packages upload ---
+
+app.post("/api/admin/services/upload", async (req, res) => {
+  const {
+    code,
+    name,
+    price,
+    description,
+    category,
+    pricingType,
+    categoryId,
+    subcategoryId,
+    image,       // main image url
+    images,      // array of gallery image objects [{url, s3Key}]
+    variants,    // array of variants [{variant_code, label, price, image, s3Key}]
+  } = req.body;
+
+  const pool = dbConnection();
+
+  pool.getConnection((err, con) => {
+    if (err) {
+      console.error("DB pool error", err);
+      return res.status(500).json({ error: "DB connection failed" });
+    }
+
+    con.beginTransaction(async (txErr) => {
+      if (txErr) {
+        con.release();
+        return res.status(500).json({ error: "Transaction start failed" });
+      }
+
+      try {
+        // Insert into service_packages
+        const pkgSql = `
+          INSERT INTO service_packages
+          (code, name, price, description, category, image, images, pricing_type, category_id, subcategory_id)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        const pkgValues = [
+          code,
+          name,
+          price || 0,
+          description,
+          category,
+          image?.url || null,
+          JSON.stringify(images || []),
+          pricingType,
+          categoryId || null,
+          subcategoryId || null,
+        ];
+
+        await new Promise((resolve, reject) => {
+          con.query(pkgSql, pkgValues, (err) => (err ? reject(err) : resolve()));
+        });
+
+        // Insert variants
+        if (Array.isArray(variants) && variants.length > 0) {
+          const variantSql = `
+            INSERT INTO service_variants (service_code, variant_code, label, price, image, extra)
+            VALUES ?
+          `;
+          const variantValues = variants.map((v) => [
+            code,
+            v.variant_code,
+            v.label,
+            v.price,
+            v.image?.url || null,
+            JSON.stringify({ s3Key: v.image?.s3Key || null }),
+          ]);
+
+          await new Promise((resolve, reject) => {
+            con.query(variantSql, [variantValues], (err) => (err ? reject(err) : resolve()));
+          });
+        }
+
+        // Commit
+        con.commit((err) => {
+          if (err) {
+            return rollback(con, res, "Commit failed", err);
+          }
+          res.status(201).json({ message: "Service uploaded successfully", code });
+          con.release();
+        });
+      } catch (err) {
+        rollback(con, res, "Upload service failed", err);
+      }
+    });
+  });
+});
+
+function rollback(con, res, msg, err) {
+  console.error(msg, err || "");
+  con.rollback(() => {
+    con.release();
+    res.status(500).json({ error: msg });
+  });
+}
 
 
 
