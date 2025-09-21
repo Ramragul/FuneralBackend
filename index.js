@@ -7203,14 +7203,143 @@ app.post('/api/coffins/purchase', (req, res) => {
 
 // Version 3 
 
-app.post('/api/services/book', (req, res) => {
-  const { customer, packageCode, services = [], serviceDate, pickupLocation, dropLocation, notes , address } = req.body;
+// app.post('/api/services/book', (req, res) => {
+//   const { customer, packageCode, services = [], serviceDate, pickupLocation, dropLocation, notes , address } = req.body;
 
+//   if ((!packageCode && (!Array.isArray(services) || services.length === 0)) || !serviceDate || !customer?.phone) {
+//     return res.status(400).json({ error: 'Missing required fields' });
+//   }
+
+//   const pool = dbConnection(); // this now returns a pool
+
+//   pool.getConnection((err, con) => {
+//     if (err) {
+//       console.error('DB connection error', err);
+//       return res.status(500).json({ error: 'DB connection failed' });
+//     }
+
+//     con.beginTransaction(err => {
+//       if (err) {
+//         con.release();
+//         return res.status(500).json({ error: 'Transaction start failed' });
+//       }
+
+//       // --- Upsert customer ---
+//       con.query('SELECT id FROM customers WHERE phone = ? LIMIT 1', [customer.phone], (err, rows) => {
+//         if (err) return rollback(con, res, 'Customer lookup failed', err);
+
+//         const handleCustomer = (customerId) => {
+//           if (packageCode) {
+//             con.query('SELECT * FROM service_packages WHERE code = ? LIMIT 1', [packageCode], (err, pkgRows) => {
+//               if (err || !pkgRows.length) return rollback(con, res, 'Service package not found', err);
+//               const pkg = pkgRows[0];
+//               const totalPrice = Number(pkg.price);
+
+//               createOrder(customerId, [
+//                 { code: pkg.code, name: pkg.name, price: Number(pkg.price), quantity: 1, subtotal: Number(pkg.price) }
+//               ], totalPrice, packageCode);
+//             });
+//             return;
+//           }
+
+//           const codes = services.map(s => s.code);
+//           if (!codes.length) return rollback(con, res, 'No services provided');
+
+//           con.query('SELECT * FROM service_packages WHERE code IN (?)', [codes], (err, svcRows) => {
+//             if (err) return rollback(con, res, 'Service lookup failed', err);
+//             if (!svcRows.length) return rollback(con, res, 'Services not found');
+
+//             let totalPrice = 0;
+//             const items = svcRows.map(row => {
+//               const requested = services.find(s => s.code === row.code) || { quantity: 1 };
+//               const qty = Number(requested.quantity) || 1;
+//               const unit = Number(row.price);
+//               const subtotal = unit * qty;
+//               totalPrice += subtotal;
+//               return { code: row.code, name: row.name, price: unit, quantity: qty, subtotal };
+//             });
+
+//             createOrder(customerId, items, totalPrice, null);
+//           });
+//         };
+
+//         function createOrder(customerId, items, totalPrice, packageCodeForBooking = null) {
+//           con.query(
+//             'INSERT INTO orders (customer_id, order_type, total_price, status, payment_status) VALUES (?, ?, ?, ?, ?)',
+//             [customerId, 'service', totalPrice, 'pending', 'unpaid'],
+//             (err, orderRes) => {
+//               if (err) return rollback(con, res, 'Order insert failed', err);
+//               const orderId = orderRes.insertId;
+
+//               const itemInserts = items.map(it => [
+//                 orderId, 'service', it.code, it.name, it.price, it.quantity, it.subtotal
+//               ]);
+
+//               con.query(
+//                 'INSERT INTO order_items (order_id, item_type, item_ref, name, unit_price, quantity, subtotal) VALUES ?',
+//                 [itemInserts],
+//                 (err) => {
+//                   if (err) return rollback(con, res, 'Order items insert failed', err);
+
+//                   con.query(
+//                     `INSERT INTO service_bookings (order_id, package_code, service_date, address, pickup_location, drop_location, notes)
+//                      VALUES (?, ?, ?, ?, ?, ?, ?)`,
+//                     [orderId, packageCodeForBooking || null, serviceDate, address || null, pickupLocation || null, dropLocation || null, notes || null],
+//                     (err) => {
+//                       if (err) return rollback(con, res, 'Service booking insert failed', err);
+
+//                       con.commit(err => {
+//                         if (err) return rollback(con, res, 'Commit failed', err);
+//                         res.json({ orderId, status: 'pending', total: totalPrice, message: 'Service booking created' });
+//                         con.release(); // ✅ release connection back to pool
+//                       });
+//                     }
+//                   );
+//                 }
+//               );
+//             }
+//           );
+//         }
+
+//         if (rows.length) {
+//           const customerId = rows[0].id;
+//           con.query('UPDATE customers SET name=?, email=? WHERE id=?', [customer.name, customer.email, customerId], (err) => {
+//             if (err) return rollback(con, res, 'Customer update failed', err);
+//             handleCustomer(customerId);
+//           });
+//         } else {
+//           con.query('INSERT INTO customers (name, phone, email) VALUES (?, ?, ?)', [customer.name, customer.phone, customer.email], (err, result) => {
+//             if (err) return rollback(con, res, 'Customer insert failed', err);
+//             handleCustomer(result.insertId);
+//           });
+//         }
+//       });
+//     });
+//   });
+// });
+
+// // rollback helper
+// function rollback(con, res, msg, err) {
+//   console.error(msg, err || '');
+//   con.rollback(() => {
+//     con.release(); // release back to pool
+//     res.status(500).json({ error: msg });
+//   });
+// }
+
+
+// Version 4 
+
+// POST /api/services/book
+app.post('/api/services/book', (req, res) => {
+  const { customer, packageCode, services = [], serviceDate, pickupLocation, dropLocation, notes, address } = req.body;
+
+  // basic validation
   if ((!packageCode && (!Array.isArray(services) || services.length === 0)) || !serviceDate || !customer?.phone) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
-  const pool = dbConnection(); // this now returns a pool
+  const pool = dbConnection(); // returns a mysql pool
 
   pool.getConnection((err, con) => {
     if (err) {
@@ -7221,48 +7350,140 @@ app.post('/api/services/book', (req, res) => {
     con.beginTransaction(err => {
       if (err) {
         con.release();
+        console.error('Transaction begin error', err);
         return res.status(500).json({ error: 'Transaction start failed' });
       }
 
-      // --- Upsert customer ---
+      // 1) Upsert / find customer by phone
       con.query('SELECT id FROM customers WHERE phone = ? LIMIT 1', [customer.phone], (err, rows) => {
         if (err) return rollback(con, res, 'Customer lookup failed', err);
 
         const handleCustomer = (customerId) => {
+          // If booking a package (single package booking)
           if (packageCode) {
             con.query('SELECT * FROM service_packages WHERE code = ? LIMIT 1', [packageCode], (err, pkgRows) => {
-              if (err || !pkgRows.length) return rollback(con, res, 'Service package not found', err);
-              const pkg = pkgRows[0];
-              const totalPrice = Number(pkg.price);
+              if (err) return rollback(con, res, 'Service package lookup failed', err);
+              if (!pkgRows.length) return rollback(con, res, 'Service package not found');
 
-              createOrder(customerId, [
-                { code: pkg.code, name: pkg.name, price: Number(pkg.price), quantity: 1, subtotal: Number(pkg.price) }
-              ], totalPrice, packageCode);
+              const pkg = pkgRows[0];
+              const totalPrice = Number(pkg.price || 0);
+              const items = [{
+                code: pkg.code,
+                name: pkg.name,
+                price: Number(pkg.price || 0),
+                quantity: 1,
+                subtotal: Number(pkg.price || 0)
+              }];
+
+              createOrder(customerId, items, totalPrice, packageCode);
             });
+
             return;
           }
 
-          const codes = services.map(s => s.code);
+          // Otherwise handle services[] (possibly multiple items and variants)
+          const requestItems = services; // array of { code, variant_code?, quantity? }
+
+          // collect unique service codes and variant codes from payload
+          const codes = [...new Set(requestItems.map(s => s.code).filter(Boolean))];
+          const variantCodes = [...new Set(requestItems.map(s => s.variant_code).filter(Boolean))];
+
           if (!codes.length) return rollback(con, res, 'No services provided');
 
-          con.query('SELECT * FROM service_packages WHERE code IN (?)', [codes], (err, svcRows) => {
+          // fetch packages for the codes provided
+          con.query('SELECT * FROM service_packages WHERE code IN (?)', [codes], (err, pkgRows) => {
             if (err) return rollback(con, res, 'Service lookup failed', err);
-            if (!svcRows.length) return rollback(con, res, 'Services not found');
 
-            let totalPrice = 0;
-            const items = svcRows.map(row => {
-              const requested = services.find(s => s.code === row.code) || { quantity: 1 };
-              const qty = Number(requested.quantity) || 1;
-              const unit = Number(row.price);
-              const subtotal = unit * qty;
-              totalPrice += subtotal;
-              return { code: row.code, name: row.name, price: unit, quantity: qty, subtotal };
+            // fetch variants for service_code in codes OR variant_code in variantCodes
+            let varSql = 'SELECT * FROM service_variants WHERE service_code IN (?)';
+            const varParams = [codes];
+
+            if (variantCodes.length) {
+              varSql = 'SELECT * FROM service_variants WHERE service_code IN (?) OR variant_code IN (?)';
+              varParams.push(variantCodes);
+            }
+
+            con.query(varSql, varParams, (err, varRows) => {
+              if (err) return rollback(con, res, 'Variant lookup failed', err);
+
+              // If variants reference service_code that we don't have in pkgRows, fetch those packages too.
+              const extraServiceCodes = [...new Set((varRows || []).map(v => v.service_code))]
+                .filter(sc => !pkgRows.some(p => p.code === sc));
+              if (extraServiceCodes.length) {
+                con.query('SELECT * FROM service_packages WHERE code IN (?)', [extraServiceCodes], (err, extraPkgs) => {
+                  if (err) return rollback(con, res, 'Extra package lookup failed', err);
+                  pkgRows = pkgRows.concat(extraPkgs || []);
+                  buildItemsAndCreateOrder(pkgRows, varRows || []);
+                });
+              } else {
+                buildItemsAndCreateOrder(pkgRows, varRows || []);
+              }
             });
-
-            createOrder(customerId, items, totalPrice, null);
           });
+
+          // Build items list using requestItems, pkgRows and varRows
+          function buildItemsAndCreateOrder(pkgRows, varRows) {
+            let totalPrice = 0;
+            const items = [];
+
+            for (const rItem of requestItems) {
+              const qty = Number(rItem.quantity || 1);
+
+              // find package row: direct match by code
+              let pkg = pkgRows.find(p => p.code === rItem.code);
+
+              // If client passed a payload where code is not the package (rare), try to locate variant directly
+              let variant = null;
+              if (rItem.variant_code) {
+                // prefer variant whose service_code matches pkg.code
+                if (pkg) {
+                  variant = varRows.find(v => v.service_code === pkg.code && v.variant_code === rItem.variant_code);
+                }
+                // if not found, try to find variant anywhere (covers cases where code is not base code)
+                if (!variant) {
+                  variant = varRows.find(v => v.variant_code === rItem.variant_code);
+                  if (variant && !pkg) {
+                    pkg = pkgRows.find(p => p.code === variant.service_code);
+                  }
+                }
+              }
+
+              // If package still not found, try to find a package that matches rItem.code exactly as fallback
+              if (!pkg) {
+                pkg = pkgRows.find(p => p.code === rItem.code);
+              }
+
+              if (!pkg) {
+                return rollback(con, res, `Service not found for code: ${rItem.code}`);
+              }
+
+              let unitPrice = Number(pkg.price || 0);
+              let itemName = pkg.name;
+
+              // if variant exists, use variant price and label
+              if (variant) {
+                unitPrice = Number(variant.price || unitPrice);
+                itemName = `${pkg.name} — ${variant.label || variant.variant_code}`;
+              }
+
+              const subtotal = unitPrice * qty;
+              totalPrice += subtotal;
+
+              items.push({
+                code: pkg.code,       // keep base package code (server-side order uses package code)
+                name: itemName,
+                price: unitPrice,
+                quantity: qty,
+                subtotal
+              });
+            }
+
+            // create order now
+            createOrder(customerId, items, totalPrice, null);
+          }
         };
 
+        // createOrder inserts into orders, order_items, service_bookings
         function createOrder(customerId, items, totalPrice, packageCodeForBooking = null) {
           con.query(
             'INSERT INTO orders (customer_id, order_type, total_price, status, payment_status) VALUES (?, ?, ?, ?, ?)',
@@ -7290,8 +7511,12 @@ app.post('/api/services/book', (req, res) => {
 
                       con.commit(err => {
                         if (err) return rollback(con, res, 'Commit failed', err);
+
+                        // success
                         res.json({ orderId, status: 'pending', total: totalPrice, message: 'Service booking created' });
-                        con.release(); // ✅ release connection back to pool
+
+                        // release connection back to pool
+                        try { con.release(); } catch (e) { /* ignore */ }
                       });
                     }
                   );
@@ -7301,6 +7526,7 @@ app.post('/api/services/book', (req, res) => {
           );
         }
 
+        // upsert customer
         if (rows.length) {
           const customerId = rows[0].id;
           con.query('UPDATE customers SET name=?, email=? WHERE id=?', [customer.name, customer.email, customerId], (err) => {
@@ -7318,15 +7544,20 @@ app.post('/api/services/book', (req, res) => {
   });
 });
 
-// rollback helper
+// rollback helper - always rollback + release connection
 function rollback(con, res, msg, err) {
   console.error(msg, err || '');
-  con.rollback(() => {
-    con.release(); // release back to pool
+  // protect against con being undefined / already released
+  try {
+    con.rollback(() => {
+      try { con.release(); } catch (e) { /* ignore release errors */ }
+      res.status(500).json({ error: msg });
+    });
+  } catch (e) {
+    try { con.release(); } catch (e2) { /* ignore */ }
     res.status(500).json({ error: msg });
-  });
+  }
 }
-
 
 
 // Get all orders with customer info
