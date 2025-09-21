@@ -68,15 +68,15 @@ const storage = multer.diskStorage({
 
 
 
-const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASS,
-  database: process.env.DB_NAME,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
+// const pool = mysql.createPool({
+//   host: process.env.DB_HOST,
+//   user: process.env.DB_USER,
+//   password: process.env.DB_PASS,
+//   database: process.env.DB_NAME,
+//   waitForConnections: true,
+//   connectionLimit: 10,
+//   queueLimit: 0,
+// });
 
 
 // Helper function to parse LaTeX or handle plain text - Maths
@@ -553,19 +553,44 @@ app.use(bodyParser.json());
 
 // Commented on SEPT 8,2025 for 
 
-function dbConnection () {
-  console.log("PORT NUMBER" +process.env.DATABASE_PORT)
-  var connection = mysql.createConnection({
+// function dbConnection () {
+//   console.log("PORT NUMBER" +process.env.DATABASE_PORT)
+//   var connection = mysql.createConnection({
   
-    //host     : "smartdisplay.cj0ybsa00pzb.ap-northeast-1.rds.amazonaws.com",
-    host     : process.env.DATABASE_URL,
-    user     : process.env.DATABASE_USERNAME,
-    password : process.env.DATABASE_PASSWORD,
-    port     : process.env.DATABASE_PORT,
-    database : process.env.DATABASE_NAME
-  });
-  return connection;
+//     //host     : "smartdisplay.cj0ybsa00pzb.ap-northeast-1.rds.amazonaws.com",
+//     host     : process.env.DATABASE_URL,
+//     user     : process.env.DATABASE_USERNAME,
+//     password : process.env.DATABASE_PASSWORD,
+//     port     : process.env.DATABASE_PORT,
+//     database : process.env.DATABASE_NAME
+//   });
+//   return connection;
+// }
+
+let pool;
+
+function dbConnection() {
+  console.log("PORT NUMBER " + process.env.DATABASE_PORT);
+
+  if (!pool) {
+    pool = mysql.createPool({
+      host: process.env.DATABASE_URL,
+      user: process.env.DATABASE_USERNAME,
+      password: process.env.DATABASE_PASSWORD,
+      port: process.env.DATABASE_PORT,
+      database: process.env.DATABASE_NAME,
+      waitForConnections: true,
+      connectionLimit: 10,  // adjust based on your server
+      queueLimit: 0
+    });
+  }
+
+  // mimic old connection object so existing code still works
+  pool.connect = () => {};  // calling .connect() will do nothing
+  return pool;
 }
+
+module.exports = dbConnection;
 
 //const mysql = require("mysql2");   // keep normal mysql2
 
