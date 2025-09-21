@@ -3369,9 +3369,10 @@ app.get('/api/cc/services', async (req, res) => {
   } catch (error) {
     console.error('Error fetching services::', error);
     res.status(500).json({ error: 'Error fetching services ' });
-  } finally {
-    if (con) // con.end();
-  }
+  } 
+  // finally {
+  //   if (con) // con.end();
+  // }
 });
 
 
@@ -3424,9 +3425,10 @@ app.get('/api/cc/service/variants', async (req, res) => {
   } catch (error) {
     console.error('Error fetching service partners or variants:', error);
     res.status(500).json({ error: 'Error fetching service partners or variants' });
-  } finally {
-    if (con) // con.end();
-  }
+  } 
+  // finally {
+  //   if (con) // con.end();
+  // }
 });
 
 // Api for fetching services and corresponding varinat - partner perspective 
@@ -3479,9 +3481,10 @@ app.get('/api/cc/partner/services', async (req, res) => {
   } catch (error) {
     console.error('Error fetching partner services:', error);
     res.status(500).json({ error: 'Error fetching partner services' });
-  } finally {
-    if (con) // con.end();
-  }
+  } 
+  // finally {
+  //   if (con) // con.end();
+  // }
 });
 
 
@@ -3567,9 +3570,10 @@ app.post('/api/cc/partner/services', async (req, res) => {
   } catch (error) {
     console.error("Error updating variants:", error);
     res.status(500).json({ error: "Internal Server Error" });
-  } finally {
-    if (con) // con.end();
   }
+  //  finally {
+  //   if (con) // con.end();
+  // }
 });
 
 // mehendi service booking
@@ -6134,7 +6138,8 @@ app.get('/api/ip/partner/:institute/videos', async (req, res) => {
   } catch (dbError) {
     console.error('DB Query Error:', dbError);
     return res.status(500).json({ error: 'Failed to fetch videos' });
-  } finally {
+  } 
+  finally {
     // con.end();
   }
 });
@@ -6374,9 +6379,10 @@ app.post('/api/ip/course/creation', async (req, res) => {
     console.error("Error creating course:", error);
     res.status(500).json({ error: "Internal Server Error" });
 
-  } finally {
-    if (con) // con.end();
   }
+  //  finally {
+  //   if (con) // con.end();
+  // }
 });
 
 
