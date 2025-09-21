@@ -1995,129 +1995,239 @@ app.post('/api/cc/register', async (req, res) => {
 
  // Order API 
 
- app.post('/api/cc/order', async (req, res) => {
-  const { deliveryDetails, cart, totals ,userId} = req.body;
+//  app.post('/api/cc/order', async (req, res) => {
+//   const { deliveryDetails, cart, totals ,userId} = req.body;
 
-    const connection = dbConnection();
+//     const connection = dbConnection();
 
-    connection.beginTransaction((err) => {
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
+//     connection.beginTransaction((err) => {
+//         if (err) {
+//             return res.status(500).json({ error: err.message });
+//         }
 
-        // Insert delivery details
+//         // Insert delivery details
+//         const deliveryQuery = `
+//             INSERT INTO CC_Delivery_Details (first_name, last_name, email, mobile_number, address, landmark, city, pincode, order_notes, delivery_type, return_pickup, return_address, return_landmark, return_city, return_pincode)
+//             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+//         `;
+//         const deliveryValues = [
+//             deliveryDetails.firstName,
+//             deliveryDetails.lastName,
+//             deliveryDetails.email,
+//             deliveryDetails.mobileNumber,
+//             deliveryDetails.address,
+//             deliveryDetails.landmark,
+//             deliveryDetails.city,
+//             deliveryDetails.pincode,
+//             deliveryDetails.orderNotes,
+//             deliveryDetails.deliveryType,
+//             deliveryDetails.returnPickup,
+//             deliveryDetails.returnAddress,
+//             deliveryDetails.returnLandmark,
+//             deliveryDetails.returnCity,
+//             deliveryDetails.returnPincode
+//         ];
+
+//         connection.query(deliveryQuery, deliveryValues, (err, deliveryResult) => {
+//             if (err) {
+//                 return connection.rollback(() => {
+//                     res.status(500).json({ error: err.message });
+//                 });
+//             }
+
+//             const deliveryId = deliveryResult.insertId;
+//             var orderDate = moment().format('YYYY-MM-DD HH:mm:ss');
+//             //var orderDate = new Date().toLocaleString('en-GB').replace(',', '').replace(/\//g, '-').replace(/(\d{2})-(\d{2})-(\d{4})/, '$3-$2-$1');
+
+
+//             // Insert order
+//             const orderQuery = `
+//                 INSERT INTO CC_Orders (delivery_details_id, products_price, security_deposit, total_amount,order_date,order_status,user_id,payment_type)
+//                 VALUES (?, ?, ?, ?,?,?,?,?)
+//             `;
+
+//             const orderStatus = "Created"
+//             const orderValues = [
+//                 deliveryId,
+//                 totals.productsPrice,
+//                 totals.securityDeposit,
+//                 totals.totalAmount,
+//                 //new Date().toISOString().replace('T', ' ').substring(0, 19),
+//                 orderDate,
+//                 orderStatus,
+//                 userId,
+//                 deliveryDetails.paymentType
+//             ];
+
+//             connection.query(orderQuery, orderValues, (err, orderResult) => {
+//                 if (err) {
+//                     return connection.rollback(() => {
+//                         res.status(500).json({ error: err.message });
+//                     });
+//                 }
+
+//                 const orderId = orderResult.insertId;
+
+//                 // Insert cart items
+//                 const cartQuery = `
+//                     INSERT INTO CC_Order_Items (order_id, product_id, name, size, duration, delivery_date, return_date, quantity, price, image_url)
+//                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+//                 `;
+
+//                 let cartPromises = cart.map(item => {
+//                     return new Promise((resolve, reject) => {
+//                         const cartValues = [
+//                             orderId,
+//                             item.id,
+//                             item.name,
+//                             item.size,
+//                             item.duration,
+//                             item.deliveryDate,
+//                             item.returnDate,
+//                             item.quantity,
+//                             item.price,
+//                             item.imageURL
+//                         ];
+
+//                         connection.query(cartQuery, cartValues, (err) => {
+//                             if (err) {
+//                                 return reject(err);
+//                             }
+//                             resolve();
+//                         });
+//                     });
+//                 });
+
+//                 Promise.all(cartPromises)
+//                     .then(() => {
+//                         connection.commit((err) => {
+//                             if (err) {
+//                                 return connection.rollback(() => {
+//                                     res.status(500).json({ error: err.message });
+//                                 });
+//                             }
+//                             res.status(201).json({ message: "Order Created Successfully",order_id: orderId});
+//                         });
+//                     })
+//                     .catch((err) => {
+//                         connection.rollback(() => {
+//                             res.status(500).json({ error: err.message });
+//                         });
+//                     });
+//             });
+//         });
+//     });
+// });
+
+
+// Version 2 
+
+import moment from "moment";
+
+app.post('/api/cc/order', (req, res) => {
+  const { deliveryDetails, cart, totals, userId } = req.body;
+
+  pool.getConnection((err, connection) => {
+    if (err) {
+      console.error("DB connection error", err);
+      return res.status(500).json({ error: "DB connection error" });
+    }
+
+    connection.beginTransaction(async (err) => {
+      if (err) {
+        connection.release();
+        return res.status(500).json({ error: err.message });
+      }
+
+      try {
+        // --- Insert delivery details ---
         const deliveryQuery = `
-            INSERT INTO CC_Delivery_Details (first_name, last_name, email, mobile_number, address, landmark, city, pincode, order_notes, delivery_type, return_pickup, return_address, return_landmark, return_city, return_pincode)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO CC_Delivery_Details 
+          (first_name, last_name, email, mobile_number, address, landmark, city, pincode, order_notes, delivery_type, return_pickup, return_address, return_landmark, return_city, return_pincode)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
         const deliveryValues = [
-            deliveryDetails.firstName,
-            deliveryDetails.lastName,
-            deliveryDetails.email,
-            deliveryDetails.mobileNumber,
-            deliveryDetails.address,
-            deliveryDetails.landmark,
-            deliveryDetails.city,
-            deliveryDetails.pincode,
-            deliveryDetails.orderNotes,
-            deliveryDetails.deliveryType,
-            deliveryDetails.returnPickup,
-            deliveryDetails.returnAddress,
-            deliveryDetails.returnLandmark,
-            deliveryDetails.returnCity,
-            deliveryDetails.returnPincode
+          deliveryDetails.firstName,
+          deliveryDetails.lastName,
+          deliveryDetails.email,
+          deliveryDetails.mobileNumber,
+          deliveryDetails.address,
+          deliveryDetails.landmark,
+          deliveryDetails.city,
+          deliveryDetails.pincode,
+          deliveryDetails.orderNotes,
+          deliveryDetails.deliveryType,
+          deliveryDetails.returnPickup,
+          deliveryDetails.returnAddress,
+          deliveryDetails.returnLandmark,
+          deliveryDetails.returnCity,
+          deliveryDetails.returnPincode
         ];
 
-        connection.query(deliveryQuery, deliveryValues, (err, deliveryResult) => {
-            if (err) {
-                return connection.rollback(() => {
-                    res.status(500).json({ error: err.message });
-                });
-            }
+        const [deliveryResult] = await connection.promise().query(deliveryQuery, deliveryValues);
+        const deliveryId = deliveryResult.insertId;
 
-            const deliveryId = deliveryResult.insertId;
-            var orderDate = moment().format('YYYY-MM-DD HH:mm:ss');
-            //var orderDate = new Date().toLocaleString('en-GB').replace(',', '').replace(/\//g, '-').replace(/(\d{2})-(\d{2})-(\d{4})/, '$3-$2-$1');
+        const orderDate = moment().format('YYYY-MM-DD HH:mm:ss');
+        const orderStatus = "Created";
 
+        // --- Insert order ---
+        const orderQuery = `
+          INSERT INTO CC_Orders 
+          (delivery_details_id, products_price, security_deposit, total_amount, order_date, order_status, user_id, payment_type)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        const orderValues = [
+          deliveryId,
+          totals.productsPrice,
+          totals.securityDeposit,
+          totals.totalAmount,
+          orderDate,
+          orderStatus,
+          userId,
+          deliveryDetails.paymentType
+        ];
 
-            // Insert order
-            const orderQuery = `
-                INSERT INTO CC_Orders (delivery_details_id, products_price, security_deposit, total_amount,order_date,order_status,user_id,payment_type)
-                VALUES (?, ?, ?, ?,?,?,?,?)
-            `;
+        const [orderResult] = await connection.promise().query(orderQuery, orderValues);
+        const orderId = orderResult.insertId;
 
-            const orderStatus = "Created"
-            const orderValues = [
-                deliveryId,
-                totals.productsPrice,
-                totals.securityDeposit,
-                totals.totalAmount,
-                //new Date().toISOString().replace('T', ' ').substring(0, 19),
-                orderDate,
-                orderStatus,
-                userId,
-                deliveryDetails.paymentType
-            ];
+        // --- Insert cart items ---
+        const cartQuery = `
+          INSERT INTO CC_Order_Items 
+          (order_id, product_id, name, size, duration, delivery_date, return_date, quantity, price, image_url)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
 
-            connection.query(orderQuery, orderValues, (err, orderResult) => {
-                if (err) {
-                    return connection.rollback(() => {
-                        res.status(500).json({ error: err.message });
-                    });
-                }
+        for (let item of cart) {
+          const cartValues = [
+            orderId,
+            item.id,
+            item.name,
+            item.size,
+            item.duration,
+            item.deliveryDate,
+            item.returnDate,
+            item.quantity,
+            item.price,
+            item.imageURL
+          ];
+          await connection.promise().query(cartQuery, cartValues);
+        }
 
-                const orderId = orderResult.insertId;
+        // --- Commit transaction ---
+        await connection.promise().commit();
+        res.status(201).json({ message: "Order Created Successfully", order_id: orderId });
 
-                // Insert cart items
-                const cartQuery = `
-                    INSERT INTO CC_Order_Items (order_id, product_id, name, size, duration, delivery_date, return_date, quantity, price, image_url)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `;
-
-                let cartPromises = cart.map(item => {
-                    return new Promise((resolve, reject) => {
-                        const cartValues = [
-                            orderId,
-                            item.id,
-                            item.name,
-                            item.size,
-                            item.duration,
-                            item.deliveryDate,
-                            item.returnDate,
-                            item.quantity,
-                            item.price,
-                            item.imageURL
-                        ];
-
-                        connection.query(cartQuery, cartValues, (err) => {
-                            if (err) {
-                                return reject(err);
-                            }
-                            resolve();
-                        });
-                    });
-                });
-
-                Promise.all(cartPromises)
-                    .then(() => {
-                        connection.commit((err) => {
-                            if (err) {
-                                return connection.rollback(() => {
-                                    res.status(500).json({ error: err.message });
-                                });
-                            }
-                            res.status(201).json({ message: "Order Created Successfully",order_id: orderId});
-                        });
-                    })
-                    .catch((err) => {
-                        connection.rollback(() => {
-                            res.status(500).json({ error: err.message });
-                        });
-                    });
-            });
-        });
+      } catch (err) {
+        console.error("Order creation failed", err);
+        await connection.promise().rollback();
+        res.status(500).json({ error: err.message });
+      } finally {
+        connection.release(); // ✅ always release back to pool
+      }
     });
+  });
 });
+
 
 
 // update orders
