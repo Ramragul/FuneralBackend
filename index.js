@@ -2122,7 +2122,7 @@ app.post('/api/cc/register', async (req, res) => {
 
 // Version 2 
 
-import moment from "moment";
+
 
 app.post('/api/cc/order', (req, res) => {
   const { deliveryDetails, cart, totals, userId } = req.body;
