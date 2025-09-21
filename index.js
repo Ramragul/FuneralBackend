@@ -1668,9 +1668,124 @@ app.get('/api/cc/rental/product', (req, res) => {
 //   }
 // });
 
+// Rental Preoduct Upload
+
+//Version 1
+
+// app.post("/api/cc/rental/product/upload", (req, res) => {
+//   const conn = dbConnection(); // returns plain mysql2 connection (NO .promise())
+
+//   const {
+//     productName,
+//     productType,
+//     productBrandName,
+//     productImageURL,
+//     productUsageGender,
+//     productUsageOccasion,
+//     productOrigin,
+//     productCategory,
+//     productPriceBand,
+//     productPrice,
+//     productPurchasePrice,
+//     productAvailability,
+//     remarks,
+//     owningAuthority
+//   } = req.body;
+
+//   // convert arrays to comma string
+//   const occasionValue = Array.isArray(productUsageOccasion)
+//     ? productUsageOccasion.join(",")
+//     : productUsageOccasion;
+//   const imageValue = Array.isArray(productImageURL)
+//     ? productImageURL.join(",")
+//     : productImageURL;
+
+//   conn.beginTransaction((txErr) => {
+//     if (txErr) {
+//       console.error("Begin transaction failed:", txErr);
+//       conn.end();
+//       return res.status(500).json({ error: "DB transaction error" });
+//     }
+
+//     const insertSql = `
+//       INSERT INTO CC_RentalProductMaster
+//       (ProductName, ProductType, ProductBrandName, ProductImageURL,
+//        ProductUsageGender, ProductUsageOccasion, ProductOrigin, ProductCategory,
+//        ProductPriceBand, ProductPrice, ProductPurchasePrice,
+//        ProductAvailability, Remarks, OwningAuthority)
+//       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+
+//     const insertParams = [
+//       productName,
+//       productType,
+//       productBrandName,
+//       imageValue,
+//       productUsageGender,
+//       occasionValue,
+//       productOrigin,
+//       productCategory,
+//       productPriceBand,
+//       productPrice,
+//       productPurchasePrice,
+//       productAvailability,
+//       remarks,
+//       owningAuthority
+//     ];
+
+//     conn.query(insertSql, insertParams, (insErr, insertResult) => {
+//       if (insErr) {
+//         console.error("Insert failed:", insErr);
+//         return conn.rollback(() => {
+//           conn.end();
+//           res.status(500).json({ error: "Insert failed" });
+//         });
+//       }
+
+//       const newProductID = insertResult.insertId;
+
+//       // If extra image table
+//       if (Array.isArray(productImageURL) && productImageURL.length) {
+//         const values = productImageURL.map((url) => [newProductID, url]);
+//         conn.query(
+//           "INSERT INTO CC_ProductImages (ProductID, ImageURL) VALUES ?",
+//           [values],
+//           (imgErr) => {
+//             if (imgErr) {
+//               console.error("Image insert failed:", imgErr);
+//               return conn.rollback(() => {
+//                 conn.end();
+//                 res.status(500).json({ error: "Image insert failed" });
+//               });
+//             }
+//             commitAndRespond(newProductID);
+//           }
+//         );
+//       } else {
+//         commitAndRespond(newProductID);
+//       }
+
+//       function commitAndRespond(id) {
+//         conn.commit((commitErr) => {
+//           conn.end();
+//           if (commitErr) {
+//             console.error("Commit failed:", commitErr);
+//             return res.status(500).json({ error: "Commit failed" });
+//           }
+//           res.status(201).json({
+//             status: "Data Upload completed successfully",
+//             productId: id,
+//           });
+//         });
+//       }
+//     });
+//   });
+// });
+
+
+// Version 2 : Pool Fixes
 
 app.post("/api/cc/rental/product/upload", (req, res) => {
-  const conn = dbConnection(); // returns plain mysql2 connection (NO .promise())
+  const pool = dbConnection(); // ✅ returns a pool
 
   const {
     productName,
@@ -1697,86 +1812,97 @@ app.post("/api/cc/rental/product/upload", (req, res) => {
     ? productImageURL.join(",")
     : productImageURL;
 
-  conn.beginTransaction((txErr) => {
-    if (txErr) {
-      console.error("Begin transaction failed:", txErr);
-      conn.end();
-      return res.status(500).json({ error: "DB transaction error" });
+  pool.getConnection((err, conn) => {
+    if (err) {
+      console.error("DB connection error:", err);
+      return res.status(500).json({ error: "DB connection failed" });
     }
 
-    const insertSql = `
-      INSERT INTO CC_RentalProductMaster
-      (ProductName, ProductType, ProductBrandName, ProductImageURL,
-       ProductUsageGender, ProductUsageOccasion, ProductOrigin, ProductCategory,
-       ProductPriceBand, ProductPrice, ProductPurchasePrice,
-       ProductAvailability, Remarks, OwningAuthority)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
-
-    const insertParams = [
-      productName,
-      productType,
-      productBrandName,
-      imageValue,
-      productUsageGender,
-      occasionValue,
-      productOrigin,
-      productCategory,
-      productPriceBand,
-      productPrice,
-      productPurchasePrice,
-      productAvailability,
-      remarks,
-      owningAuthority
-    ];
-
-    conn.query(insertSql, insertParams, (insErr, insertResult) => {
-      if (insErr) {
-        console.error("Insert failed:", insErr);
-        return conn.rollback(() => {
-          conn.end();
-          res.status(500).json({ error: "Insert failed" });
-        });
+    conn.beginTransaction((txErr) => {
+      if (txErr) {
+        console.error("Begin transaction failed:", txErr);
+        conn.release();
+        return res.status(500).json({ error: "DB transaction error" });
       }
 
-      const newProductID = insertResult.insertId;
+      const insertSql = `
+        INSERT INTO CC_RentalProductMaster
+        (ProductName, ProductType, ProductBrandName, ProductImageURL,
+         ProductUsageGender, ProductUsageOccasion, ProductOrigin, ProductCategory,
+         ProductPriceBand, ProductPrice, ProductPurchasePrice,
+         ProductAvailability, Remarks, OwningAuthority)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
 
-      // If extra image table
-      if (Array.isArray(productImageURL) && productImageURL.length) {
-        const values = productImageURL.map((url) => [newProductID, url]);
-        conn.query(
-          "INSERT INTO CC_ProductImages (ProductID, ImageURL) VALUES ?",
-          [values],
-          (imgErr) => {
-            if (imgErr) {
-              console.error("Image insert failed:", imgErr);
-              return conn.rollback(() => {
-                conn.end();
-                res.status(500).json({ error: "Image insert failed" });
-              });
+      const insertParams = [
+        productName,
+        productType,
+        productBrandName,
+        imageValue,
+        productUsageGender,
+        occasionValue,
+        productOrigin,
+        productCategory,
+        productPriceBand,
+        productPrice,
+        productPurchasePrice,
+        productAvailability,
+        remarks,
+        owningAuthority
+      ];
+
+      conn.query(insertSql, insertParams, (insErr, insertResult) => {
+        if (insErr) {
+          console.error("Insert failed:", insErr);
+          return rollback(conn, res, "Insert failed", insErr);
+        }
+
+        const newProductID = insertResult.insertId;
+
+        // If extra image table
+        if (Array.isArray(productImageURL) && productImageURL.length) {
+          const values = productImageURL.map((url) => [newProductID, url]);
+          conn.query(
+            "INSERT INTO CC_ProductImages (ProductID, ImageURL) VALUES ?",
+            [values],
+            (imgErr) => {
+              if (imgErr) {
+                console.error("Image insert failed:", imgErr);
+                return rollback(conn, res, "Image insert failed", imgErr);
+              }
+              commitAndRespond(newProductID);
             }
-            commitAndRespond(newProductID);
-          }
-        );
-      } else {
-        commitAndRespond(newProductID);
-      }
+          );
+        } else {
+          commitAndRespond(newProductID);
+        }
 
-      function commitAndRespond(id) {
-        conn.commit((commitErr) => {
-          conn.end();
-          if (commitErr) {
-            console.error("Commit failed:", commitErr);
-            return res.status(500).json({ error: "Commit failed" });
-          }
-          res.status(201).json({
-            status: "Data Upload completed successfully",
-            productId: id,
+        function commitAndRespond(id) {
+          conn.commit((commitErr) => {
+            if (commitErr) {
+              console.error("Commit failed:", commitErr);
+              return rollback(conn, res, "Commit failed", commitErr);
+            }
+            res.status(201).json({
+              status: "Data Upload completed successfully",
+              productId: id,
+            });
+            conn.release(); // ✅ release connection back to pool
           });
-        });
-      }
+        }
+      });
     });
   });
 });
+
+// rollback helper
+function rollback(conn, res, msg, err) {
+  console.error(msg, err || "");
+  conn.rollback(() => {
+    conn.release(); // ✅ release to pool
+    res.status(500).json({ error: msg });
+  });
+}
+
 
 
 
@@ -2647,179 +2773,337 @@ app.get('/api/cc/user/orders', async (req, res) => {
 
 
 // Endpoint to handle tailoring booking order creation
+// app.post('/api/cc/tailoringOrder', async (req, res) => {
+//   const {
+//       name,
+//       email,
+//       phone,
+//       stitchType,
+//       customDesignImage, // Assuming this is a file path or some kind of identifier
+//       address,
+//       city,
+//       pincode,
+//       orderNotes,
+//       appointmentDate,
+//       userId,
+//       productId,
+//       productImageURL,
+//       owningAuthority,
+//       productPrice,
+//       paymentType,
+//   } = req.body;
+
+//   // GMT to IST Conversion
+
+//   const appointmentDateUTC = new Date(appointmentDate);
+
+//   const appointmentDateIST = new Date(appointmentDateUTC);
+//   appointmentDateIST.setHours(appointmentDateIST.getHours() + 5);
+//   appointmentDateIST.setMinutes(appointmentDateIST.getMinutes() + 30);
+
+
+// var orderId = ""
+
+//   console.log("Appointment DateRECEIVED FROM FRONT END :" +JSON.stringify(req.body.appointmentDate))
+//   console.log("Appoinment date direct value " +appointmentDate)
+
+//   try
+//   {
+//   var con = dbConnection();
+//   con.connect();
+//   } catch (error) {
+//     console.error('DB Connection Error', error);
+//     res.status(500).json({ error: 'DB Connection Error' });
+//   }
+
+//   const transporter = mailConfig();
+
+//   con.beginTransaction((err) => {
+//       if (err) {
+//           return res.status(500).json({ error: err.message });
+//       }
+
+      
+
+//       // Insert tailoring details
+//       const tailoringQuery = `
+//           INSERT INTO CC_Tailoring_Order_Details (name, email, phone, stitch_option, custom_design, address, city, pincode, order_notes, appointment_date,product_id,product_image_url,partner)
+//           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?)
+//       `;
+//       const tailoringValues = [
+//           name,
+//           email,
+//           phone,
+//           stitchType,
+//           (customDesignImage.length>0) ? customDesignImage : "",
+//           address,
+//           city,
+//           pincode,
+//           orderNotes,
+//           appointmentDate ? moment(appointmentDateIST).format('YYYY-MM-DD HH:mm:ss') : null,
+//          // appointmentDate ? appointmentDate : null,
+//           productId,
+//           productImageURL,
+//           owningAuthority
+//       ];
+
+      
+//       con.query(tailoringQuery, tailoringValues, (err, tailoringResult) => {
+//           if (err) {
+//               return con.rollback(() => {
+//                   res.status(500).json({ error: err.message });
+//               });
+//           }
+
+//           const tailoringId = tailoringResult.insertId;
+//           const orderDate = moment().format('YYYY-MM-DD HH:mm:ss');
+//           const orderStatus = "Created";
+
+//           // Insert order related to tailoring
+//           const orderQuery = `
+//               INSERT INTO CC_Tailoring_Orders (tailoring_details_id, order_date, order_status, user_id, partner,products_price,payment_type)
+//               VALUES (?, ?, ?, ?, ?, ?, ?)
+//           `;
+
+//           const orderValues = [
+//               tailoringId,
+//               orderDate,
+//               orderStatus,
+//               userId,
+//               owningAuthority,
+//               productPrice,
+//               paymentType
+//           ];
+
+//           con.query(orderQuery, orderValues, (err, orderResult) => {
+//               if (err) {
+//                   return con.rollback(() => {
+//                       res.status(500).json({ error: err.message });
+//                       // con.end();
+//                   });
+//               }
+
+//               console.log("Order Results " +JSON.stringify(orderResult))
+//               orderId = orderResult.insertId
+
+//               con.commit((err) => {
+//                   if (err) {
+//                       return con.rollback(() => {
+//                           res.status(500).json({ error: err.message });
+//                       });
+//                   }
+
+//                   sendOrderConfirmationEmail(email, name);
+//                   console.log("Order_Id :" +orderId )
+//                   res.status(201).json({ message: 'Tailoring order placed successfully', order_id: orderId});
+//                   // con.end();
+//               });
+//           });
+//       });
+
+//        // Function to send registration email
+//   const sendOrderConfirmationEmail = (userEmail, userName) => {
+//     // Set the correct path to the HTML template
+//     const templatePath = path.join(__dirname, 'emailTemplates', 'tailoringOrderConfirmationTemplate.html');
+  
+//     // Read the HTML template file
+//     fs.readFile(templatePath, 'utf-8', (err, htmlTemplate) => {
+//       if (err) {
+//         console.error('Error reading the email template file:', err);
+//         return;
+//       }
+  
+//       // Replace {{userName}} with the actual user's name
+//       // const emailHtml = htmlTemplate.replace('{{userName}}', userName);
+
+//       const emailHtml = htmlTemplate
+//       .replace('{{orderId}}', orderId)
+//       .replace('{{userName}}', userName)
+//       .replace('{{appointmentDate}}' , appointmentDateIST)
+//       .replace('{{orderDetails}}' , stitchType)
+//       .replace('{{userEmail}}',email)
+
+  
+//       // Define email options
+//       const mailOptions = {
+//         from: '"Cotton Candy Support" <support@cottoncandy.co.in>',
+//         to: userEmail,
+//         subject: 'Tailoring Order Confirmed',
+//         html: emailHtml,
+//       };
+  
+//       // Send the email
+//       transporter.sendMail(mailOptions, (error, info) => {
+//         if (error) {
+//           res.status(500).json({ message: 'Failure in Email Delivery ' +error });
+//         } else {
+//           res.status(201).json({ message: 'Tailoring order placed successfully ' +info.response , order_id: orderId });
+//         }
+//       });
+//     });
+//   };
+//   });
+ 
+
+// });
+
+
+// Version 2 - Pool Fix
+
 app.post('/api/cc/tailoringOrder', async (req, res) => {
   const {
-      name,
-      email,
-      phone,
-      stitchType,
-      customDesignImage, // Assuming this is a file path or some kind of identifier
-      address,
-      city,
-      pincode,
-      orderNotes,
-      appointmentDate,
-      userId,
-      productId,
-      productImageURL,
-      owningAuthority,
-      productPrice,
-      paymentType,
+    name,
+    email,
+    phone,
+    stitchType,
+    customDesignImage,
+    address,
+    city,
+    pincode,
+    orderNotes,
+    appointmentDate,
+    userId,
+    productId,
+    productImageURL,
+    owningAuthority,
+    productPrice,
+    paymentType,
   } = req.body;
 
-  // GMT to IST Conversion
-
+  // Convert appointmentDate from GMT → IST
   const appointmentDateUTC = new Date(appointmentDate);
-
   const appointmentDateIST = new Date(appointmentDateUTC);
   appointmentDateIST.setHours(appointmentDateIST.getHours() + 5);
   appointmentDateIST.setMinutes(appointmentDateIST.getMinutes() + 30);
 
+  let orderId = "";
+  console.log("Appointment Date received from FE:", req.body.appointmentDate);
+  console.log("AppointmentDate direct value:", appointmentDate);
 
-var orderId = ""
-
-  console.log("Appointment DateRECEIVED FROM FRONT END :" +JSON.stringify(req.body.appointmentDate))
-  console.log("Appoinment date direct value " +appointmentDate)
-
-  try
-  {
-  var con = dbConnection();
-  con.connect();
-  } catch (error) {
-    console.error('DB Connection Error', error);
-    res.status(500).json({ error: 'DB Connection Error' });
-  }
-
+  const pool = dbConnection(); // ✅ returns pool
   const transporter = mailConfig();
 
-  con.beginTransaction((err) => {
-      if (err) {
-          return res.status(500).json({ error: err.message });
-      }
+  pool.getConnection((err, con) => {
+    if (err) {
+      console.error("DB connection error", err);
+      return res.status(500).json({ error: "DB Connection Error" });
+    }
 
-      
+    con.beginTransaction((txErr) => {
+      if (txErr) {
+        con.release();
+        return res.status(500).json({ error: txErr.message });
+      }
 
       // Insert tailoring details
       const tailoringQuery = `
-          INSERT INTO CC_Tailoring_Order_Details (name, email, phone, stitch_option, custom_design, address, city, pincode, order_notes, appointment_date,product_id,product_image_url,partner)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?)
+        INSERT INTO CC_Tailoring_Order_Details 
+        (name, email, phone, stitch_option, custom_design, address, city, pincode, order_notes, appointment_date, product_id, product_image_url, partner)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
+
       const tailoringValues = [
-          name,
-          email,
-          phone,
-          stitchType,
-          (customDesignImage.length>0) ? customDesignImage : "",
-          address,
-          city,
-          pincode,
-          orderNotes,
-          appointmentDate ? moment(appointmentDateIST).format('YYYY-MM-DD HH:mm:ss') : null,
-         // appointmentDate ? appointmentDate : null,
-          productId,
-          productImageURL,
-          owningAuthority
+        name,
+        email,
+        phone,
+        stitchType,
+        (customDesignImage && customDesignImage.length > 0) ? customDesignImage : "",
+        address,
+        city,
+        pincode,
+        orderNotes,
+        appointmentDate ? moment(appointmentDateIST).format("YYYY-MM-DD HH:mm:ss") : null,
+        productId,
+        productImageURL,
+        owningAuthority
       ];
 
-      
       con.query(tailoringQuery, tailoringValues, (err, tailoringResult) => {
-          if (err) {
-              return con.rollback(() => {
-                  res.status(500).json({ error: err.message });
-              });
-          }
+        if (err) return rollback(con, res, "Tailoring insert failed", err);
 
-          const tailoringId = tailoringResult.insertId;
-          const orderDate = moment().format('YYYY-MM-DD HH:mm:ss');
-          const orderStatus = "Created";
+        const tailoringId = tailoringResult.insertId;
+        const orderDate = moment().format("YYYY-MM-DD HH:mm:ss");
+        const orderStatus = "Created";
 
-          // Insert order related to tailoring
-          const orderQuery = `
-              INSERT INTO CC_Tailoring_Orders (tailoring_details_id, order_date, order_status, user_id, partner,products_price,payment_type)
-              VALUES (?, ?, ?, ?, ?, ?, ?)
-          `;
+        // Insert order
+        const orderQuery = `
+          INSERT INTO CC_Tailoring_Orders (tailoring_details_id, order_date, order_status, user_id, partner, products_price, payment_type)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `;
+        const orderValues = [
+          tailoringId,
+          orderDate,
+          orderStatus,
+          userId,
+          owningAuthority,
+          productPrice,
+          paymentType
+        ];
 
-          const orderValues = [
-              tailoringId,
-              orderDate,
-              orderStatus,
-              userId,
-              owningAuthority,
-              productPrice,
-              paymentType
-          ];
+        con.query(orderQuery, orderValues, (err, orderResult) => {
+          if (err) return rollback(con, res, "Tailoring order insert failed", err);
 
-          con.query(orderQuery, orderValues, (err, orderResult) => {
-              if (err) {
-                  return con.rollback(() => {
-                      res.status(500).json({ error: err.message });
-                      // con.end();
-                  });
-              }
+          orderId = orderResult.insertId;
 
-              console.log("Order Results " +JSON.stringify(orderResult))
-              orderId = orderResult.insertId
+          con.commit((commitErr) => {
+            if (commitErr) return rollback(con, res, "Commit failed", commitErr);
 
-              con.commit((err) => {
-                  if (err) {
-                      return con.rollback(() => {
-                          res.status(500).json({ error: err.message });
-                      });
-                  }
-
-                  sendOrderConfirmationEmail(email, name);
-                  console.log("Order_Id :" +orderId )
-                  res.status(201).json({ message: 'Tailoring order placed successfully', order_id: orderId});
-                  // con.end();
-              });
+            sendOrderConfirmationEmail(email, name, orderId, appointmentDateIST, stitchType);
+            console.log("Tailoring Order_Id:", orderId);
+            res.status(201).json({
+              message: "Tailoring order placed successfully",
+              order_id: orderId
+            });
+            con.release(); // ✅ release back to pool
           });
-      });
-
-       // Function to send registration email
-  const sendOrderConfirmationEmail = (userEmail, userName) => {
-    // Set the correct path to the HTML template
-    const templatePath = path.join(__dirname, 'emailTemplates', 'tailoringOrderConfirmationTemplate.html');
-  
-    // Read the HTML template file
-    fs.readFile(templatePath, 'utf-8', (err, htmlTemplate) => {
-      if (err) {
-        console.error('Error reading the email template file:', err);
-        return;
-      }
-  
-      // Replace {{userName}} with the actual user's name
-      // const emailHtml = htmlTemplate.replace('{{userName}}', userName);
-
-      const emailHtml = htmlTemplate
-      .replace('{{orderId}}', orderId)
-      .replace('{{userName}}', userName)
-      .replace('{{appointmentDate}}' , appointmentDateIST)
-      .replace('{{orderDetails}}' , stitchType)
-      .replace('{{userEmail}}',email)
-
-  
-      // Define email options
-      const mailOptions = {
-        from: '"Cotton Candy Support" <support@cottoncandy.co.in>',
-        to: userEmail,
-        subject: 'Tailoring Order Confirmed',
-        html: emailHtml,
-      };
-  
-      // Send the email
-      transporter.sendMail(mailOptions, (error, info) => {
-        if (error) {
-          res.status(500).json({ message: 'Failure in Email Delivery ' +error });
-        } else {
-          res.status(201).json({ message: 'Tailoring order placed successfully ' +info.response , order_id: orderId });
-        }
+        });
       });
     });
-  };
-  });
- 
 
+    // Email function
+    function sendOrderConfirmationEmail(userEmail, userName, orderId, appointmentDateIST, stitchType) {
+      const templatePath = path.join(__dirname, "emailTemplates", "tailoringOrderConfirmationTemplate.html");
+
+      fs.readFile(templatePath, "utf-8", (err, htmlTemplate) => {
+        if (err) {
+          console.error("Error reading the email template file:", err);
+          return;
+        }
+
+        const emailHtml = htmlTemplate
+          .replace("{{orderId}}", orderId)
+          .replace("{{userName}}", userName)
+          .replace("{{appointmentDate}}", appointmentDateIST)
+          .replace("{{orderDetails}}", stitchType)
+          .replace("{{userEmail}}", email);
+
+        const mailOptions = {
+          from: '"Cotton Candy Support" <support@cottoncandy.co.in>',
+          to: userEmail,
+          subject: "Tailoring Order Confirmed",
+          html: emailHtml,
+        };
+
+        transporter.sendMail(mailOptions, (error, info) => {
+          if (error) {
+            console.error("Email delivery failed", error);
+          } else {
+            console.log("Tailoring order email sent:", info.response);
+          }
+        });
+      });
+    }
+  });
 });
+
+// Rollback helper
+function rollback(con, res, msg, err) {
+  console.error(msg, err || "");
+  con.rollback(() => {
+    con.release(); // ✅ release to pool
+    res.status(500).json({ error: msg });
+  });
+}
 
 
 // Send Email Api
@@ -3114,141 +3398,143 @@ const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}
 
 // API TO REGISTER Business Partners
 
-app.post('/api/businessPartnerRegistration', async (req, res) => {
-  const { email, name, businessName, address, city, pincode, aadharImageURL, password, role, user_type, mobile, partnerType, availability } = req.body;
-  const hashedPassword = await bcrypt.hash(password, 10);
+// Version 1
 
-  const transporter = mailConfig();
+// app.post('/api/businessPartnerRegistration', async (req, res) => {
+//   const { email, name, businessName, address, city, pincode, aadharImageURL, password, role, user_type, mobile, partnerType, availability } = req.body;
+//   const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Function to send registration email
-    const sendRegistrationEmail = (userEmail, userName) => {
-      // Set the correct path to the HTML template
-      const templatePath = path.join(__dirname, 'emailTemplates', 'registrationEmailTemplate.html');
+//   const transporter = mailConfig();
+
+//     // Function to send registration email
+//     const sendRegistrationEmail = (userEmail, userName) => {
+//       // Set the correct path to the HTML template
+//       const templatePath = path.join(__dirname, 'emailTemplates', 'registrationEmailTemplate.html');
     
-      // Read the HTML template file
-      fs.readFile(templatePath, 'utf-8', (err, htmlTemplate) => {
-        if (err) {
-          console.error('Error reading the email template file:', err);
-          return;
-        }
+//       // Read the HTML template file
+//       fs.readFile(templatePath, 'utf-8', (err, htmlTemplate) => {
+//         if (err) {
+//           console.error('Error reading the email template file:', err);
+//           return;
+//         }
     
-        // Replace {{userName}} with the actual user's name
-        const emailHtml = htmlTemplate.replace('{{userName}}', userName);
+//         // Replace {{userName}} with the actual user's name
+//         const emailHtml = htmlTemplate.replace('{{userName}}', userName);
     
-        // Define email options
-        const mailOptions = {
-          from: '"Cotton Candy Support" <support@cottoncandy.co.in>',
-          to: userEmail,
-          subject: 'Welcome to Cotton Candy!',
-          html: emailHtml,
-        };
+//         // Define email options
+//         const mailOptions = {
+//           from: '"Cotton Candy Support" <support@cottoncandy.co.in>',
+//           to: userEmail,
+//           subject: 'Welcome to Cotton Candy!',
+//           html: emailHtml,
+//         };
     
-        // Send the email
-        transporter.sendMail(mailOptions, (error, info) => {
-          if (error) {
-            res.status(500).json({ message: 'Failure in Email Delivery ' +error });
-          } else {
-            res.status(201).json({ message: 'Tailoring order placed successfully ' +info.response });
-          }
-        });
-      });
-    };
+//         // Send the email
+//         transporter.sendMail(mailOptions, (error, info) => {
+//           if (error) {
+//             res.status(500).json({ message: 'Failure in Email Delivery ' +error });
+//           } else {
+//             res.status(201).json({ message: 'Tailoring order placed successfully ' +info.response });
+//           }
+//         });
+//       });
+//     };
 
 
 
-  // Validate required fields
+//   // Validate required fields
 
-  console.log("Incoming Request:" +email + name +mobile +partnerType)
-  if (!email || !name || !mobile || !partnerType) {
-    return res.status(400).json({ error: 'Missing required fields' });
-  }
+//   console.log("Incoming Request:" +email + name +mobile +partnerType)
+//   if (!email || !name || !mobile || !partnerType) {
+//     return res.status(400).json({ error: 'Missing required fields' });
+//   }
 
   
 
-  try
-  {
-  var con = dbConnection();
-  con.connect();
-  } catch (error) {
-    console.error('DB Connection Error', error);
-    res.status(500).json({ error: 'DB Connection Error' });
-  }
+//   try
+//   {
+//   var con = dbConnection();
+//   con.connect();
+//   } catch (error) {
+//     console.error('DB Connection Error', error);
+//     res.status(500).json({ error: 'DB Connection Error' });
+//   }
   
-  try {
+//   try {
  
-    // Start transaction
-    await new Promise((resolve, reject) => {
-      con.beginTransaction(err => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
+//     // Start transaction
+//     await new Promise((resolve, reject) => {
+//       con.beginTransaction(err => {
+//         if (err) reject(err);
+//         else resolve();
+//       });
+//     });
 
-    // Insert into CC_Users table
-    const insertUserQuery = `INSERT INTO CC_Users (email, name, address, city, password, role, user_type, mobile) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
-    const userValues = [email, name, address, city, hashedPassword, role, user_type, mobile];
+//     // Insert into CC_Users table
+//     const insertUserQuery = `INSERT INTO CC_Users (email, name, address, city, password, role, user_type, mobile) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+//     const userValues = [email, name, address, city, hashedPassword, role, user_type, mobile];
 
-    await new Promise((resolve, reject) => {
-      con.query(insertUserQuery, userValues, (err, results) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(results);
-        }
-      });
-    });
+//     await new Promise((resolve, reject) => {
+//       con.query(insertUserQuery, userValues, (err, results) => {
+//         if (err) {
+//           reject(err);
+//         } else {
+//           resolve(results);
+//         }
+//       });
+//     });
 
-    // Generate unique partner ID (PID)
-    // const pid = uuidv4();
+//     // Generate unique partner ID (PID)
+//     // const pid = uuidv4();
 
-        // Generate next PID in the format P0001, P0002, etc.
-        const pid = await generateNextPid(con);
+//         // Generate next PID in the format P0001, P0002, etc.
+//         const pid = await generateNextPid(con);
 
 
-    // Insert into CC_Partners table with mobile as foreign key
-    const insertPartnerQuery = `INSERT INTO CC_Partners (pid, mobile, partner_type, availability,address,city,pincode,business_name,id_proof) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-    const partnerValues = [pid, mobile, partnerType, availability,address,city,pincode,businessName,aadharImageURL];
+//     // Insert into CC_Partners table with mobile as foreign key
+//     const insertPartnerQuery = `INSERT INTO CC_Partners (pid, mobile, partner_type, availability,address,city,pincode,business_name,id_proof) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+//     const partnerValues = [pid, mobile, partnerType, availability,address,city,pincode,businessName,aadharImageURL];
 
-    await new Promise((resolve, reject) => {
-      con.query(insertPartnerQuery, partnerValues, (err, results) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(results);
-        }
-      });
-    });
+//     await new Promise((resolve, reject) => {
+//       con.query(insertPartnerQuery, partnerValues, (err, results) => {
+//         if (err) {
+//           reject(err);
+//         } else {
+//           resolve(results);
+//         }
+//       });
+//     });
 
-    // Commit transaction
-    await new Promise((resolve, reject) => {
-      con.commit(err => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
+//     // Commit transaction
+//     await new Promise((resolve, reject) => {
+//       con.commit(err => {
+//         if (err) reject(err);
+//         else resolve();
+//       });
+//     });
     
    
-    res.status(201).json({ message: 'Business partner registered successfully!', pid, mobile });
-   sendRegistrationEmail(email,name);
-  } catch (error) {
-    // Rollback transaction in case of error
-    await new Promise((resolve, reject) => {
-      con.rollback(err => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
+//     res.status(201).json({ message: 'Business partner registered successfully!', pid, mobile });
+//    sendRegistrationEmail(email,name);
+//   } catch (error) {
+//     // Rollback transaction in case of error
+//     await new Promise((resolve, reject) => {
+//       con.rollback(err => {
+//         if (err) reject(err);
+//         else resolve();
+//       });
+//     });
 
-    console.error('Error during business partner registration:', error);
-    res.status(500).json({ error: 'Business partner registration failed' });
+//     console.error('Error during business partner registration:', error);
+//     res.status(500).json({ error: 'Business partner registration failed' });
 
-  } finally {
-    // con.end(); // Close the connection
-  }
+//   } finally {
+//     // con.end(); // Close the connection
+//   }
 
     
 
-});
+// });
 
 
 // app.post('/api/service/upload', async (req, res) => {
@@ -3319,89 +3605,300 @@ app.post('/api/businessPartnerRegistration', async (req, res) => {
 // });
 
 
-app.post('/api/service/upload', async (req, res) => {
-  const { partnerId, serviceId, brandUsed, willingToTravel, paymentPolicy, refundPolicy, finalPaymentDueOn, variants, portfolioImages } = req.body;
+// Version 2 : Pool Fix
 
-  console.log("Final Payment Due on " +finalPaymentDueOn)
-  // Check for missing fields
+app.post('/api/businessPartnerRegistration', async (req, res) => {
+  const {
+    email,
+    name,
+    businessName,
+    address,
+    city,
+    pincode,
+    aadharImageURL,
+    password,
+    role,
+    user_type,
+    mobile,
+    partnerType,
+    availability
+  } = req.body;
+
+  if (!email || !name || !mobile || !partnerType) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const transporter = mailConfig();
+  const pool = dbConnection(); // ✅ returns pool
+
+  // email helper
+  function sendRegistrationEmail(userEmail, userName) {
+    const templatePath = path.join(__dirname, 'emailTemplates', 'registrationEmailTemplate.html');
+    fs.readFile(templatePath, 'utf-8', (err, htmlTemplate) => {
+      if (err) {
+        console.error('Error reading the email template file:', err);
+        return;
+      }
+      const emailHtml = htmlTemplate.replace('{{userName}}', userName);
+      const mailOptions = {
+        from: '"Cotton Candy Support" <support@cottoncandy.co.in>',
+        to: userEmail,
+        subject: 'Welcome to Cotton Candy!',
+        html: emailHtml,
+      };
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          console.error("Email delivery failed", error);
+        } else {
+          console.log("Partner registration email sent:", info.response);
+        }
+      });
+    });
+  }
+
+  pool.getConnection(async (err, con) => {
+    if (err) {
+      console.error('DB connection error', err);
+      return res.status(500).json({ error: 'DB Connection Error' });
+    }
+
+    try {
+      await new Promise((resolve, reject) => {
+        con.beginTransaction(err => (err ? reject(err) : resolve()));
+      });
+
+      // Insert into CC_Users
+      const insertUserQuery = `
+        INSERT INTO CC_Users (email, name, address, city, password, role, user_type, mobile)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+      await new Promise((resolve, reject) => {
+        con.query(insertUserQuery,
+          [email, name, address, city, hashedPassword, role, user_type, mobile],
+          (err, results) => err ? reject(err) : resolve(results)
+        );
+      });
+
+      // Generate next PID
+      const pid = await generateNextPid(con);
+
+      // Insert into CC_Partners
+      const insertPartnerQuery = `
+        INSERT INTO CC_Partners (pid, mobile, partner_type, availability, address, city, pincode, business_name, id_proof)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+      await new Promise((resolve, reject) => {
+        con.query(insertPartnerQuery,
+          [pid, mobile, partnerType, availability, address, city, pincode, businessName, aadharImageURL],
+          (err, results) => err ? reject(err) : resolve(results)
+        );
+      });
+
+      // Commit transaction
+      await new Promise((resolve, reject) => {
+        con.commit(err => (err ? reject(err) : resolve()));
+      });
+
+      res.status(201).json({ message: 'Business partner registered successfully!', pid, mobile });
+      sendRegistrationEmail(email, name);
+
+    } catch (error) {
+      console.error('Error during business partner registration:', error);
+      await new Promise((resolve) => {
+        con.rollback(() => resolve());
+      });
+      res.status(500).json({ error: 'Business partner registration failed' });
+    } finally {
+      con.release(); // ✅ release back to pool
+    }
+  });
+});
+
+
+//Version 1
+
+// app.post('/api/service/upload', async (req, res) => {
+//   const { partnerId, serviceId, brandUsed, willingToTravel, paymentPolicy, refundPolicy, finalPaymentDueOn, variants, portfolioImages } = req.body;
+
+//   console.log("Final Payment Due on " +finalPaymentDueOn)
+//   // Check for missing fields
+//   if (!partnerId || !serviceId || !variants || !portfolioImages) {
+//     return res.status(400).json({ error: 'Missing required fields' });
+//   }
+
+//   try {
+//     var con = dbConnection().promise();
+//     con.connect();
+
+//     // Start transaction
+//     await con.beginTransaction();
+
+//     // Insert each variant into the CC_Service_Variants table
+//     const variantInsertPromises = variants.map((variant) => {
+//       const { variantName, description, price } = variant;
+//       const sqlInsertVariant = `
+//         INSERT INTO CC_Service_Variants 
+//         (partner_id, service_id, variant_name, description, price, brand_used, willing_to_travel, policies)
+//         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+//       `;
+//       return con.query(sqlInsertVariant, [
+//         partnerId,
+//         serviceId,
+//         variantName,
+//         description,
+//         price,
+//         brandUsed,
+//         willingToTravel === 'true' ? 1 : 0, // Convert to boolean
+//         refundPolicy,
+//       ]);
+//     });
+
+//     // Wait for all variant insertions to complete
+//     await Promise.all(variantInsertPromises);
+
+//     // Prepare portfolioImages as a single string
+//     const portfolioImagesString = portfolioImages.toString(); // This should already be a single comma-separated string
+//     console.log('Portfolio Images String:', portfolioImagesString);
+
+//     // Insert portfolio images as a single string (comma-separated)
+//     const sqlInsertPortfolio = `
+//       INSERT INTO CC_Service_Portfolio 
+//       (partner_id, service_id, image_url, description)
+//       VALUES (?, ?, ?, ?)
+//     `;
+
+//     // Ensure portfolioImages is treated as a single string
+//     await con.query(sqlInsertPortfolio, [
+//       partnerId,
+//       serviceId,
+//       portfolioImagesString,  // This should be a single string now
+//       '' // Optional description (empty for now)
+//     ]);
+
+//     //  Insert into payment rules table
+
+//     const paymentQuery = `
+//     INSERT INTO CC_Service_Payment_Rules (partner_id,service_id, advance_percentage, remaining_due_on, refund_policy)
+//     VALUES (?, ?, ?, ?, ?)
+//   `;
+//   const paymentValues = [partnerId, serviceId, paymentPolicy, finalPaymentDueOn, refundPolicy];
+
+//   await con.query(paymentQuery, paymentValues);
+
+//     // Insert into payment rules table
+
+//     // Commit transaction
+//     await con.commit();
+//     // con.end();
+
+//     res.status(200).json({ message: 'Service details uploaded successfully' });
+//   } catch (error) {
+//     // If an error occurs, roll back the transaction
+//     if (con) await con.rollback();
+
+//     console.error('Error during service upload:', error);
+//     res.status(500).json({ error: 'Failed to upload service details' });
+//   }
+// });
+
+
+// Version 2 : Pool Fix
+
+app.post('/api/service/upload', async (req, res) => {
+  const {
+    partnerId,
+    serviceId,
+    brandUsed,
+    willingToTravel,
+    paymentPolicy,
+    refundPolicy,
+    finalPaymentDueOn,
+    variants,
+    portfolioImages
+  } = req.body;
+
+  console.log("Final Payment Due on " + finalPaymentDueOn);
+
+  // Validate required fields
   if (!partnerId || !serviceId || !variants || !portfolioImages) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
-  try {
-    var con = dbConnection().promise();
-    con.connect();
+  const pool = dbConnection(); // ✅ pool, not single connection
 
-    // Start transaction
-    await con.beginTransaction();
+  pool.getConnection(async (err, con) => {
+    if (err) {
+      console.error("DB connection error", err);
+      return res.status(500).json({ error: "DB connection failed" });
+    }
 
-    // Insert each variant into the CC_Service_Variants table
-    const variantInsertPromises = variants.map((variant) => {
-      const { variantName, description, price } = variant;
-      const sqlInsertVariant = `
-        INSERT INTO CC_Service_Variants 
-        (partner_id, service_id, variant_name, description, price, brand_used, willing_to_travel, policies)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    try {
+      await con.beginTransaction();
+
+      // Insert each variant
+      for (const variant of variants) {
+        const { variantName, description, price } = variant;
+        const sqlInsertVariant = `
+          INSERT INTO CC_Service_Variants 
+          (partner_id, service_id, variant_name, description, price, brand_used, willing_to_travel, policies)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        await con.query(sqlInsertVariant, [
+          partnerId,
+          serviceId,
+          variantName,
+          description,
+          price,
+          brandUsed,
+          willingToTravel === 'true' ? 1 : 0,
+          refundPolicy,
+        ]);
+      }
+
+      // Insert portfolio images (comma-separated)
+      const portfolioImagesString = Array.isArray(portfolioImages)
+        ? portfolioImages.join(",")
+        : portfolioImages;
+
+      const sqlInsertPortfolio = `
+        INSERT INTO CC_Service_Portfolio 
+        (partner_id, service_id, image_url, description)
+        VALUES (?, ?, ?, ?)
       `;
-      return con.query(sqlInsertVariant, [
+      await con.query(sqlInsertPortfolio, [
         partnerId,
         serviceId,
-        variantName,
-        description,
-        price,
-        brandUsed,
-        willingToTravel === 'true' ? 1 : 0, // Convert to boolean
-        refundPolicy,
+        portfolioImagesString,
+        "" // description left empty
       ]);
-    });
 
-    // Wait for all variant insertions to complete
-    await Promise.all(variantInsertPromises);
+      // Insert payment rules
+      const paymentQuery = `
+        INSERT INTO CC_Service_Payment_Rules 
+        (partner_id, service_id, advance_percentage, remaining_due_on, refund_policy)
+        VALUES (?, ?, ?, ?, ?)
+      `;
+      await con.query(paymentQuery, [
+        partnerId,
+        serviceId,
+        paymentPolicy,
+        finalPaymentDueOn,
+        refundPolicy
+      ]);
 
-    // Prepare portfolioImages as a single string
-    const portfolioImagesString = portfolioImages.toString(); // This should already be a single comma-separated string
-    console.log('Portfolio Images String:', portfolioImagesString);
-
-    // Insert portfolio images as a single string (comma-separated)
-    const sqlInsertPortfolio = `
-      INSERT INTO CC_Service_Portfolio 
-      (partner_id, service_id, image_url, description)
-      VALUES (?, ?, ?, ?)
-    `;
-
-    // Ensure portfolioImages is treated as a single string
-    await con.query(sqlInsertPortfolio, [
-      partnerId,
-      serviceId,
-      portfolioImagesString,  // This should be a single string now
-      '' // Optional description (empty for now)
-    ]);
-
-    //  Insert into payment rules table
-
-    const paymentQuery = `
-    INSERT INTO CC_Service_Payment_Rules (partner_id,service_id, advance_percentage, remaining_due_on, refund_policy)
-    VALUES (?, ?, ?, ?, ?)
-  `;
-  const paymentValues = [partnerId, serviceId, paymentPolicy, finalPaymentDueOn, refundPolicy];
-
-  await con.query(paymentQuery, paymentValues);
-
-    // Insert into payment rules table
-
-    // Commit transaction
-    await con.commit();
-    // con.end();
-
-    res.status(200).json({ message: 'Service details uploaded successfully' });
-  } catch (error) {
-    // If an error occurs, roll back the transaction
-    if (con) await con.rollback();
-
-    console.error('Error during service upload:', error);
-    res.status(500).json({ error: 'Failed to upload service details' });
-  }
+      await con.commit();
+      res.status(200).json({ message: "Service details uploaded successfully" });
+    } catch (error) {
+      await con.rollback();
+      console.error("Error during service upload:", error);
+      res.status(500).json({ error: "Failed to upload service details" });
+    } finally {
+      con.release(); // ✅ always release back to pool
+    }
+  });
 });
+
 
 
 // API to return service users, variant etc
@@ -6458,43 +6955,102 @@ app.get('/api/ip/:type/lists', async (req, res) => {
 
 // Course and Subject Creation api 
 
+// Version 1
+
+// app.post('/api/ip/course/creation', async (req, res) => {
+//   const { courseName, courseDescription, subjects, userId,institute } = req.body;
+
+//   if (!courseName) {
+//     return res.status(400).json({ error: "Course name is required" });
+//   }
+
+//   let con;
+//   try {
+//     con = dbConnection();
+//     con.connect();
+//     await new Promise((resolve, reject) => con.beginTransaction(err => err ? reject(err) : resolve()));
+
+//     // Insert course into IP_Course
+//     const courseInsertQuery = `INSERT INTO IP_Courses (user_id,institute,course_name, course_description) VALUES (?,?, ?, ?)`;
+//     const [courseResult] = await con.promise().query(courseInsertQuery, [userId, institute,courseName, courseDescription || ""]);
+//     const courseId = courseResult.insertId;
+
+//     // Insert subjects if they exist
+//     if (subjects && subjects.length > 0) {
+//       const subjectInsertQuery = `INSERT INTO IP_Subjects (name, course_id) VALUES ?`;
+//       const subjectValues = subjects.map(subject => [subject, courseId]);
+//       await con.promise().query(subjectInsertQuery, [subjectValues]);
+//     }
+
+//     await new Promise((resolve, reject) => con.commit(err => err ? reject(err) : resolve()));
+//     res.status(201).json({ message: "Course created successfully", courseId });
+
+//   } catch (error) {
+//     if (con) await new Promise((resolve, reject) => con.rollback(err => err ? reject(err) : resolve()));
+//     console.error("Error creating course:", error);
+//     res.status(500).json({ error: "Internal Server Error" });
+
+//   }
+//   //  finally {
+//   //   if (con) // con.end();
+//   // }
+// });
+
+
+// Version 2 : Pool Fix
+
 app.post('/api/ip/course/creation', async (req, res) => {
-  const { courseName, courseDescription, subjects, userId,institute } = req.body;
+  const { courseName, courseDescription, subjects, userId, institute } = req.body;
 
   if (!courseName) {
     return res.status(400).json({ error: "Course name is required" });
   }
 
-  let con;
-  try {
-    con = dbConnection();
-    con.connect();
-    await new Promise((resolve, reject) => con.beginTransaction(err => err ? reject(err) : resolve()));
-
-    // Insert course into IP_Course
-    const courseInsertQuery = `INSERT INTO IP_Courses (user_id,institute,course_name, course_description) VALUES (?,?, ?, ?)`;
-    const [courseResult] = await con.promise().query(courseInsertQuery, [userId, institute,courseName, courseDescription || ""]);
-    const courseId = courseResult.insertId;
-
-    // Insert subjects if they exist
-    if (subjects && subjects.length > 0) {
-      const subjectInsertQuery = `INSERT INTO IP_Subjects (name, course_id) VALUES ?`;
-      const subjectValues = subjects.map(subject => [subject, courseId]);
-      await con.promise().query(subjectInsertQuery, [subjectValues]);
+  const pool = dbConnection(); // ✅ use pool
+  pool.getConnection(async (err, con) => {
+    if (err) {
+      console.error("DB connection error", err);
+      return res.status(500).json({ error: "DB connection failed" });
     }
 
-    await new Promise((resolve, reject) => con.commit(err => err ? reject(err) : resolve()));
-    res.status(201).json({ message: "Course created successfully", courseId });
+    try {
+      await con.beginTransaction();
 
-  } catch (error) {
-    if (con) await new Promise((resolve, reject) => con.rollback(err => err ? reject(err) : resolve()));
-    console.error("Error creating course:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+      // Insert course
+      const courseInsertQuery = `
+        INSERT INTO IP_Courses (user_id, institute, course_name, course_description)
+        VALUES (?, ?, ?, ?)
+      `;
+      const [courseResult] = await con.query(courseInsertQuery, [
+        userId,
+        institute,
+        courseName,
+        courseDescription || ""
+      ]);
+      const courseId = courseResult.insertId;
 
-  }
-  //  finally {
-  //   if (con) // con.end();
-  // }
+      // Insert subjects if provided
+      if (Array.isArray(subjects) && subjects.length > 0) {
+        const subjectInsertQuery = `
+          INSERT INTO IP_Subjects (name, course_id) VALUES ?
+        `;
+        const subjectValues = subjects.map(subject => [subject, courseId]);
+        await con.query(subjectInsertQuery, [subjectValues]);
+      }
+
+      await con.commit();
+      res.status(201).json({
+        message: "Course created successfully",
+        courseId,
+      });
+    } catch (error) {
+      await con.rollback();
+      console.error("Error creating course:", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    } finally {
+      con.release(); // ✅ always release connection
+    }
+  });
 });
 
 
@@ -6901,6 +7457,107 @@ app.post('/api/products/:id/images/reorder', (req, res) => {
 
 // Coffin Purchase API
 
+// app.post('/api/coffins/purchase', (req, res) => {
+//   const {
+//     customer,
+//     shippingAddress,
+//     productId,
+//     size,
+//     customizations = [],
+//     quantity = 1,
+//     deliveryDate,
+//     collectionDate = null,
+//     notes = ''
+//   } = req.body;
+
+//   if (!productId || !deliveryDate || !customer?.phone) {
+//     return res.status(400).json({ error: 'Missing required fields' });
+//   }
+
+//   let con;
+//   try {
+//     con = dbConnection();
+//     con.connect();
+
+//     con.beginTransaction(err => {
+//       if (err) return res.status(500).json({ error: 'Transaction start failed' });
+
+//       // Step 1: Upsert customer
+//       con.query('SELECT id FROM customers WHERE phone = ? LIMIT 1', [customer.phone], (err, rows) => {
+//         if (err) return rollback(con, res, 'Customer lookup failed', err);
+
+//         const handleCustomer = (customerId) => {
+//           // Step 2: Insert product
+//           con.query('SELECT * FROM products WHERE id = ? LIMIT 1', [productId], (err, productRows) => {
+//             if (err || !productRows.length) return rollback(con, res, 'Product not found', err);
+//             const product = productRows[0];
+
+//             // Step 3: Customizations
+//             if (customizations.length) {
+//               con.query('SELECT id, label, price FROM product_customizations WHERE id IN (?)', [customizations], (err, cRows) => {
+//                 if (err) return rollback(con, res, 'Customization lookup failed', err);
+//                 finishOrder(customerId, product, cRows);
+//               });
+//             } else {
+//               finishOrder(customerId, product, []);
+//             }
+//           });
+//         };
+
+//         if (rows.length) {
+//           const customerId = rows[0].id;
+//           con.query('UPDATE customers SET name=?, email=? WHERE id=?', [customer.name, customer.email, customerId], (err) => {
+//             if (err) return rollback(con, res, 'Customer update failed', err);
+//             handleCustomer(customerId);
+//           });
+//         } else {
+//           con.query('INSERT INTO customers (name, phone, email) VALUES (?, ?, ?)', [customer.name, customer.phone, customer.email], (err, result) => {
+//             if (err) return rollback(con, res, 'Customer insert failed', err);
+//             handleCustomer(result.insertId);
+//           });
+//         }
+//       });
+
+//       function finishOrder(customerId, product, customizationRows) {
+//         const customSum = customizationRows.reduce((s, c) => s + Number(c.price), 0);
+//         const unitPrice = Number(product.base_price) + customSum;
+//         const totalPrice = unitPrice * quantity;
+
+//         // Insert order
+//         con.query('INSERT INTO orders (customer_id, order_type, total_price, status, payment_status) VALUES (?, ?, ?, ?, ?)',
+//           [customerId, 'product', totalPrice, 'pending', 'unpaid'], (err, orderRes) => {
+//             if (err) return rollback(con, res, 'Order insert failed', err);
+//             const orderId = orderRes.insertId;
+
+//             // Insert order_items
+//             con.query('INSERT INTO order_items (order_id, item_type, item_ref, name, unit_price, quantity, subtotal, customizations) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+//               [orderId, 'product', product.id, product.name, unitPrice, quantity, totalPrice, JSON.stringify(customizationRows)], (err) => {
+//                 if (err) return rollback(con, res, 'Order items insert failed', err);
+
+//                 // Insert product_orders
+//                 con.query(`INSERT INTO product_orders (order_id, product_id, size, delivery_date, collection_date, notes)
+//                            VALUES (?, ?, ?, ?, ?, ?)`,
+//                   [orderId, product.id, size, deliveryDate, collectionDate, notes], (err) => {
+//                     if (err) return rollback(con, res, 'Product order insert failed', err);
+
+//                     con.commit(err => {
+//                       if (err) return rollback(con, res, 'Commit failed', err);
+//                       res.json({ orderId, status: 'pending', total: totalPrice, message: 'Coffin order created' });
+//                     });
+//                   });
+//               });
+//           });
+//       }
+//     });
+//   } catch (error) {
+//     console.error('coffin purchase exception', error);
+//     res.status(500).json({ error: 'Server error' });
+//   }
+// });
+
+
+// Version 2 : Pool Fix
+
 app.post('/api/coffins/purchase', (req, res) => {
   const {
     customer,
@@ -6918,30 +7575,39 @@ app.post('/api/coffins/purchase', (req, res) => {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
-  let con;
-  try {
-    con = dbConnection();
-    con.connect();
+  const pool = dbConnection(); // ✅ use pool
+  pool.getConnection((err, con) => {
+    if (err) {
+      console.error('DB connection error', err);
+      return res.status(500).json({ error: 'DB connection failed' });
+    }
 
     con.beginTransaction(err => {
-      if (err) return res.status(500).json({ error: 'Transaction start failed' });
+      if (err) {
+        con.release();
+        return res.status(500).json({ error: 'Transaction start failed' });
+      }
 
       // Step 1: Upsert customer
       con.query('SELECT id FROM customers WHERE phone = ? LIMIT 1', [customer.phone], (err, rows) => {
         if (err) return rollback(con, res, 'Customer lookup failed', err);
 
         const handleCustomer = (customerId) => {
-          // Step 2: Insert product
+          // Step 2: Fetch product
           con.query('SELECT * FROM products WHERE id = ? LIMIT 1', [productId], (err, productRows) => {
             if (err || !productRows.length) return rollback(con, res, 'Product not found', err);
             const product = productRows[0];
 
-            // Step 3: Customizations
+            // Step 3: Handle customizations
             if (customizations.length) {
-              con.query('SELECT id, label, price FROM product_customizations WHERE id IN (?)', [customizations], (err, cRows) => {
-                if (err) return rollback(con, res, 'Customization lookup failed', err);
-                finishOrder(customerId, product, cRows);
-              });
+              con.query(
+                'SELECT id, label, price FROM product_customizations WHERE id IN (?)',
+                [customizations],
+                (err, cRows) => {
+                  if (err) return rollback(con, res, 'Customization lookup failed', err);
+                  finishOrder(customerId, product, cRows);
+                }
+              );
             } else {
               finishOrder(customerId, product, []);
             }
@@ -6950,54 +7616,94 @@ app.post('/api/coffins/purchase', (req, res) => {
 
         if (rows.length) {
           const customerId = rows[0].id;
-          con.query('UPDATE customers SET name=?, email=? WHERE id=?', [customer.name, customer.email, customerId], (err) => {
-            if (err) return rollback(con, res, 'Customer update failed', err);
-            handleCustomer(customerId);
-          });
+          con.query(
+            'UPDATE customers SET name=?, email=? WHERE id=?',
+            [customer.name, customer.email, customerId],
+            (err) => {
+              if (err) return rollback(con, res, 'Customer update failed', err);
+              handleCustomer(customerId);
+            }
+          );
         } else {
-          con.query('INSERT INTO customers (name, phone, email) VALUES (?, ?, ?)', [customer.name, customer.phone, customer.email], (err, result) => {
-            if (err) return rollback(con, res, 'Customer insert failed', err);
-            handleCustomer(result.insertId);
-          });
+          con.query(
+            'INSERT INTO customers (name, phone, email) VALUES (?, ?, ?)',
+            [customer.name, customer.phone, customer.email],
+            (err, result) => {
+              if (err) return rollback(con, res, 'Customer insert failed', err);
+              handleCustomer(result.insertId);
+            }
+          );
         }
       });
 
+      // Step 4: Finalize order
       function finishOrder(customerId, product, customizationRows) {
         const customSum = customizationRows.reduce((s, c) => s + Number(c.price), 0);
         const unitPrice = Number(product.base_price) + customSum;
         const totalPrice = unitPrice * quantity;
 
-        // Insert order
-        con.query('INSERT INTO orders (customer_id, order_type, total_price, status, payment_status) VALUES (?, ?, ?, ?, ?)',
-          [customerId, 'product', totalPrice, 'pending', 'unpaid'], (err, orderRes) => {
+        // Insert into orders
+        con.query(
+          'INSERT INTO orders (customer_id, order_type, total_price, status, payment_status) VALUES (?, ?, ?, ?, ?)',
+          [customerId, 'product', totalPrice, 'pending', 'unpaid'],
+          (err, orderRes) => {
             if (err) return rollback(con, res, 'Order insert failed', err);
             const orderId = orderRes.insertId;
 
-            // Insert order_items
-            con.query('INSERT INTO order_items (order_id, item_type, item_ref, name, unit_price, quantity, subtotal, customizations) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-              [orderId, 'product', product.id, product.name, unitPrice, quantity, totalPrice, JSON.stringify(customizationRows)], (err) => {
+            // Insert into order_items
+            con.query(
+              'INSERT INTO order_items (order_id, item_type, item_ref, name, unit_price, quantity, subtotal, customizations) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+              [
+                orderId,
+                'product',
+                product.id,
+                product.name,
+                unitPrice,
+                quantity,
+                totalPrice,
+                JSON.stringify(customizationRows),
+              ],
+              (err) => {
                 if (err) return rollback(con, res, 'Order items insert failed', err);
 
-                // Insert product_orders
-                con.query(`INSERT INTO product_orders (order_id, product_id, size, delivery_date, collection_date, notes)
-                           VALUES (?, ?, ?, ?, ?, ?)`,
-                  [orderId, product.id, size, deliveryDate, collectionDate, notes], (err) => {
+                // Insert into product_orders
+                con.query(
+                  `INSERT INTO product_orders (order_id, product_id, size, delivery_date, collection_date, notes)
+                   VALUES (?, ?, ?, ?, ?, ?)`,
+                  [orderId, product.id, size, deliveryDate, collectionDate, notes],
+                  (err) => {
                     if (err) return rollback(con, res, 'Product order insert failed', err);
 
                     con.commit(err => {
                       if (err) return rollback(con, res, 'Commit failed', err);
-                      res.json({ orderId, status: 'pending', total: totalPrice, message: 'Coffin order created' });
+                      res.json({
+                        orderId,
+                        status: 'pending',
+                        total: totalPrice,
+                        message: 'Coffin order created',
+                      });
+                      con.release(); // ✅ release connection back to pool
                     });
-                  });
-              });
-          });
+                  }
+                );
+              }
+            );
+          }
+        );
       }
     });
-  } catch (error) {
-    console.error('coffin purchase exception', error);
-    res.status(500).json({ error: 'Server error' });
-  }
+  });
 });
+
+// rollback helper
+function rollback(con, res, msg, err) {
+  console.error(msg, err || '');
+  con.rollback(() => {
+    con.release(); // ✅ always release
+    res.status(500).json({ error: msg });
+  });
+}
+
 
 
 
