@@ -854,7 +854,7 @@ app.post("/api/test", (req, res) => {
       console.log("1 record inserted");  
       result = result;
       });  
-      con.end();
+      // // con.end();
       //res.json({ message: "Data Received Successfully" });
       console.log("DB  Message:" +result);
       res.status(201).json("Response from DB"+result);
@@ -924,7 +924,7 @@ app.post("/api/test", (req, res) => {
       if (err) throw err;  
       console.log("1 record inserted");  
       });  
-      con.end();
+      // // con.end();
       res.json({ message: "Data Received Successfully" });
    });
 
@@ -963,7 +963,7 @@ app.post("/api/test", (req, res) => {
       if (err) console.log(err);
        console.log("1 record inserted");  
        });  
-       con.end();
+      //  // con.end();
        res.json({ message: "Data Received Successfully" });
     });
 
@@ -1182,7 +1182,7 @@ app.post("/gb/funeralground", (req, res) => {
       console.log("1 record inserted");  
       console.log("Result"+result.data);  
       });  
-      con.end();
+      // con.end();
   
       res.status(200).json({ Status: "Data Upload completed Successfully" });
   
@@ -1236,7 +1236,7 @@ app.post("/admee/partner/registration", (req, res) => {
       console.log("1 record inserted");  
       console.log("Result"+result.data);  
       });  
-      con.end();
+      // con.end();
   
       res.status(200).json({ Status: "Data Upload completed Successfully" });
   
@@ -1398,7 +1398,7 @@ con.query(sql, values, function (err, result) {
     if (err) throw err;
     console.log("Product inserted successfully");
 });
-  con.end();
+  // con.end();
 
   res.status(201).json({ Status: "Data Upload completed Successfully" });
 
@@ -1573,7 +1573,7 @@ app.get('/api/cc/rental/product', (req, res) => {
 //    console.log("1 record inserted");  
 //    console.log("Result"+result.data);  
 //    });  
-//    con.end();
+//    // con.end();
  
 //    res.status(201).json({ Status: "Data Upload completed Successfully" });
  
@@ -1906,7 +1906,7 @@ app.get('/api/cc/categories',(req,res) => {
       console.log("Pid value is " +pId);
 
       // Partners Table parther id fetch logic ends
-      con.end();
+      // con.end();
       res.json({ token, userName: user.name,userId: user.mobile,userEmail: user.email , pId : pId , userRole : user.role});
 
     });
@@ -1945,7 +1945,7 @@ app.post('/api/cc/register', async (req, res) => {
       console.error('Error inserting user:', err);
       return res.status(205).json({ message: err });
     }
-    con.end();
+    // con.end();
     sendRegistrationEmail(email, name);
     res.status(201).json({ message: 'User registered successfully' });
     
@@ -2228,7 +2228,7 @@ var paymentSource = ""
     return res.status(500).json({ error: 'Internal server error' });
 
   } finally {
-    if (con) con.end();
+    if (con) // con.end();
   
   }
 
@@ -2378,13 +2378,13 @@ app.get('/api/cc/user/orders', async (req, res) => {
       const [orders] = await con.promise().query(query);
 
       // Release the connection back to the pool
-      con.end();
+      // con.end();
 
       // Send the result as a response
       res.status(200).json({data :orders});
 
   } catch (error) {
-    con.end();
+    // con.end();
       console.error('Error fetching order details:', error);
       res.status(500).json({ error: 'Error fetching order details' });
   }
@@ -2436,7 +2436,7 @@ app.get('/api/cc/user/orders', async (req, res) => {
       {
       sendRafflesEmail(userEmail, userName);
       }
-      con.end();
+      // con.end();
       res.status(201).json({ message: 'Raffles Data updated Successfully' });
     });
 
@@ -2527,7 +2527,7 @@ app.get('/api/cc/user/orders', async (req, res) => {
     });
 
     // End the connection
-    con.end();
+    // con.end();
     console.log("Connection Ended ");
 });
 
@@ -2640,7 +2640,7 @@ var orderId = ""
               if (err) {
                   return con.rollback(() => {
                       res.status(500).json({ error: err.message });
-                      con.end();
+                      // con.end();
                   });
               }
 
@@ -2657,7 +2657,7 @@ var orderId = ""
                   sendOrderConfirmationEmail(email, name);
                   console.log("Order_Id :" +orderId )
                   res.status(201).json({ message: 'Tailoring order placed successfully', order_id: orderId});
-                  con.end();
+                  // con.end();
               });
           });
       });
@@ -2917,7 +2917,7 @@ const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}
       console.error('Error updating order status:', err);
       return res.status(205).json({ message: err });
     }
-    con.end();
+    // con.end();
     res.status(201).json({ message: 'Order Status Updated Successfully' });
 
 
@@ -2976,7 +2976,7 @@ const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}
       console.error('Error updating order status:', err);
       return res.status(205).json({ message: err });
     }
-    con.end();
+    // con.end();
     res.status(201).json({ message: 'Order Status Updated Successfully' });
 
 
@@ -3130,7 +3130,7 @@ app.post('/api/businessPartnerRegistration', async (req, res) => {
     res.status(500).json({ error: 'Business partner registration failed' });
 
   } finally {
-    con.end(); // Close the connection
+    // con.end(); // Close the connection
   }
 
     
@@ -3193,7 +3193,7 @@ app.post('/api/businessPartnerRegistration', async (req, res) => {
 
 //     // Commit transaction
 //     await con.commit();
-//     con.end();
+//     // con.end();
 
 //     res.status(200).json({ message: 'Service details uploaded successfully' });
 //   } catch (error) {
@@ -3278,7 +3278,7 @@ app.post('/api/service/upload', async (req, res) => {
 
     // Commit transaction
     await con.commit();
-    con.end();
+    // con.end();
 
     res.status(200).json({ message: 'Service details uploaded successfully' });
   } catch (error) {
@@ -3338,7 +3338,7 @@ app.post('/api/service/upload', async (req, res) => {
 //     console.error('Error fetching service partners or variants:', error);
 //     res.status(500).json({ error: 'Error fetching service partners or variants' });
 //   } finally {
-//     if (con) con.end();
+//     if (con) // con.end();
 //   }
 // });
 
@@ -3369,7 +3369,7 @@ app.get('/api/cc/services', async (req, res) => {
     console.error('Error fetching services::', error);
     res.status(500).json({ error: 'Error fetching services ' });
   } finally {
-    if (con) con.end();
+    if (con) // con.end();
   }
 });
 
@@ -3424,7 +3424,7 @@ app.get('/api/cc/service/variants', async (req, res) => {
     console.error('Error fetching service partners or variants:', error);
     res.status(500).json({ error: 'Error fetching service partners or variants' });
   } finally {
-    if (con) con.end();
+    if (con) // con.end();
   }
 });
 
@@ -3479,7 +3479,7 @@ app.get('/api/cc/partner/services', async (req, res) => {
     console.error('Error fetching partner services:', error);
     res.status(500).json({ error: 'Error fetching partner services' });
   } finally {
-    if (con) con.end();
+    if (con) // con.end();
   }
 });
 
@@ -3567,7 +3567,7 @@ app.post('/api/cc/partner/services', async (req, res) => {
     console.error("Error updating variants:", error);
     res.status(500).json({ error: "Internal Server Error" });
   } finally {
-    if (con) con.end();
+    if (con) // con.end();
   }
 });
 
@@ -3639,7 +3639,7 @@ app.post('/api/cc/mehendi/service/booking', async (req, res) => {
     }
 
     orderId = result.insertId
-    con.end();
+    // con.end();
     sendRegistrationEmail(email, name);
     res.status(201).json({ message: 'Service Booked successfully' , orderId: result.insertId});
   });
@@ -3725,7 +3725,7 @@ app.post('/api/cc/mehendi/service/booking', async (req, res) => {
 //     con.connect();
 //   } catch (error) {
 //     console.error('DB Connection Error', error);
-//     con.end();
+//     // con.end();
 //     return res.status(500).json({ error: 'DB Connection Error' });
 //   }
 
@@ -3747,7 +3747,7 @@ app.post('/api/cc/mehendi/service/booking', async (req, res) => {
 //     ];
 
 //     con.query(query, values, (err, result) => {
-//       con.end(); // Close DB connection
+//       // con.end(); // Close DB connection
 //       if (err) {
 //         console.error('Error inserting booking:', err);
 //         return res.status(500).json({ error: 'Database Insertion Failed' });
@@ -3757,7 +3757,7 @@ app.post('/api/cc/mehendi/service/booking', async (req, res) => {
 
 //   } catch (error) {
 //     console.error('Server error:', error);
-//     con.end();
+//     // con.end();
 //     res.status(500).json({ error: 'Server error' });
 //   }
 // });
@@ -3836,12 +3836,12 @@ app.post('/api/cc/service/booking', async (req, res) => {
 
     await con.promise().query(paymentQuery, paymentValues);
 
-    con.end();
+    // con.end();
     res.status(201).json({ message: 'Booking successful', bookingId, advanceAmount, remainingAmount });
 
   } catch (error) {
     console.error('Server error:', error);
-    con.end();
+    // con.end();
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -3883,12 +3883,12 @@ app.post('/api/cc/service/payment', async (req, res) => {
       [remainingAmount, newPaymentStatus, bookingId]
     );
 
-    con.end();
+    // con.end();
     res.status(200).json({ message: 'Payment updated successfully', remainingAmount, paymentStatus: newPaymentStatus });
 
   } catch (error) {
     console.error('Payment update error:', error);
-    con.end();
+    // con.end();
     res.status(500).json({ error: 'Payment update failed' });
   }
 });
@@ -3940,13 +3940,13 @@ app.get('/api/cc/tailoring/orders', async (req, res) => {
     const [orders] = await con.promise().query(query);
 
     // Release the connection back to the pool
-    con.end();
+    // con.end();
 
     // Send the result as a response
     res.status(200).json({ data: orders });
 
   } catch (error) {
-    if (con) con.end();
+    if (con) // con.end();
     console.error('Error fetching tailoring order details:', error);
     res.status(500).json({ error: 'Error fetching tailoring order details' });
   }
@@ -4680,7 +4680,7 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
 //   });
 
 //   // End the connection
-//   con.end();
+//   // con.end();
 //   console.log("Connection Ended ");
 // });
 
@@ -4727,7 +4727,7 @@ app.post("/test/upload", upload.single("file"), async (req, res) => {
 //   });
 
 //   // End the connection
-//   con.end();
+//   // con.end();
 //   console.log("Connection Ended ");
 // });
 
@@ -4753,7 +4753,7 @@ app.get('/api/ip/tests/:id?', (req, res) => {
   // Validate that only one of id or created_by is present
   if (id && created_by) {
     res.status(400).json({ error: 'Cannot filter by both id and created_by at the same time.' });
-    con.end();
+    // con.end();
     return;
   }
 
@@ -4788,7 +4788,7 @@ app.get('/api/ip/tests/:id?', (req, res) => {
   });
 
   // End the connection
-  con.end();
+  // con.end();
   console.log("Connection Ended");
 });
 
@@ -4814,13 +4814,13 @@ app.get('/api/ip/testDetails/:testId', (req, res) => {
       if (err) {
           console.error('Error fetching questions:', err);
           res.status(500).json({ error: 'Error fetching questions' });
-          con.end();
+          // con.end();
           return;
       }
 
       if (questions.length === 0) {
           res.status(404).json({ message: 'No questions found for this test.' });
-          con.end();
+          // con.end();
           return;
       }
 
@@ -4837,7 +4837,7 @@ app.get('/api/ip/testDetails/:testId', (req, res) => {
           if (err) {
               console.error('Error fetching options:', err);
               res.status(500).json({ error: 'Error fetching options' });
-              con.end();
+              // con.end();
               return;
           }
 
@@ -4851,7 +4851,7 @@ app.get('/api/ip/testDetails/:testId', (req, res) => {
 
          // res.status(200).json({ testId, questions: questionsWithOptions });
           res.status(200).json({data:{ testId, questions: questionsWithOptions }});
-          con.end();
+          // con.end();
           console.log('Connection Ended');
       });
   });
@@ -5031,7 +5031,7 @@ app.post('/ip/login', (req, res) => {
     console.log("UserType value is " +user.userType);
 
     // Partners Table parther id fetch logic ends
-    con.end();
+    // con.end();
     res.json({ token, userName: user.name,userId: user.mobile,userEmail: user.email , pId : pId , userRole : user.userType, institute: user.institute});
 
   });
@@ -5074,7 +5074,7 @@ app.post('/api/ip/reset/password/send-otp', async (req, res) => {
       con.query(insertOtpQuery, [mobile, otp, expiresAt], (err, result) => {
         if (err) {
           console.log("Error "+err)
-          con.end();
+          // con.end();
           return res.status(500).json({ error: 'Failed to store OTP' });
         }
 
@@ -5089,14 +5089,14 @@ app.post('/api/ip/reset/password/send-otp', async (req, res) => {
 
         transporter.sendMail(mailOptions, (error) => {
           if (error) return res.status(500).json({ error: 'Failed to send OTP' });
-          con.end();
+          // con.end();
           res.status(200).json({ message: 'OTP sent successfully' });
         });
       });
     });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
-    con.end();
+    // con.end();
   } 
 });
 
@@ -5107,7 +5107,7 @@ app.post('/api/ip/reset/password/verify-otp', (req, res) => {
   var con = dbConnection();
   con.connect();
   } catch (error) {
-    con.end();
+    // con.end();
     console.error('DB Connection Error', error);
     res.status(500).json({ error: 'DB Connection Error' });
   }
@@ -5118,12 +5118,12 @@ app.post('/api/ip/reset/password/verify-otp', (req, res) => {
       if (err || result.length === 0) {
         return res.status(401).json({ error: 'Invalid or expired OTP' });
       }
-      con.end();
+      // con.end();
       res.status(200).json({ message: 'OTP verified' });
       
     });
   } catch (error) {
-    con.end();
+    // con.end();
     res.status(500).json({ error: 'Server error' });
   } 
     
@@ -5138,7 +5138,7 @@ app.post('/api/ip/reset/password', async (req, res) => {
   con.connect();
   } catch (error) {
     console.error('DB Connection Error', error);
-    con.end();
+    // con.end();
     res.status(500).json({ error: 'DB Connection Error' });
   }
 
@@ -5149,11 +5149,11 @@ app.post('/api/ip/reset/password', async (req, res) => {
       if (err || result.affectedRows === 0) {
         return res.status(500).json({ error: 'Failed to reset password' });
       }
-      con.end();
+      // con.end();
       res.status(200).json({ message: 'Password reset successfully' });
     });
   } catch (error) {
-    con.end();
+    // con.end();
     res.status(500).json({ error: 'Server error' });
   } 
     
@@ -5427,7 +5427,7 @@ app.post("/ip/test/eligible/users", upload.single("file"), async (req, res) => {
 //       attemptID: attemptID,
 //     });
 
-//     con.end();
+//     // con.end();
 //   } catch (error) {
 //     console.error("Error processing test submission:", error);
 //     res.status(500).send({ message: "An error occurred while processing the test submission" });
@@ -5518,7 +5518,7 @@ app.post("/ip/test/submit", async (req, res) => {
       marksScored,
     });
 
-    con.end();
+    // con.end();
   } catch (error) {
     console.error("Error processing test submission:", error);
     res.status(500).send({ message: "An error occurred while processing the test submission" });
@@ -5549,7 +5549,7 @@ app.post("/ip/test/submit", async (req, res) => {
  
 
 //   // End the connection
-//   con.end();
+//   // con.end();
 //   console.log("Connection Ended");
 // });
 
@@ -5572,7 +5572,7 @@ app.get('/api/ip/users/:id/tests', (req, res) => {
   const { id: userId } = req.params;
 
   if (!userId) {
-    con.end();
+    // con.end();
     return res.status(400).json({ error: 'UserID is required' });
   }
 
@@ -5600,7 +5600,7 @@ app.get('/api/ip/users/:id/tests', (req, res) => {
   con.query(query, [userId], (err, results) => {
     if (err) {
       console.error('Query Error', err);
-      con.end();
+      // con.end();
       return res.status(500).json({ error: 'Error fetching tests' });
     }
 
@@ -5616,7 +5616,7 @@ app.get('/api/ip/users/:id/tests', (req, res) => {
       }
     });
 
-    con.end();
+    // con.end();
     console.log('Connection Ended');
     // return res.status(200).json({ activeTests, expiredTests });
 
@@ -5643,7 +5643,7 @@ app.get('/api/ip/users/:id/tests', (req, res) => {
 //   const { id: candidateId } = req.params;
 
 //   if (!candidateId) {
-//     con.end();
+//     // con.end();
 //     return res.status(400).json({ error: 'Candidate ID is required' });
 //   }
 
@@ -5669,18 +5669,18 @@ app.get('/api/ip/users/:id/tests', (req, res) => {
 //     const results = await con.promise().query(query, [candidateId]);
 
 //     if (results[0].length === 0) {
-//       con.end();
+//       // con.end();
 //       return res.status(404).json({ error: 'No test results found for this candidate.' });
 //     }
 
 //     const testResults = results[0];
 
-//     con.end();
+//     // con.end();
 //     console.log('Connection Ended');
 //     return res.status(200).json({ data: { testResults } });
 //   } catch (error) {
 //     console.error('Query Error:', error);
-//     con.end();
+//     // con.end();
 //     return res.status(500).json({ error: 'Error fetching test results' });
 //   }
 // });
@@ -5702,7 +5702,7 @@ app.get('/api/ip/users/:id/results', async (req, res) => {
   const { id: candidateId } = req.params;
 
   if (!candidateId) {
-    con.end();
+    // con.end();
     return res.status(400).json({ error: 'Candidate ID is required' });
   }
 
@@ -5751,16 +5751,16 @@ app.get('/api/ip/users/:id/results', async (req, res) => {
 
 
     if (results.length === 0) {
-      con.end();
+      // con.end();
       return res.status(404).json({ error: 'No test results found for this candidate.' });
     }
 
-    con.end();
+    // con.end();
     console.log('Connection Ended');
     return res.status(200).json({ data: { testResults: results } });
   } catch (error) {
     console.error('Query Error:', error);
-    con.end();
+    // con.end();
     return res.status(500).json({ error: 'Error fetching test results' });
   }
 });
@@ -5784,7 +5784,7 @@ app.get('/api/ip/users/:id/results', async (req, res) => {
 //   const { id: partnerId } = req.params;
 
 //   if (!partnerId) {
-//     con.end();
+//     // con.end();
 //     return res.status(400).json({ error: 'Partner ID is required' });
 //   }
 
@@ -5838,7 +5838,7 @@ app.get('/api/ip/users/:id/results', async (req, res) => {
 
 //     const [notAttendedCandidates] = await con.promise().query(notAttendedQuery, [partnerId]);
 
-//     con.end();
+//     // con.end();
 //     console.log('Connection Ended');
 
 //     return res.status(200).json({
@@ -5848,7 +5848,7 @@ app.get('/api/ip/users/:id/results', async (req, res) => {
 //     });
 //   } catch (error) {
 //     console.error('Query Error:', error);
-//     con.end();
+//     // con.end();
 //     return res.status(500).json({ error: 'Error fetching test stats' });
 //   }
 // });
@@ -5873,7 +5873,7 @@ app.get('/api/ip/test/:testId/stats', async (req, res) => {
   const { testId } = req.params;
 
   if (!testId) {
-    con.end();
+    // con.end();
     return res.status(400).json({ error: 'Test ID is required' });
   }
 
@@ -5945,7 +5945,7 @@ app.get('/api/ip/test/:testId/stats', async (req, res) => {
 
     const [notAttendedCandidates] = await con.promise().query(notAttendedQuery, [testId, testId]);
 
-    con.end();
+    // con.end();
     console.log('Connection Ended');
 
     return res.status(200).json({data:{
@@ -5955,7 +5955,7 @@ app.get('/api/ip/test/:testId/stats', async (req, res) => {
     }});
   } catch (error) {
     console.error('Query Error:', error);
-    con.end();
+    // con.end();
     return res.status(500).json({ error: 'Error fetching test stats' });
   }
 });
@@ -5985,7 +5985,7 @@ app.get('/api/ip/test/:testId/stats', async (req, res) => {
   console.log("Inside  api (userType) : "+userType);
 
   if (!partnerId) {
-    con.end();
+    // con.end();
     return res.status(400).json({ error: 'Partner ID is required' });
   }
 
@@ -6015,17 +6015,17 @@ app.get('/api/ip/test/:testId/stats', async (req, res) => {
     con.query(query, [partnerId,userType], (err, results) => {
       if (err) {
         console.error('Query Error:', err);
-        con.end();
+        // con.end();
         return res.status(500).json({ error: 'Error fetching students list' });
       }
 
       // Respond with the results
       res.status(200).json({data:{ student: results }});
-      con.end();
+      // con.end();
     });
   } catch (error) {
     console.error('Query Error:', error);
-    con.end();
+    // con.end();
     return res.status(500).json({ error: 'Error fetching students list' });
   }
 });
@@ -6071,7 +6071,7 @@ app.post('/api/ip/video/upload', upload.single('video'), async (req, res) => {
         });
       });
 
-      con.end();
+      // con.end();
     } catch (dbError) {
       console.error('DB Error:', dbError);
       return res.status(500).json({ error: 'Database Error' });
@@ -6134,7 +6134,7 @@ app.get('/api/ip/partner/:institute/videos', async (req, res) => {
     console.error('DB Query Error:', dbError);
     return res.status(500).json({ error: 'Failed to fetch videos' });
   } finally {
-    con.end();
+    // con.end();
   }
 });
 
@@ -6193,7 +6193,7 @@ app.post('/api/ip/document/upload', upload.single('document'), async (req, res) 
         });
       });
 
-      con.end();
+      // con.end();
     } catch (dbError) {
       console.error('DB Error:', dbError);
       return res.status(500).json({ error: 'Database Error' });
@@ -6256,7 +6256,7 @@ app.get('/api/ip/partner/:institute/documents', async (req, res) => {
     console.error('DB Query Error:', dbError);
     return res.status(500).json({ error: 'Failed to fetch documents' });
   } finally {
-    con.end();
+    // con.end();
   }
 });
 
@@ -6333,7 +6333,7 @@ app.get('/api/ip/:type/lists', async (req, res) => {
     console.error('DB Query Error:', dbError);
     return res.status(500).json({ error: 'Failed to fetch lists' });
   } finally {
-    con.end();
+    // con.end();
   }
 });
 
@@ -6374,7 +6374,7 @@ app.post('/api/ip/course/creation', async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
 
   } finally {
-    if (con) con.end();
+    if (con) // con.end();
   }
 });
 
@@ -6426,7 +6426,7 @@ app.post('/api/ip/staff/creation', async (req, res) => {
     console.error('Error creating staff:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   } finally {
-    con.end();
+    // con.end();
   }
 });
 
@@ -6536,7 +6536,7 @@ app.post('/api/mehendi/booking/update', (req, res) => {
 //     res.json(result);
 //   });
 
-//   con.end();
+//   // con.end();
 // });
 
 app.get("/api/products", (req, res) => {
@@ -6581,7 +6581,7 @@ app.get("/api/products", (req, res) => {
     res.json(result);
   });
 
-  con.end();
+  // con.end();
 });
 
 

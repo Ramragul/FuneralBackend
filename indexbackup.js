@@ -204,7 +204,7 @@ app.get("/api/test", (req, res) => {
       console.log("1 record inserted");  
       result = result;
       });  
-      con.end();
+      // con.end();
       //res.json({ message: "Data Received Successfully" });
       console.log("DB  Message:" +result);
       res.json("Response from DB"+result);
@@ -251,7 +251,7 @@ app.get("/api/test", (req, res) => {
       if (err) throw err;  
       console.log("1 record inserted");  
       });  
-      con.end();
+      // con.end();
       res.json({ message: "Data Received Successfully" });
    });
 
@@ -290,7 +290,7 @@ app.get("/api/test", (req, res) => {
       if (err) console.log(err);
        console.log("1 record inserted");  
        });  
-       con.end();
+       // con.end();
        res.json({ message: "Data Received Successfully" });
     });
 
