@@ -6971,6 +6971,126 @@ app.post('/api/coffins/purchase', (req, res) => {
 
 // Version 2 
 
+// app.post('/api/services/book', (req, res) => {
+//   const { customer, packageCode, services = [], serviceDate, pickupLocation, dropLocation, notes , address } = req.body;
+
+//   if ((!packageCode && (!Array.isArray(services) || services.length === 0)) || !serviceDate || !customer?.phone) {
+//     return res.status(400).json({ error: 'Missing required fields' });
+//   }
+
+//   let con;
+//   try {
+//     con = dbConnection();
+//     con.connect();
+
+//     con.beginTransaction(err => {
+//       if (err) return res.status(500).json({ error: 'Transaction start failed' });
+
+//       // 1) Upsert customer
+//       con.query('SELECT id FROM customers WHERE phone = ? LIMIT 1', [customer.phone], (err, rows) => {
+//         if (err) return rollback(con, res, 'Customer lookup failed', err);
+
+//         const handleCustomer = (customerId) => {
+//           // If packageCode provided -> existing package flow
+//           if (packageCode) {
+//             con.query('SELECT * FROM service_packages WHERE code = ? LIMIT 1', [packageCode], (err, pkgRows) => {
+//               if (err || !pkgRows.length) return rollback(con, res, 'Service package not found', err);
+//               const pkg = pkgRows[0];
+//               const totalPrice = Number(pkg.price);
+
+//               createOrder(customerId, [{ code: pkg.code, name: pkg.name, price: Number(pkg.price), quantity: 1 }], totalPrice, packageCode);
+//             });
+//             return;
+//           }
+
+//           // Otherwise handle services[] (multiple standalone services)
+//           const codes = services.map(s => s.code);
+//           if (!codes.length) return rollback(con, res, 'No services provided');
+
+//           con.query('SELECT * FROM service_packages WHERE code IN (?)', [codes], (err, svcRows) => {
+//             if (err) return rollback(con, res, 'Service lookup failed', err);
+//             if (!svcRows.length) return rollback(con, res, 'Services not found');
+
+//             // Map each returned row to requested quantity
+//             let totalPrice = 0;
+//             const items = svcRows.map(row => {
+//               const requested = services.find(s => s.code === row.code) || { quantity: 1 };
+//               const qty = Number(requested.quantity) || 1;
+//               const unit = Number(row.price);
+//               const subtotal = unit * qty;
+//               totalPrice += subtotal;
+//               return { code: row.code, name: row.name, price: unit, quantity: qty, subtotal };
+//             });
+
+//             createOrder(customerId, items, totalPrice, null);
+//           });
+//         };
+
+//         function createOrder(customerId, items, totalPrice, packageCodeForBooking = null) {
+//           // Insert into orders
+//           con.query(
+//             'INSERT INTO orders (customer_id, order_type, total_price, status, payment_status) VALUES (?, ?, ?, ?, ?)',
+//             [customerId, 'service', totalPrice, 'pending', 'unpaid'],
+//             (err, orderRes) => {
+//               if (err) return rollback(con, res, 'Order insert failed', err);
+//               const orderId = orderRes.insertId;
+
+//               // Prepare bulk insert for order_items
+//               const itemInserts = items.map(it => [
+//                 orderId, 'service', it.code, it.name, it.price, it.quantity, it.subtotal
+//               ]);
+
+//               con.query(
+//                 'INSERT INTO order_items (order_id, item_type, item_ref, name, unit_price, quantity, subtotal) VALUES ?',
+//                 [itemInserts],
+//                 (err) => {
+//                   if (err) return rollback(con, res, 'Order items insert failed', err);
+
+//                   // Insert into service_bookings
+//                   // Note: package_code nullable, for service-based bookings we leave it NULL.
+//                   con.query(
+//                     `INSERT INTO service_bookings (order_id, package_code, service_date, address, pickup_location, drop_location, notes)
+//                      VALUES (?, ?, ?, ?, ?, ?, ?)`,
+//                     [orderId, packageCodeForBooking || null, serviceDate,address || null, pickupLocation || null, dropLocation || null, notes || null],
+//                     (err) => {
+//                       if (err) return rollback(con, res, 'Service booking insert failed', err);
+
+//                       con.commit(err => {
+//                         if (err) return rollback(con, res, 'Commit failed', err);
+//                         res.json({ orderId, status: 'pending', total: totalPrice, message: 'Service booking created' });
+//                       });
+//                     }
+//                   );
+//                 }
+//               );
+//             }
+//           );
+//         }
+
+//         // upsert customer
+//         if (rows.length) {
+//           const customerId = rows[0].id;
+//           con.query('UPDATE customers SET name=?, email=? WHERE id=?', [customer.name, customer.email, customerId], (err) => {
+//             if (err) return rollback(con, res, 'Customer update failed', err);
+//             handleCustomer(customerId);
+//           });
+//         } else {
+//           con.query('INSERT INTO customers (name, phone, email) VALUES (?, ?, ?)', [customer.name, customer.phone, customer.email], (err, result) => {
+//             if (err) return rollback(con, res, 'Customer insert failed', err);
+//             handleCustomer(result.insertId);
+//           });
+//         }
+//       });
+//     });
+//   } catch (error) {
+//     console.error('service booking exception', error);
+//     res.status(500).json({ error: 'Server error' });
+//   }
+// });
+
+
+// Version 3 
+
 app.post('/api/services/book', (req, res) => {
   const { customer, packageCode, services = [], serviceDate, pickupLocation, dropLocation, notes , address } = req.body;
 
@@ -6978,32 +7098,38 @@ app.post('/api/services/book', (req, res) => {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
-  let con;
-  try {
-    con = dbConnection();
-    con.connect();
+  const pool = dbConnection(); // this now returns a pool
+
+  pool.getConnection((err, con) => {
+    if (err) {
+      console.error('DB connection error', err);
+      return res.status(500).json({ error: 'DB connection failed' });
+    }
 
     con.beginTransaction(err => {
-      if (err) return res.status(500).json({ error: 'Transaction start failed' });
+      if (err) {
+        con.release();
+        return res.status(500).json({ error: 'Transaction start failed' });
+      }
 
-      // 1) Upsert customer
+      // --- Upsert customer ---
       con.query('SELECT id FROM customers WHERE phone = ? LIMIT 1', [customer.phone], (err, rows) => {
         if (err) return rollback(con, res, 'Customer lookup failed', err);
 
         const handleCustomer = (customerId) => {
-          // If packageCode provided -> existing package flow
           if (packageCode) {
             con.query('SELECT * FROM service_packages WHERE code = ? LIMIT 1', [packageCode], (err, pkgRows) => {
               if (err || !pkgRows.length) return rollback(con, res, 'Service package not found', err);
               const pkg = pkgRows[0];
               const totalPrice = Number(pkg.price);
 
-              createOrder(customerId, [{ code: pkg.code, name: pkg.name, price: Number(pkg.price), quantity: 1 }], totalPrice, packageCode);
+              createOrder(customerId, [
+                { code: pkg.code, name: pkg.name, price: Number(pkg.price), quantity: 1, subtotal: Number(pkg.price) }
+              ], totalPrice, packageCode);
             });
             return;
           }
 
-          // Otherwise handle services[] (multiple standalone services)
           const codes = services.map(s => s.code);
           if (!codes.length) return rollback(con, res, 'No services provided');
 
@@ -7011,7 +7137,6 @@ app.post('/api/services/book', (req, res) => {
             if (err) return rollback(con, res, 'Service lookup failed', err);
             if (!svcRows.length) return rollback(con, res, 'Services not found');
 
-            // Map each returned row to requested quantity
             let totalPrice = 0;
             const items = svcRows.map(row => {
               const requested = services.find(s => s.code === row.code) || { quantity: 1 };
@@ -7027,7 +7152,6 @@ app.post('/api/services/book', (req, res) => {
         };
 
         function createOrder(customerId, items, totalPrice, packageCodeForBooking = null) {
-          // Insert into orders
           con.query(
             'INSERT INTO orders (customer_id, order_type, total_price, status, payment_status) VALUES (?, ?, ?, ?, ?)',
             [customerId, 'service', totalPrice, 'pending', 'unpaid'],
@@ -7035,7 +7159,6 @@ app.post('/api/services/book', (req, res) => {
               if (err) return rollback(con, res, 'Order insert failed', err);
               const orderId = orderRes.insertId;
 
-              // Prepare bulk insert for order_items
               const itemInserts = items.map(it => [
                 orderId, 'service', it.code, it.name, it.price, it.quantity, it.subtotal
               ]);
@@ -7046,18 +7169,17 @@ app.post('/api/services/book', (req, res) => {
                 (err) => {
                   if (err) return rollback(con, res, 'Order items insert failed', err);
 
-                  // Insert into service_bookings
-                  // Note: package_code nullable, for service-based bookings we leave it NULL.
                   con.query(
                     `INSERT INTO service_bookings (order_id, package_code, service_date, address, pickup_location, drop_location, notes)
                      VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                    [orderId, packageCodeForBooking || null, serviceDate,address || null, pickupLocation || null, dropLocation || null, notes || null],
+                    [orderId, packageCodeForBooking || null, serviceDate, address || null, pickupLocation || null, dropLocation || null, notes || null],
                     (err) => {
                       if (err) return rollback(con, res, 'Service booking insert failed', err);
 
                       con.commit(err => {
                         if (err) return rollback(con, res, 'Commit failed', err);
                         res.json({ orderId, status: 'pending', total: totalPrice, message: 'Service booking created' });
+                        con.release(); // ✅ release connection back to pool
                       });
                     }
                   );
@@ -7067,7 +7189,6 @@ app.post('/api/services/book', (req, res) => {
           );
         }
 
-        // upsert customer
         if (rows.length) {
           const customerId = rows[0].id;
           con.query('UPDATE customers SET name=?, email=? WHERE id=?', [customer.name, customer.email, customerId], (err) => {
@@ -7082,11 +7203,17 @@ app.post('/api/services/book', (req, res) => {
         }
       });
     });
-  } catch (error) {
-    console.error('service booking exception', error);
-    res.status(500).json({ error: 'Server error' });
-  }
+  });
 });
+
+// rollback helper
+function rollback(con, res, msg, err) {
+  console.error(msg, err || '');
+  con.rollback(() => {
+    con.release(); // release back to pool
+    res.status(500).json({ error: msg });
+  });
+}
 
 
 
