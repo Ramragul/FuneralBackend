@@ -2227,10 +2227,10 @@ var paymentSource = ""
     console.error('Server Error:', error);
     return res.status(500).json({ error: 'Internal server error' });
 
-  } finally {
-    if (con) // con.end();
+  // } finally {
+  //   if (con) // con.end();
   
-  }
+  // }
 
   console.log('Connected to database.');
 
