@@ -8531,9 +8531,43 @@ app.post('/api/services/:serviceCode/variants', (req,res) => {
 
 // Service Variants , category , packages upload ---
 
+
+// ================= AWS Upload (already exists) =================
+app.post('/aws/upload', upload.array('photos', 10), async (req, res) => {
+  try {
+    const uploaded = [];
+    const promises = req.files.map(async (file) => {
+      const resizedBuffer = await sharp(file.buffer)
+        .rotate()
+        .resize(800, 800, { fit: sharp.fit.inside, withoutEnlargement: true })
+        .toFormat('jpeg', { quality: 80 })
+        .toBuffer();
+
+      const key = `gb_ground/${uuidv4()}_${file.originalname}`;
+
+      const params = {
+        Bucket: 'snektoawsbucket',
+        Key: key,
+        Body: resizedBuffer,
+        ContentType: 'image/jpeg',
+        ACL: 'public-read',
+      };
+
+      const data = await s3.upload(params).promise();
+      uploaded.push({ url: data.Location, s3Key: key });
+    });
+
+    await Promise.all(promises);
+    res.status(200).json({ imageURLs: uploaded });
+  } catch (error) {
+    console.error('Error uploading images to AWS S3:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 // ================= CATEGORY APIs =================
 app.post("/api/admin/categories", (req, res) => {
-  const { code, name, image } = req.body;
+  const { code, name, image, extra } = req.body;
   if (!code || !name) return res.status(400).json({ error: "Code and Name required" });
 
   const pool = dbConnection();
@@ -8542,7 +8576,7 @@ app.post("/api/admin/categories", (req, res) => {
     [code, name, image || null],
     (err, result) => {
       if (err) return res.status(500).json({ error: err.message });
-      res.status(201).json({ id: result.insertId, code, name, image });
+      res.status(201).json({ id: result.insertId, code, name, image, extra });
     }
   );
 });
@@ -8584,7 +8618,7 @@ app.post("/api/admin/services", (req, res) => {
     ],
     (err, result) => {
       if (err) return res.status(500).json({ error: err.message });
-      res.status(201).json({ code, name });
+      res.status(201).json({ id: result.insertId, code, name });
     }
   );
 });
@@ -8597,6 +8631,12 @@ app.get("/api/admin/services", (req, res) => {
      LEFT JOIN service_categories c ON sp.category_id = c.id`,
     (err, rows) => {
       if (err) return res.status(500).json({ error: err.message });
+
+      // parse images JSON before sending
+      rows.forEach(r => {
+        try { r.images = r.images ? JSON.parse(r.images) : []; } catch { r.images = []; }
+      });
+
       res.json(rows);
     }
   );
@@ -8640,10 +8680,18 @@ app.get("/api/admin/services/:serviceCode/variants", (req, res) => {
     [serviceCode],
     (err, rows) => {
       if (err) return res.status(500).json({ error: err.message });
+
+      // parse extra JSON (for s3Key)
+      rows.forEach(r => {
+        try { r.extra = r.extra ? JSON.parse(r.extra) : {}; } catch { r.extra = {}; }
+      });
+
       res.json(rows);
     }
   );
 });
+
+
 
 
 
