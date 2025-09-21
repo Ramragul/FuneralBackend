@@ -7142,81 +7142,77 @@ app.post('/api/admin/orders/update', (req, res) => {
 
 app.get('/api/services/list', (req, res) => {
   const { category } = req.query;
-  const con = dbConnection(); con.connect();
-  let sql =
-    `SELECT sp.code, sp.name, sp.price, sp.description, sp.category, sp.image, sp.images, sp.pricing_type
-     FROM service_packages sp`;
+  const con = dbConnection();
+  con.connect();
+
+  let sql = `
+    SELECT sp.code, sp.name, sp.price, sp.description,
+           sp.image, sp.images, sp.pricing_type,
+           c.slug AS category_slug, c.name AS category_name
+    FROM service_packages sp
+    LEFT JOIN service_categories c ON sp.category_id = c.id
+  `;
+
   const params = [];
-  if (category) { sql += ' WHERE sp.category = ?'; params.push(category); }
+  if (category) {
+    sql += ' WHERE c.slug = ?';
+    params.push(category);
+  }
 
   con.query(sql, params, (err, rows) => {
-    if (err) return res.status(500).json({ error: 'Could not fetch services' });
+    if (err) {
+      console.error('[API] services list error', err);
+      return res.status(500).json({ error: 'Could not fetch services' });
+    }
 
-    // build list and attach variants from service_variants table
     const codes = rows.map(r => r.code);
     if (!codes.length) return res.json({ services: [] });
 
-    con.query('SELECT service_code, variant_code, label, price, image FROM service_variants WHERE service_code IN (?)', [codes], (err2, vrows) => {
-      if (err2) return res.status(500).json({ error: 'Could not fetch variants' });
+    // Fetch variants for these services
+    con.query(
+      'SELECT service_code, variant_code, label, price, image FROM service_variants WHERE service_code IN (?)',
+      [codes],
+      (err2, vrows) => {
+        if (err2) {
+          console.error('[API] variants fetch error', err2);
+          return res.status(500).json({ error: 'Could not fetch variants' });
+        }
 
-      const variantsByService = {};
-      (vrows || []).forEach(v => {
-        variantsByService[v.service_code] = variantsByService[v.service_code] || [];
-        variantsByService[v.service_code].push({
-          variant_code: v.variant_code, label: v.label, price: Number(v.price), image: v.image
+        const variantsByService = {};
+        (vrows || []).forEach(v => {
+          variantsByService[v.service_code] = variantsByService[v.service_code] || [];
+          variantsByService[v.service_code].push({
+            variant_code: v.variant_code,
+            label: v.label,
+            price: Number(v.price),
+            image: v.image
+          });
         });
-      });
 
-      const services = rows.map(r => ({
-        code: r.code,
-        name: r.name,
-        price: Number(r.price),
-        description: r.description,
-        category: r.category,
-        image: r.image || null,
-        images: r.images ? (typeof r.images === 'string' ? JSON.parse(r.images) : r.images) : [],
-        pricingType: r.pricing_type || 'flat',
-        variants: variantsByService[r.code] || []
-      }));
+        const services = rows.map(r => ({
+          code: r.code,
+          name: r.name,
+          price: r.price !== null ? Number(r.price) : null,
+          description: r.description,
+          category: r.category_slug,
+          categoryName: r.category_name,
+          image: r.image || null,
+          images: r.images ? (typeof r.images === 'string' ? JSON.parse(r.images) : r.images) : [],
+          pricingType: r.pricing_type || 'flat',
+          variants: variantsByService[r.code] || []
+        }));
 
-      res.json({ services });
-    });
+        res.json({ services });
+      }
+    );
   });
 });
 
 
 // GET single service by code (reliable for ServiceDetail)
 
-// app.get('/api/services/get', (req, res) => {
-//   const { code } = req.query;
-//   if (!code) return res.status(400).json({ error: 'Missing code' });
-
-//   const con = dbConnection(); con.connect();
-//   const sql = `SELECT code, name, price, description, category, image, images, pricing_type FROM service_packages WHERE code = ? LIMIT 1`;
-//   con.query(sql, [code], (err, rows) => {
-//     if (err) return res.status(500).json({ error: 'DB error' });
-//     if (!rows.length) return res.status(404).json({ error: 'Service not found' });
-//     const r = rows[0];
-//     con.query('SELECT variant_code, label, price, image FROM service_variants WHERE service_code = ?', [code], (err2, vrows) => {
-//       if (err2) return res.status(500).json({ error: 'Variant fetch failed' });
-//       const service = {
-//         code: r.code,
-//         name: r.name,
-//         price: Number(r.price),
-//         description: r.description,
-//         category: r.category,
-//         image: r.image || null,
-//         images: r.images ? (typeof r.images === 'string' ? JSON.parse(r.images) : r.images) : [],
-//         pricingType: r.pricing_type || 'flat',
-//         variants: (vrows || []).map(v => ({ variant_code: v.variant_code, label: v.label, price: Number(v.price), image: v.image }))
-//       };
-//       res.json({ service });
-//     });
-//   });
-// });
 
 
-// GET single service by code (robust)
 app.get('/api/services/get', (req, res) => {
   const { code, debug } = req.query;
   console.log('[API] GET /api/services/get code=', code, ' debug=', debug);
@@ -7226,8 +7222,14 @@ app.get('/api/services/get', (req, res) => {
   const con = dbConnection();
   con.connect();
 
-  const sql = `SELECT code, name, price, description, category, image, images, pricing_type
-               FROM service_packages WHERE code = ? LIMIT 1`;
+  const sql = `
+    SELECT sp.code, sp.name, sp.price, sp.description,
+           sp.image, sp.images, sp.pricing_type,
+           c.slug AS category_slug, c.name AS category_name
+    FROM service_packages sp
+    LEFT JOIN service_categories c ON sp.category_id = c.id
+    WHERE sp.code = ? LIMIT 1
+  `;
 
   con.query(sql, [code], (err, rows) => {
     if (err) {
@@ -7251,31 +7253,40 @@ app.get('/api/services/get', (req, res) => {
       }
     };
 
-    // fetch variants for this service (if table exists)
-    con.query('SELECT variant_code, label, price, image FROM service_variants WHERE service_code = ?', [code], (err2, vrows) => {
-      if (err2) {
-        console.error('[API] variant fetch failed', err2);
-        // don't block the response — return service without variants
-        vrows = [];
-      }
+    // fetch variants for this service
+    con.query(
+      'SELECT variant_code, label, price, image FROM service_variants WHERE service_code = ?',
+      [code],
+      (err2, vrows) => {
+        if (err2) {
+          console.error('[API] variant fetch failed', err2);
+          vrows = [];
+        }
 
-      const service = {
-        code: r.code,
-        name: r.name,
-        price: (r.price !== null && r.price !== undefined) ? Number(r.price) : null,
-        description: r.description,
-        category: r.category,
-        image: r.image || null,
-        images: safeParseJson(r.images),
-        pricingType: r.pricing_type || 'flat',
-        variants: (vrows || []).map(v => ({ variant_code: v.variant_code, label: v.label, price: Number(v.price), image: v.image }))
-      };
+        const service = {
+          code: r.code,
+          name: r.name,
+          price: (r.price !== null && r.price !== undefined) ? Number(r.price) : null,
+          description: r.description,
+          category: r.category_slug,
+          categoryName: r.category_name,
+          image: r.image || null,
+          images: safeParseJson(r.images),
+          pricingType: r.pricing_type || 'flat',
+          variants: (vrows || []).map(v => ({
+            variant_code: v.variant_code,
+            label: v.label,
+            price: Number(v.price),
+            image: v.image
+          }))
+        };
 
-      if (debug === '1') {
-        return res.json({ debug: true, dbRow: r, variantsRaw: vrows || [], service });
+        if (debug === '1') {
+          return res.json({ debug: true, dbRow: r, variantsRaw: vrows || [], service });
+        }
+        return res.json({ service });
       }
-      return res.json({ service });
-    });
+    );
   });
 });
 
