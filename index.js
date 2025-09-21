@@ -715,7 +715,7 @@ app.post("/api/test", (req, res) => {
         console.log(data)
         res.json({data})
       })
-      connection.end();
+      //connection.end();
       console.log("Connection Ended ")
     });
 
@@ -750,7 +750,7 @@ app.post("/api/test", (req, res) => {
         //res.json({data})
        })
        
-       connection.end();
+       //connection.end();
        console.log("Connection Ended ")
      });
 
@@ -783,7 +783,7 @@ app.post("/api/test", (req, res) => {
           //res.json({data})
          })
          
-         connection.end();
+        // connection.end();
          console.log("Connection Ended ")
        });
 
@@ -809,7 +809,7 @@ app.post("/api/test", (req, res) => {
             res.json({data})
            })
            
-           connection.end();
+           //connection.end();
            console.log("Connection Ended ")
          });
 
@@ -877,7 +877,7 @@ app.post("/api/test", (req, res) => {
          console.log(data)
          res.json({data})
        })
-       connection.end();
+       //connection.end();
        //console.log("Connection Ended ")
      });
 
@@ -985,7 +985,7 @@ app.post("/api/test", (req, res) => {
         //    console.log(data)
         //    res.json({data})
         //  })
-         connection.end();
+         //connection.end();
          console.log("Connection Ended ")
        });
 
@@ -1323,7 +1323,7 @@ app.get('/api/cc/designcatalogue', (req, res) => {
     res.json({ data });
   });
 
-  connection.end();
+  //connection.end();
 });
 
 // POST Tailoring Data Upload
@@ -1939,7 +1939,7 @@ app.get('/api/cc/categories',(req,res) => {
        console.log(data)
        res.json({data})
      })
-     connection.end();
+     //connection.end();
      //console.log("Connection Ended ")
    });
 
