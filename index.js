@@ -8531,101 +8531,119 @@ app.post('/api/services/:serviceCode/variants', (req,res) => {
 
 // Service Variants , category , packages upload ---
 
-app.post("/api/admin/services/upload", async (req, res) => {
-  const {
-    code,
-    name,
-    price,
-    description,
-    category,
-    pricingType,
-    categoryId,
-    subcategoryId,
-    image,       // main image url
-    images,      // array of gallery image objects [{url, s3Key}]
-    variants,    // array of variants [{variant_code, label, price, image, s3Key}]
-  } = req.body;
+// ================= CATEGORY APIs =================
+app.post("/api/admin/categories", (req, res) => {
+  const { code, name, image } = req.body;
+  if (!code || !name) return res.status(400).json({ error: "Code and Name required" });
 
   const pool = dbConnection();
-
-  pool.getConnection((err, con) => {
-    if (err) {
-      console.error("DB pool error", err);
-      return res.status(500).json({ error: "DB connection failed" });
+  pool.query(
+    "INSERT INTO service_categories (code, name, image) VALUES (?, ?, ?)",
+    [code, name, image || null],
+    (err, result) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.status(201).json({ id: result.insertId, code, name, image });
     }
+  );
+});
 
-    con.beginTransaction(async (txErr) => {
-      if (txErr) {
-        con.release();
-        return res.status(500).json({ error: "Transaction start failed" });
-      }
-
-      try {
-        // Insert into service_packages
-        const pkgSql = `
-          INSERT INTO service_packages
-          (code, name, price, description, category, image, images, pricing_type, category_id, subcategory_id)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `;
-        const pkgValues = [
-          code,
-          name,
-          price || 0,
-          description,
-          category,
-          image?.url || null,
-          JSON.stringify(images || []),
-          pricingType,
-          categoryId || null,
-          subcategoryId || null,
-        ];
-
-        await new Promise((resolve, reject) => {
-          con.query(pkgSql, pkgValues, (err) => (err ? reject(err) : resolve()));
-        });
-
-        // Insert variants
-        if (Array.isArray(variants) && variants.length > 0) {
-          const variantSql = `
-            INSERT INTO service_variants (service_code, variant_code, label, price, image, extra)
-            VALUES ?
-          `;
-          const variantValues = variants.map((v) => [
-            code,
-            v.variant_code,
-            v.label,
-            v.price,
-            v.image?.url || null,
-            JSON.stringify({ s3Key: v.image?.s3Key || null }),
-          ]);
-
-          await new Promise((resolve, reject) => {
-            con.query(variantSql, [variantValues], (err) => (err ? reject(err) : resolve()));
-          });
-        }
-
-        // Commit
-        con.commit((err) => {
-          if (err) {
-            return rollback(con, res, "Commit failed", err);
-          }
-          res.status(201).json({ message: "Service uploaded successfully", code });
-          con.release();
-        });
-      } catch (err) {
-        rollback(con, res, "Upload service failed", err);
-      }
-    });
+app.get("/api/admin/categories", (req, res) => {
+  const pool = dbConnection();
+  pool.query("SELECT * FROM service_categories", (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
   });
 });
 
-function rollback(con, res, msg, err) {
-  console.error(msg, err || "");
-  con.rollback(() => {
-    con.release();
-    res.status(500).json({ error: msg });
-  });
-}
+// ================= SERVICE APIs =================
+app.post("/api/admin/services", (req, res) => {
+  const {
+    code, name, price, description, categoryId,
+    image, images, pricingType, subcategory_id
+  } = req.body;
+
+  if (!code || !name || !categoryId) {
+    return res.status(400).json({ error: "Code, Name, Category required" });
+  }
+
+  const pool = dbConnection();
+  pool.query(
+    `INSERT INTO service_packages 
+    (code, name, price, description, category_id, image, images, pricing_type, subcategory_id) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      code,
+      name,
+      price || 0,
+      description || null,
+      categoryId,
+      image || null,
+      images ? JSON.stringify(images) : null,
+      pricingType || "flat",
+      subcategory_id || null,
+    ],
+    (err, result) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.status(201).json({ code, name });
+    }
+  );
+});
+
+app.get("/api/admin/services", (req, res) => {
+  const pool = dbConnection();
+  pool.query(
+    `SELECT sp.*, c.name AS categoryName 
+     FROM service_packages sp 
+     LEFT JOIN service_categories c ON sp.category_id = c.id`,
+    (err, rows) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json(rows);
+    }
+  );
+});
+
+// ================= VARIANT APIs =================
+app.post("/api/admin/services/:serviceCode/variants", (req, res) => {
+  const { serviceCode } = req.params;
+  const { variants } = req.body;
+
+  if (!variants || !variants.length) {
+    return res.status(400).json({ error: "Variants required" });
+  }
+
+  const pool = dbConnection();
+  const values = variants.map((v) => [
+    serviceCode,
+    v.variant_code,
+    v.label,
+    v.price || 0,
+    v.image || null,
+    v.extra ? JSON.stringify(v.extra) : null,
+  ]);
+
+  pool.query(
+    `INSERT INTO service_variants 
+    (service_code, variant_code, label, price, image, extra) VALUES ?`,
+    [values],
+    (err, result) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.status(201).json({ added: result.affectedRows });
+    }
+  );
+});
+
+app.get("/api/admin/services/:serviceCode/variants", (req, res) => {
+  const { serviceCode } = req.params;
+  const pool = dbConnection();
+  pool.query(
+    "SELECT * FROM service_variants WHERE service_code = ?",
+    [serviceCode],
+    (err, rows) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json(rows);
+    }
+  );
+});
 
 
 
