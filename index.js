@@ -1519,12 +1519,12 @@ app.get('/api/cc/rental/product', (req, res) => {
     if (err) {
       console.error('Error executing query:', err);
       res.status(500).json({ error: 'Internal Server Error' });
-      conn.end();
+     // conn.end();
       return;
     }
     // rows[].ProductImageURL is already a comma string from GROUP_CONCAT
     res.json({ data: rows });
-    conn.end();
+    // conn.end();
   });
 });
 
