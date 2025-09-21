@@ -2127,6 +2127,8 @@ app.post('/api/cc/register', async (req, res) => {
 app.post('/api/cc/order', (req, res) => {
   const { deliveryDetails, cart, totals, userId } = req.body;
 
+  const pool = dbConnection();
+
   pool.getConnection((err, connection) => {
     if (err) {
       console.error("DB connection error", err);
