@@ -7140,6 +7140,7 @@ app.post('/api/admin/orders/update', (req, res) => {
 // Version 2
 // GET list (optional category filter) - returns richer fields
 
+// --- Get list of services ---
 app.get('/api/services/list', (req, res) => {
   const { category } = req.query;
   const con = dbConnection();
@@ -7147,34 +7148,32 @@ app.get('/api/services/list', (req, res) => {
 
   let sql = `
     SELECT sp.code, sp.name, sp.price, sp.description,
-           sp.image, sp.images, sp.pricing_type,
-           c.slug AS category_slug, c.name AS category_name
+           sp.category_id, sp.image, sp.images, sp.pricing_type,
+           c.code AS categoryCode, c.name AS categoryName
     FROM service_packages sp
     LEFT JOIN service_categories c ON sp.category_id = c.id
   `;
-
   const params = [];
   if (category) {
-    sql += ' WHERE c.slug = ?';
+    sql += ' WHERE c.code = ?';   // ✅ FIX: use c.code, not slug
     params.push(category);
   }
 
   con.query(sql, params, (err, rows) => {
     if (err) {
-      console.error('[API] services list error', err);
+      console.error('[API] list DB error', err);
       return res.status(500).json({ error: 'Could not fetch services' });
     }
 
     const codes = rows.map(r => r.code);
     if (!codes.length) return res.json({ services: [] });
 
-    // Fetch variants for these services
     con.query(
       'SELECT service_code, variant_code, label, price, image FROM service_variants WHERE service_code IN (?)',
       [codes],
       (err2, vrows) => {
         if (err2) {
-          console.error('[API] variants fetch error', err2);
+          console.error('[API] variant fetch error', err2);
           return res.status(500).json({ error: 'Could not fetch variants' });
         }
 
@@ -7192,10 +7191,10 @@ app.get('/api/services/list', (req, res) => {
         const services = rows.map(r => ({
           code: r.code,
           name: r.name,
-          price: r.price !== null ? Number(r.price) : null,
+          price: Number(r.price),
           description: r.description,
-          category: r.category_slug,
-          categoryName: r.category_name,
+          category: r.categoryCode || null,
+          categoryName: r.categoryName || null,
           image: r.image || null,
           images: r.images ? (typeof r.images === 'string' ? JSON.parse(r.images) : r.images) : [],
           pricingType: r.pricing_type || 'flat',
@@ -7209,10 +7208,7 @@ app.get('/api/services/list', (req, res) => {
 });
 
 
-// GET single service by code (reliable for ServiceDetail)
-
-
-
+// --- Get single service ---
 app.get('/api/services/get', (req, res) => {
   const { code, debug } = req.query;
   console.log('[API] GET /api/services/get code=', code, ' debug=', debug);
@@ -7224,8 +7220,8 @@ app.get('/api/services/get', (req, res) => {
 
   const sql = `
     SELECT sp.code, sp.name, sp.price, sp.description,
-           sp.image, sp.images, sp.pricing_type,
-           c.slug AS category_slug, c.name AS category_name
+           sp.category_id, sp.image, sp.images, sp.pricing_type,
+           c.code AS categoryCode, c.name AS categoryName
     FROM service_packages sp
     LEFT JOIN service_categories c ON sp.category_id = c.id
     WHERE sp.code = ? LIMIT 1
@@ -7243,7 +7239,6 @@ app.get('/api/services/get', (req, res) => {
 
     const r = rows[0];
 
-    // safe parse helper
     const safeParseJson = (val) => {
       if (!val) return [];
       if (Array.isArray(val)) return val;
@@ -7253,7 +7248,6 @@ app.get('/api/services/get', (req, res) => {
       }
     };
 
-    // fetch variants for this service
     con.query(
       'SELECT variant_code, label, price, image FROM service_variants WHERE service_code = ?',
       [code],
@@ -7268,8 +7262,8 @@ app.get('/api/services/get', (req, res) => {
           name: r.name,
           price: (r.price !== null && r.price !== undefined) ? Number(r.price) : null,
           description: r.description,
-          category: r.category_slug,
-          categoryName: r.category_name,
+          category: r.categoryCode || null,
+          categoryName: r.categoryName || null,
           image: r.image || null,
           images: safeParseJson(r.images),
           pricingType: r.pricing_type || 'flat',
@@ -7289,6 +7283,7 @@ app.get('/api/services/get', (req, res) => {
     );
   });
 });
+
 
 
 // List
