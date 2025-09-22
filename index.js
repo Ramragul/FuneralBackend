@@ -8583,7 +8583,8 @@ app.post("/api/admin/categories", (req, res) => {
 
 app.get("/api/admin/categories", (req, res) => {
   const pool = dbConnection();
-  pool.query("SELECT * FROM service_categories", (err, rows) => {
+  // pool.query("SELECT * FROM service_categories", (err, rows) => {
+  pool.query("SELECT id, LOWER(code) as code, name, image FROM service_categories", (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   });
