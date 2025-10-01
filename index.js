@@ -2246,13 +2246,124 @@ app.post('/api/cc/register', async (req, res) => {
 // });
 
 
-// Version 2 
+// Version 2 - working version
 
 
+
+// app.post('/api/cc/order', (req, res) => {
+//   const { deliveryDetails, cart, totals, userId } = req.body;
+
+//   const pool = dbConnection();
+
+//   pool.getConnection((err, connection) => {
+//     if (err) {
+//       console.error("DB connection error", err);
+//       return res.status(500).json({ error: "DB connection error" });
+//     }
+
+//     connection.beginTransaction(async (err) => {
+//       if (err) {
+//         connection.release();
+//         return res.status(500).json({ error: err.message });
+//       }
+
+//       try {
+//         // --- Insert delivery details ---
+//         const deliveryQuery = `
+//           INSERT INTO CC_Delivery_Details 
+//           (first_name, last_name, email, mobile_number, address, landmark, city, pincode, order_notes, delivery_type, return_pickup, return_address, return_landmark, return_city, return_pincode)
+//           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+//         `;
+//         const deliveryValues = [
+//           deliveryDetails.firstName,
+//           deliveryDetails.lastName,
+//           deliveryDetails.email,
+//           deliveryDetails.mobileNumber,
+//           deliveryDetails.address,
+//           deliveryDetails.landmark,
+//           deliveryDetails.city,
+//           deliveryDetails.pincode,
+//           deliveryDetails.orderNotes,
+//           deliveryDetails.deliveryType,
+//           deliveryDetails.returnPickup,
+//           deliveryDetails.returnAddress,
+//           deliveryDetails.returnLandmark,
+//           deliveryDetails.returnCity,
+//           deliveryDetails.returnPincode
+//         ];
+
+//         const [deliveryResult] = await connection.promise().query(deliveryQuery, deliveryValues);
+//         const deliveryId = deliveryResult.insertId;
+
+//         const orderDate = moment().format('YYYY-MM-DD HH:mm:ss');
+//         const orderStatus = "Created";
+
+//         // --- Insert order ---
+//         const orderQuery = `
+//           INSERT INTO CC_Orders 
+//           (delivery_details_id, products_price, security_deposit, total_amount, order_date, order_status, user_id, payment_type)
+//           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+//         `;
+//         const orderValues = [
+//           deliveryId,
+//           totals.productsPrice,
+//           totals.securityDeposit,
+//           totals.totalAmount,
+//           orderDate,
+//           orderStatus,
+//           userId,
+//           deliveryDetails.paymentType
+//         ];
+
+//         const [orderResult] = await connection.promise().query(orderQuery, orderValues);
+//         const orderId = orderResult.insertId;
+
+//         // --- Insert cart items ---
+//         const cartQuery = `
+//           INSERT INTO CC_Order_Items 
+//           (order_id, product_id, name, size, duration, delivery_date, return_date, quantity, price, image_url)
+//           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+//         `;
+
+//         for (let item of cart) {
+//           const cartValues = [
+//             orderId,
+//             item.id,
+//             item.name,
+//             item.size,
+//             item.duration,
+//             item.deliveryDate,
+//             item.returnDate,
+//             item.quantity,
+//             item.price,
+//             item.imageURL
+//           ];
+//           await connection.promise().query(cartQuery, cartValues);
+//         }
+
+//         // --- Commit transaction ---
+//         await connection.promise().commit();
+//         res.status(201).json({ message: "Order Created Successfully", order_id: orderId });
+
+//       } catch (err) {
+//         console.error("Order creation failed", err);
+//         await connection.promise().rollback();
+//         res.status(500).json({ error: err.message });
+//       } finally {
+//         connection.release(); // ✅ always release back to pool
+//       }
+//     });
+//   });
+// });
+
+
+// Version 3 - Whatsapp Integration
+
+
+const axios = require("axios");
 
 app.post('/api/cc/order', (req, res) => {
   const { deliveryDetails, cart, totals, userId } = req.body;
-
   const pool = dbConnection();
 
   pool.getConnection((err, connection) => {
@@ -2261,14 +2372,13 @@ app.post('/api/cc/order', (req, res) => {
       return res.status(500).json({ error: "DB connection error" });
     }
 
-    connection.beginTransaction(async (err) => {
+    connection.beginTransaction((err) => {
       if (err) {
         connection.release();
         return res.status(500).json({ error: err.message });
       }
 
       try {
-        // --- Insert delivery details ---
         const deliveryQuery = `
           INSERT INTO CC_Delivery_Details 
           (first_name, last_name, email, mobile_number, address, landmark, city, pincode, order_notes, delivery_type, return_pickup, return_address, return_landmark, return_city, return_pincode)
@@ -2292,69 +2402,153 @@ app.post('/api/cc/order', (req, res) => {
           deliveryDetails.returnPincode
         ];
 
-        const [deliveryResult] = await connection.promise().query(deliveryQuery, deliveryValues);
-        const deliveryId = deliveryResult.insertId;
+        connection.query(deliveryQuery, deliveryValues, (err, deliveryResult) => {
+          if (err) {
+            return connection.rollback(() => {
+              connection.release();
+              res.status(500).json({ error: err.message });
+            });
+          }
 
-        const orderDate = moment().format('YYYY-MM-DD HH:mm:ss');
-        const orderStatus = "Created";
+          const deliveryId = deliveryResult.insertId;
+          const orderDate = moment().format('YYYY-MM-DD HH:mm:ss');
+          const orderStatus = "Created";
 
-        // --- Insert order ---
-        const orderQuery = `
-          INSERT INTO CC_Orders 
-          (delivery_details_id, products_price, security_deposit, total_amount, order_date, order_status, user_id, payment_type)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `;
-        const orderValues = [
-          deliveryId,
-          totals.productsPrice,
-          totals.securityDeposit,
-          totals.totalAmount,
-          orderDate,
-          orderStatus,
-          userId,
-          deliveryDetails.paymentType
-        ];
-
-        const [orderResult] = await connection.promise().query(orderQuery, orderValues);
-        const orderId = orderResult.insertId;
-
-        // --- Insert cart items ---
-        const cartQuery = `
-          INSERT INTO CC_Order_Items 
-          (order_id, product_id, name, size, duration, delivery_date, return_date, quantity, price, image_url)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `;
-
-        for (let item of cart) {
-          const cartValues = [
-            orderId,
-            item.id,
-            item.name,
-            item.size,
-            item.duration,
-            item.deliveryDate,
-            item.returnDate,
-            item.quantity,
-            item.price,
-            item.imageURL
+          const orderQuery = `
+            INSERT INTO CC_Orders 
+            (delivery_details_id, products_price, security_deposit, total_amount, order_date, order_status, user_id, payment_type)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          `;
+          const orderValues = [
+            deliveryId,
+            totals.productsPrice,
+            totals.securityDeposit,
+            totals.totalAmount,
+            orderDate,
+            orderStatus,
+            userId,
+            deliveryDetails.paymentType
           ];
-          await connection.promise().query(cartQuery, cartValues);
-        }
 
-        // --- Commit transaction ---
-        await connection.promise().commit();
-        res.status(201).json({ message: "Order Created Successfully", order_id: orderId });
+          connection.query(orderQuery, orderValues, (err, orderResult) => {
+            if (err) {
+              return connection.rollback(() => {
+                connection.release();
+                res.status(500).json({ error: err.message });
+              });
+            }
 
+            const orderId = orderResult.insertId;
+
+            // Insert all cart items
+            const cartQuery = `
+              INSERT INTO CC_Order_Items 
+              (order_id, product_id, name, size, duration, delivery_date, return_date, quantity, price, image_url)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `;
+
+            let insertTasks = cart.map(item => {
+              return new Promise((resolve, reject) => {
+                const cartValues = [
+                  orderId,
+                  item.id,
+                  item.name,
+                  item.size,
+                  item.duration,
+                  item.deliveryDate,
+                  item.returnDate,
+                  item.quantity,
+                  item.price,
+                  item.imageURL
+                ];
+                connection.query(cartQuery, cartValues, (err) => {
+                  if (err) return reject(err);
+                  resolve();
+                });
+              });
+            });
+
+            Promise.all(insertTasks)
+              .then(() => {
+                connection.commit(async (err) => {
+                  if (err) {
+                    return connection.rollback(() => {
+                      connection.release();
+                      res.status(500).json({ error: err.message });
+                    });
+                  }
+
+                  connection.release();
+
+                  // ✅ Trigger WhatsApp Message
+                  sendWhatsAppMessage(
+                    deliveryDetails.mobileNumber,
+                    orderId,
+                    deliveryDetails.firstName,
+                  );
+
+                  res.status(201).json({ message: "Order Created Successfully", order_id: orderId });
+                });
+              })
+              .catch(err => {
+                connection.rollback(() => {
+                  connection.release();
+                  res.status(500).json({ error: err.message });
+                });
+              });
+          });
+        });
       } catch (err) {
-        console.error("Order creation failed", err);
-        await connection.promise().rollback();
-        res.status(500).json({ error: err.message });
-      } finally {
-        connection.release(); // ✅ always release back to pool
+        connection.rollback(() => {
+          connection.release();
+          res.status(500).json({ error: err.message });
+        });
       }
     });
   });
 });
+
+
+// --- WhatsApp Function ---
+async function sendWhatsAppMessage(mobileNumber, orderId, customerName) {
+  try {
+    const token = process.env.WHATSAPP_TOKEN;
+    const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+    const url = `https://graph.facebook.com/v20.0/${phoneNumberId}/messages`;
+
+    const data = {
+      messaging_product: "whatsapp",
+      to: mobileNumber, // Example: "91xxxxxxxxxx"
+      type: "template",
+      template: {
+        name: "order_confirmation", // replace with your approved template name
+        language: { code: "en" },
+        components: [
+          {
+            type: "body",
+            parameters: [
+              {type : "text", text: customerName}
+              { type: "text", text: orderId.toString() },
+              { type: "text", text: "978887555" }
+            ]
+          }
+        ]
+      }
+    };
+
+    await axios.post(url, data, {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      }
+    });
+
+    console.log("✅ WhatsApp message sent successfully");
+  } catch (err) {
+    console.error("❌ WhatsApp send failed:", err.response?.data || err.message);
+  }
+}
+
 
 
 
