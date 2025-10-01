@@ -2527,7 +2527,7 @@ async function sendWhatsAppMessage(mobileNumber, orderId, customerName) {
           {
             type: "body",
             parameters: [
-              {type : "text", text: customerName}
+              {type : "text", text: customerName},
               { type: "text", text: orderId.toString() },
               { type: "text", text: "978887555" }
             ]
