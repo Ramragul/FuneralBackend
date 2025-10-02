@@ -9770,7 +9770,7 @@ const sendRegistrationEmail = (userEmail, userName) => {
 
 const options = {
   key: fs.readFileSync(path.join(__dirname,'cert', 'admee.in.key')),
-  cert: fs.readFileSync(path.join(__dirname, 'cert', 'admee_in.crt'))
+  cert: fs.readFileSync(path.join(__dirname, 'cert', 'fullchain.crt'))
 };
 const server = https.createServer(options,app);
 
