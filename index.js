@@ -9710,6 +9710,184 @@ app.post("/api/tfc/grounds/update", (req, res) => {
 
 // -------------------- The Funeral Company API End -----------------------
 
+
+
+
+// --------------------  SNEKA API BEGINS ----------------------------------------
+
+
+// app.post('/api/sneka/slots/create', (req, res) => {
+//   const { date, capacity } = req.body;
+//   if (!date) return res.status(400).json({ error: 'Date required' });
+
+//   const defaultSlots = [
+//     '10:00 - 11:00',
+//     '11:30 - 12:30',
+//     '1:00 - 2:00',
+//     '2:30 - 3:30',
+//     '4:00 - 5:00'
+//   ];
+
+//   try {
+//     const con = dbConnection();
+//     con.connect();
+//     const values = defaultSlots.map(s => [date, s, capacity || 3, 0]);
+//     const sql = 'INSERT INTO SnekaSlots (slotDate, timeSlot, capacity, bookedCount) VALUES ?';
+//     con.query(sql, [values], (err) => {
+//       if (err) {
+//         console.error('Insert error', err);
+//         return res.status(500).json({ error: 'DB Error' });
+//       }
+//       res.status(201).json({ message: 'Slots created successfully' });
+//     });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ error: 'DB connection error' });
+//   }
+// });
+
+
+app.post('/api/sneka/slots/create-range', (req, res) => {
+  const { startDate, endDate, capacity } = req.body;
+  if (!startDate || !endDate)
+    return res.status(400).json({ error: 'Start and end date required' });
+
+  const defaultSlots = [
+    '10:00 - 11:00',
+    '11:30 - 12:30',
+    '1:00 - 2:00',
+    '2:30 - 3:30',
+    '4:00 - 5:00'
+  ];
+
+  // Generate all dates between start and end
+  const allDates = [];
+  let current = new Date(startDate);
+  const end = new Date(endDate);
+
+  while (current <= end) {
+    allDates.push(current.toISOString().split('T')[0]);
+    current.setDate(current.getDate() + 1);
+  }
+
+  const values = [];
+  allDates.forEach(d => {
+    defaultSlots.forEach(s => {
+      values.push([d, s, capacity || 3, 0]);
+    });
+  });
+
+  try {
+    const con = dbConnection();
+    con.connect();
+    const sql = 'INSERT INTO SnekaSlots (slotDate, timeSlot, capacity, bookedCount) VALUES ?';
+    con.query(sql, [values], (err) => {
+      if (err) {
+        console.error('Insert error', err);
+        return res.status(500).json({ error: 'DB Error' });
+      }
+      res.status(201).json({ message: 'Monthly slots created successfully', total: values.length });
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'DB connection error' });
+  }
+});
+
+
+
+
+app.get('/api/sneka/slots', (req, res) => {
+  const { date } = req.query;
+  if (!date) return res.status(400).json({ error: 'Date is required' });
+
+  try {
+    const con = dbConnection();
+    con.connect();
+    const sql = `SELECT id, slotDate, timeSlot, capacity, bookedCount, (bookedCount >= capacity) AS isBooked
+                 FROM SnekaSlots WHERE slotDate = ? ORDER BY timeSlot`;
+    con.query(sql, [date], (err, result) => {
+      if (err) {
+        console.error('DB error', err);
+        return res.status(500).json({ error: 'Database Error' });
+      }
+      res.json(result);
+    });
+  } catch (err) {
+    console.error('DB connection error', err);
+    res.status(500).json({ error: 'DB connection error' });
+  }
+});
+
+
+
+app.post('/api/sneka/book-slot', (req, res) => {
+  const { name, phone, email, date, timeSlot, designType, notes } = req.body;
+  if (!name || !phone || !date || !timeSlot)
+    return res.status(400).json({ error: 'Missing required fields' });
+
+  try {
+    const con = dbConnection();
+    con.connect();
+
+    const findSlot = `SELECT * FROM SnekaSlots WHERE slotDate=? AND timeSlot=?`;
+    con.query(findSlot, [date, timeSlot], (err, rows) => {
+      if (err) return res.status(500).json({ error: 'DB error' });
+      if (!rows.length) return res.status(404).json({ error: 'Slot not found' });
+
+      const slot = rows[0];
+      if (slot.bookedCount >= slot.capacity)
+        return res.status(400).json({ error: 'Slot is full' });
+
+      const slotId = slot.id;
+      const update = `UPDATE SnekaSlots SET bookedCount = bookedCount + 1 WHERE id = ?`;
+      con.query(update, [slotId], (err2) => {
+        if (err2) return res.status(500).json({ error: 'Slot update failed' });
+
+        const insert = `
+          INSERT INTO SnekaBookings (name, phone, email, date, timeSlot, designType, notes, slotId)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        con.query(insert, [name, phone, email, date, timeSlot, designType, notes, slotId], (err3, result) => {
+          if (err3) return res.status(500).json({ error: 'Insert error' });
+          res.status(201).json({ message: 'Booking confirmed', bookingId: result.insertId });
+        });
+      });
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'DB connection error' });
+  }
+});
+
+
+app.delete('/api/sneka/booking/:id', (req, res) => {
+  const { id } = req.params;
+  try {
+    const con = dbConnection();
+    con.connect();
+
+    const find = `SELECT slotId FROM SnekaBookings WHERE id=?`;
+    con.query(find, [id], (err, rows) => {
+      if (err) return res.status(500).json({ error: 'DB error' });
+      if (!rows.length) return res.status(404).json({ error: 'Booking not found' });
+
+      const slotId = rows[0].slotId;
+      const deleteQuery = `DELETE FROM SnekaBookings WHERE id=?`;
+      con.query(deleteQuery, [id]);
+
+      const updateSlot = `UPDATE SnekaSlots SET bookedCount = bookedCount - 1 WHERE id=? AND bookedCount > 0`;
+      con.query(updateSlot, [slotId]);
+
+      res.json({ message: 'Booking cancelled and slot released' });
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'DB connection error' });
+  }
+});
+
+
+// --------------------  SNEKA API ENDS   ----------------------------------------
+
 // Helper rollback function
 function rollback(con, res, msg, err) {
   console.error(msg, err);
