@@ -9886,6 +9886,40 @@ app.delete('/api/sneka/booking/:id', (req, res) => {
 });
 
 
+// Metal Estimation API
+
+const densityRatios = {
+  "Gold 22K (916)": 1.0,
+  "Gold 18K (750)": 15.60 / 17.50,
+  "Gold 14K (585)": 13.10 / 17.50,
+  "White Gold 18K": 14.80 / 17.50,
+  "White Gold 14K": 13.60 / 17.50,
+  "Platinum 950": 21.45 / 17.50,
+  "Silver 925": 10.50 / 17.50
+};
+
+app.post("/api/estimate-metal", (req, res) => {
+  const { designName, baseWeight, baseSize, complexityFactor, targetSize, metalType } = req.body;
+
+  if (!baseWeight || !baseSize || !targetSize || !metalType) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  const densityRatio = densityRatios[metalType] || 1.0;
+  const estimatedWeight = (
+    baseWeight * (targetSize / baseSize) * complexityFactor * densityRatio
+  ).toFixed(2);
+
+  res.json({
+    designName,
+    metalType,
+    estimatedWeight: Number(estimatedWeight),
+    notes: "±5–8% finishing tolerance",
+    unit: "grams"
+  });
+});
+
+
 // --------------------  SNEKA API ENDS   ----------------------------------------
 
 // Helper rollback function
