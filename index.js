@@ -9705,6 +9705,121 @@ app.post("/api/tfc/grounds/update", (req, res) => {
 });
 
 
+// Add new vendor
+app.post("/api/tfc/vendors", (req, res) => {
+  const data = req.body;
+  if (!data.name || !data.type) {
+    return res.status(400).json({ error: "Vendor name and type are required" });
+  }
+
+  const con = dbConnection();
+
+  const sql = `
+    INSERT INTO vendors
+    (name, type, contact_name, phone, email, address, city, state, country,
+     payment_mode, bank_name, account_no, ifsc_code, upi_id, payment_terms,
+     commission_percent, base_rate, advance_allowed, created_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())
+  `;
+
+  const vals = [
+    data.name,
+    data.type,
+    data.contact_name || null,
+    data.phone || null,
+    data.email || null,
+    data.address || null,
+    data.city || null,
+    data.state || null,
+    data.country || null,
+    data.payment_mode || "bank",
+    data.bank_name || null,
+    data.account_no || null,
+    data.ifsc_code || null,
+    data.upi_id || null,
+    data.payment_terms || null,
+    data.commission_percent || null,
+    data.base_rate || null,
+    data.advance_allowed ? 1 : 0,
+  ];
+
+  con.query(sql, vals, (err, result) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ message: "Vendor added successfully", vendor_id: result.insertId });
+  });
+});
+
+// Get All Vendors
+
+app.get("/api/tfc/vendors", (req, res) => {
+  const con = dbConnection();
+  const sql = "SELECT * FROM vendors ORDER BY id DESC";
+
+  con.query(sql, (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+
+// Get Vendor by ID
+
+app.get("/api/tfc/vendors/:id", (req, res) => {
+  const con = dbConnection();
+  const sql = "SELECT * FROM vendors WHERE id = ?";
+  con.query(sql, [req.params.id], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!rows.length) return res.status(404).json({ error: "Vendor not found" });
+    res.json(rows[0]);
+  });
+});
+
+
+// Update Vendor Status
+
+app.put("/api/tfc/vendors/:id/status", (req, res) => {
+  const con = dbConnection();
+  const { status } = req.body;
+  if (!status) return res.status(400).json({ error: "Status required" });
+
+  const sql = "UPDATE vendors SET status = ? WHERE id = ?";
+  con.query(sql, [status, req.params.id], (err, result) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ message: "Vendor status updated", affected: result.affectedRows });
+  });
+});
+
+
+// Add Vendor Payment 
+
+app.post("/api/tfc/vendor-payments", (req, res) => {
+  const d = req.body;
+  if (!d.vendor_id || !d.amount)
+    return res.status(400).json({ error: "vendor_id and amount required" });
+
+  const con = dbConnection();
+
+  const sql = `
+    INSERT INTO vendor_payments
+    (vendor_id, order_id, payment_date, amount, payment_mode, payment_reference, remarks, status)
+    VALUES (?, ?, NOW(), ?, ?, ?, ?, ?)
+  `;
+  const vals = [
+    d.vendor_id,
+    d.order_id || null,
+    d.amount,
+    d.payment_mode || "bank",
+    d.payment_reference || null,
+    d.remarks || null,
+    d.status || "pending",
+  ];
+
+  con.query(sql, vals, (err, result) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ message: "Payment recorded", id: result.insertId });
+  });
+});
+
 
 
 
