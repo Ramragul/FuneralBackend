@@ -9749,6 +9749,31 @@ app.post("/api/tfc/vendors", (req, res) => {
   });
 });
 
+//  Vendor Catalog Update( their price etc)
+
+app.post("/api/tfc/vendors/:id/catalog", (req, res) => {
+  const vendorId = req.params.id;
+  const services = req.body.services;
+
+  if (!Array.isArray(services) || services.length === 0) {
+    return res.status(400).json({ error: "services array required" });
+  }
+
+  const con = dbConnection();
+  const values = services.map((s) => [vendorId, s.service_code, s.base_rate || 0]);
+
+  const sql = `
+    INSERT INTO vendor_catalog (vendor_id, service_code, base_rate)
+    VALUES ?
+  `;
+
+  con.query(sql, [values], (err, result) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ message: "Vendor catalog added", count: result.affectedRows });
+  });
+});
+
+
 // Get All Vendors
 
 app.get("/api/tfc/vendors", (req, res) => {
