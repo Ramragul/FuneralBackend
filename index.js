@@ -9719,7 +9719,7 @@ app.post("/api/tfc/vendors", (req, res) => {
     (name, type, contact_name, phone, email, address, city, state, country,
      payment_mode, bank_name, account_no, ifsc_code, upi_id, payment_terms,
      commission_percent, base_rate, advance_allowed, created_at)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())
   `;
 
   const vals = [
