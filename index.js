@@ -9766,14 +9766,14 @@ app.post("/api/tfc/vendors", (req, res) => {
     INSERT INTO vendors
     (
       name, type, contact_name, contact_designation,
-      phone, alternate_phone, email, address, city, state, country,
+      phone, alternate_phone, email, address, city, state, country,pincode,google_location_url
       payment_mode, bank_name, account_no, ifsc_code, upi_id, payment_terms,
       commission_percent, base_rate, advance_allowed,
       operational_hours, available_days, conditions, remarks,
       profile_image_url, id_proof_url,
       created_at
     )
-    VALUES (?,?,?,?, ?,?,?, ?,?,?, ?, ?,?,?, ?,?,?, ?,?,?, ?,?,?, ?,?, NOW())
+    VALUES (?,?,?,?, ?,?,?, ?,?,?, ?, ?,?,?, ?,?,?, ?,?,?, ?,?,?, ?,?,?,?,? NOW())
   `;
 
   const vals = [
@@ -9789,6 +9789,8 @@ app.post("/api/tfc/vendors", (req, res) => {
     data.city || null,
     data.state || null,
     data.country || null,
+    data.pincode || null,
+    data.google_location_url || null,
 
     data.payment_mode || "bank",
     data.bank_name || null,
@@ -9884,7 +9886,7 @@ app.get("/api/tfc/vendors", (req, res) => {
 app.get("/api/tfc/vendors/:id", (req, res) => {
   const con = dbConnection();
   const sql = `
-    SELECT id, name, type, contact_name, phone, email, address, city, state, country,
+    SELECT id, name, type, contact_name, phone, email, address, city, state, country,pincode,google_location_url,
            payment_mode, bank_name, account_no, ifsc_code, upi_id, payment_terms,
            commission_percent, base_rate, advance_allowed, status, created_at
     FROM vendors
@@ -9946,6 +9948,8 @@ app.put("/api/tfc/vendors/:id", (req, res) => {
       city = ?,
       state = ?,
       country = ?,
+      pincode= ?,
+      google_location_url = ?,
       payment_mode = ?,
       bank_name = ?,
       account_no = ?,
@@ -9977,6 +9981,8 @@ app.put("/api/tfc/vendors/:id", (req, res) => {
     data.city || null,
     data.state || null,
     data.country || null,
+    data.pincode || null,
+    data.google_location_url || null,
     data.payment_mode || "bank",
     data.bank_name || null,
     data.account_no || null,
