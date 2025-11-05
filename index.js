@@ -9706,6 +9706,54 @@ app.post("/api/tfc/grounds/update", (req, res) => {
 
 
 // Add new vendor
+
+// Version 1
+
+// app.post("/api/tfc/vendors", (req, res) => {
+//   const data = req.body;
+//   if (!data.name || !data.type) {
+//     return res.status(400).json({ error: "Vendor name and type are required" });
+//   }
+
+//   const con = dbConnection();
+
+//   const sql = `
+//     INSERT INTO vendors
+//     (name, type, contact_name, phone, email, address, city, state, country,
+//      payment_mode, bank_name, account_no, ifsc_code, upi_id, payment_terms,
+//      commission_percent, base_rate, advance_allowed, created_at)
+//     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())
+//   `;
+
+//   const vals = [
+//     data.name,
+//     data.type,
+//     data.contact_name || null,
+//     data.phone || null,
+//     data.email || null,
+//     data.address || null,
+//     data.city || null,
+//     data.state || null,
+//     data.country || null,
+//     data.payment_mode || "bank",
+//     data.bank_name || null,
+//     data.account_no || null,
+//     data.ifsc_code || null,
+//     data.upi_id || null,
+//     data.payment_terms || null,
+//     data.commission_percent || null,
+//     data.base_rate || null,
+//     data.advance_allowed ? 1 : 0,
+//   ];
+
+//   con.query(sql, vals, (err, result) => {
+//     if (err) return res.status(500).json({ error: err.message });
+//     res.json({ message: "Vendor added successfully", vendor_id: result.insertId });
+//   });
+// });
+
+// Version 2 
+
 app.post("/api/tfc/vendors", (req, res) => {
   const data = req.body;
   if (!data.name || !data.type) {
@@ -9716,31 +9764,50 @@ app.post("/api/tfc/vendors", (req, res) => {
 
   const sql = `
     INSERT INTO vendors
-    (name, type, contact_name, phone, email, address, city, state, country,
-     payment_mode, bank_name, account_no, ifsc_code, upi_id, payment_terms,
-     commission_percent, base_rate, advance_allowed, created_at)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())
+    (
+      name, type, contact_name, contact_designation,
+      phone, alternate_phone, email, address, city, state, country,
+      payment_mode, bank_name, account_no, ifsc_code, upi_id, payment_terms,
+      commission_percent, base_rate, advance_allowed,
+      operational_hours, available_days, conditions, remarks,
+      profile_image_url, id_proof_url,
+      created_at
+    )
+    VALUES (?,?,?,?, ?,?,?, ?,?,?, ?, ?,?,?, ?,?,?, ?,?,?, ?,?,?, ?,?, NOW())
   `;
 
   const vals = [
     data.name,
-    data.type,
+    data.type, // comma-separated: "van,freezer,floral"
     data.contact_name || null,
+    data.contact_designation || null,
+
     data.phone || null,
+    data.alternate_phone || null,
     data.email || null,
     data.address || null,
     data.city || null,
     data.state || null,
     data.country || null,
+
     data.payment_mode || "bank",
     data.bank_name || null,
     data.account_no || null,
     data.ifsc_code || null,
     data.upi_id || null,
     data.payment_terms || null,
-    data.commission_percent || null,
-    data.base_rate || null,
+
+    data.commission_percent ?? null,
+    data.base_rate ?? null,
     data.advance_allowed ? 1 : 0,
+
+    data.operational_hours || null,
+    data.available_days || null,
+    data.conditions || null,
+    data.remarks || null,
+
+    data.profile_image_url || null,
+    data.id_proof_url || null,
   ];
 
   con.query(sql, vals, (err, result) => {
@@ -9749,11 +9816,39 @@ app.post("/api/tfc/vendors", (req, res) => {
   });
 });
 
+
 //  Vendor Catalog Update( their price etc)
+
+// Version 1
+
+// app.post("/api/tfc/vendors/:id/catalog", (req, res) => {
+//   const vendorId = req.params.id;
+//   const services = req.body.services;
+
+//   if (!Array.isArray(services) || services.length === 0) {
+//     return res.status(400).json({ error: "services array required" });
+//   }
+
+//   const con = dbConnection();
+//   const values = services.map((s) => [vendorId, s.service_code, s.base_rate || 0]);
+
+//   const sql = `
+//     INSERT INTO vendor_catalog (vendor_id, service_code, base_rate)
+//     VALUES ?
+//   `;
+
+//   con.query(sql, [values], (err, result) => {
+//     if (err) return res.status(500).json({ error: err.message });
+//     res.json({ message: "Vendor catalog added", count: result.affectedRows });
+//   });
+// });
+
+
+// Version 2 
 
 app.post("/api/tfc/vendors/:id/catalog", (req, res) => {
   const vendorId = req.params.id;
-  const services = req.body.services;
+  const services = req.body.services; // [{ service_code, base_rate }]
 
   if (!Array.isArray(services) || services.length === 0) {
     return res.status(400).json({ error: "services array required" });
@@ -9761,12 +9856,7 @@ app.post("/api/tfc/vendors/:id/catalog", (req, res) => {
 
   const con = dbConnection();
   const values = services.map((s) => [vendorId, s.service_code, s.base_rate || 0]);
-
-  const sql = `
-    INSERT INTO vendor_catalog (vendor_id, service_code, base_rate)
-    VALUES ?
-  `;
-
+  const sql = `INSERT INTO vendor_catalog (vendor_id, service_code, base_rate) VALUES ?`;
   con.query(sql, [values], (err, result) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ message: "Vendor catalog added", count: result.affectedRows });
@@ -9810,23 +9900,100 @@ app.get("/api/tfc/vendors/:id", (req, res) => {
 
 // Update Vendor by ID ( Vendor Update functionality)
 
+// Version 1
+
+// app.put("/api/tfc/vendors/:id", (req, res) => {
+//   const data = req.body;
+//   const con = dbConnection();
+
+//   const sql = `
+//     UPDATE vendors SET
+//       name = ?, type = ?, contact_name = ?, phone = ?, email = ?, address = ?, city = ?, 
+//       state = ?, country = ?, payment_mode = ?, bank_name = ?, account_no = ?, ifsc_code = ?, 
+//       upi_id = ?, payment_terms = ?, commission_percent = ?, base_rate = ?, advance_allowed = ?
+//     WHERE id = ?
+//   `;
+
+//   const vals = [
+//     data.name, data.type, data.contact_name, data.phone, data.email, data.address,
+//     data.city, data.state, data.country, data.payment_mode, data.bank_name, data.account_no,
+//     data.ifsc_code, data.upi_id, data.payment_terms, data.commission_percent,
+//     data.base_rate, data.advance_allowed ? 1 : 0, req.params.id,
+//   ];
+
+//   con.query(sql, vals, (err, result) => {
+//     if (err) return res.status(500).json({ error: err.message });
+//     res.json({ message: "Vendor updated successfully" });
+//   });
+// });
+
+// Version 2 
+
 app.put("/api/tfc/vendors/:id", (req, res) => {
   const data = req.body;
   const con = dbConnection();
 
   const sql = `
     UPDATE vendors SET
-      name = ?, type = ?, contact_name = ?, phone = ?, email = ?, address = ?, city = ?, 
-      state = ?, country = ?, payment_mode = ?, bank_name = ?, account_no = ?, ifsc_code = ?, 
-      upi_id = ?, payment_terms = ?, commission_percent = ?, base_rate = ?, advance_allowed = ?
+      name = ?,
+      type = ?,                      -- comma-separated services
+      contact_name = ?,
+      contact_designation = ?,
+      phone = ?,
+      alternate_phone = ?,
+      email = ?,
+      address = ?,
+      city = ?,
+      state = ?,
+      country = ?,
+      payment_mode = ?,
+      bank_name = ?,
+      account_no = ?,
+      ifsc_code = ?,
+      upi_id = ?,
+      payment_terms = ?,
+      commission_percent = ?,
+      base_rate = ?,
+      advance_allowed = ?,
+      operational_hours = ?,
+      available_days = ?,
+      conditions = ?,
+      remarks = ?,
+      profile_image_url = ?,
+      id_proof_url = ?,
+      status = COALESCE(?, status)   -- optional: keep existing if not sent
     WHERE id = ?
   `;
 
   const vals = [
-    data.name, data.type, data.contact_name, data.phone, data.email, data.address,
-    data.city, data.state, data.country, data.payment_mode, data.bank_name, data.account_no,
-    data.ifsc_code, data.upi_id, data.payment_terms, data.commission_percent,
-    data.base_rate, data.advance_allowed ? 1 : 0, req.params.id,
+    data.name,
+    data.type || "", // "van,freezer"
+    data.contact_name || null,
+    data.contact_designation || null,
+    data.phone || null,
+    data.alternate_phone || null,
+    data.email || null,
+    data.address || null,
+    data.city || null,
+    data.state || null,
+    data.country || null,
+    data.payment_mode || "bank",
+    data.bank_name || null,
+    data.account_no || null,
+    data.ifsc_code || null,
+    data.upi_id || null,
+    data.payment_terms || null,
+    data.commission_percent ?? null,
+    data.base_rate ?? null,
+    data.advance_allowed ? 1 : 0,
+    data.operational_hours || null,
+    data.available_days || null,
+    data.conditions || null,
+    data.remarks || null,
+    data.profile_image_url || null,
+    data.id_proof_url || null,
+    data.status || null, // pass "active"/"inactive" or omit
+    req.params.id,
   ];
 
   con.query(sql, vals, (err, result) => {
