@@ -9789,15 +9789,63 @@ app.get("/api/tfc/vendors", (req, res) => {
 
 // Get Vendor by ID
 
+
+
 app.get("/api/tfc/vendors/:id", (req, res) => {
   const con = dbConnection();
-  const sql = "SELECT * FROM vendors WHERE id = ?";
+  const sql = `
+    SELECT id, name, type, contact_name, phone, email, address, city, state, country,
+           payment_mode, bank_name, account_no, ifsc_code, upi_id, payment_terms,
+           commission_percent, base_rate, advance_allowed, status, created_at
+    FROM vendors
+    WHERE id = ?
+  `;
   con.query(sql, [req.params.id], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     if (!rows.length) return res.status(404).json({ error: "Vendor not found" });
     res.json(rows[0]);
   });
 });
+
+
+// Update Vendor by ID ( Vendor Update functionality)
+
+app.put("/api/tfc/vendors/:id", (req, res) => {
+  const data = req.body;
+  const con = dbConnection();
+
+  const sql = `
+    UPDATE vendors SET
+      name = ?, type = ?, contact_name = ?, phone = ?, email = ?, address = ?, city = ?, 
+      state = ?, country = ?, payment_mode = ?, bank_name = ?, account_no = ?, ifsc_code = ?, 
+      upi_id = ?, payment_terms = ?, commission_percent = ?, base_rate = ?, advance_allowed = ?
+    WHERE id = ?
+  `;
+
+  const vals = [
+    data.name, data.type, data.contact_name, data.phone, data.email, data.address,
+    data.city, data.state, data.country, data.payment_mode, data.bank_name, data.account_no,
+    data.ifsc_code, data.upi_id, data.payment_terms, data.commission_percent,
+    data.base_rate, data.advance_allowed ? 1 : 0, req.params.id,
+  ];
+
+  con.query(sql, vals, (err, result) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ message: "Vendor updated successfully" });
+  });
+});
+
+
+// Delete Vendor by ID ( From UI Page)
+
+app.delete("/api/tfc/vendors/:id", (req, res) => {
+  const con = dbConnection();
+  con.query("DELETE FROM vendors WHERE id = ?", [req.params.id], (err, result) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ message: "Vendor deleted successfully" });
+  });
+});
+
 
 
 // Update Vendor Status
