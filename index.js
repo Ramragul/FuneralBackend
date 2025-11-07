@@ -10078,7 +10078,7 @@ app.post("/api/schedule/generate", async (req, res) => {
   try {
     await connection.beginTransaction();
 
-    // Step 1: Create customer schedule
+    // Step 1: Create customer schedules
     const [scheduleRes] = await connection.query(
       "INSERT INTO customer_schedules (booking_id, variant_code, status) VALUES (?, ?, 'draft')",
       [booking_id, package_code]
