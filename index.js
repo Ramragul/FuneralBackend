@@ -10072,35 +10072,47 @@ app.post("/api/tfc/vendor-payments", (req, res) => {
 // Schedule generation api
 
 app.post("/api/schedule/generate", async (req, res) => {
-  const { booking_id, variant_code } = req.body;
+  const { booking_id, package_code } = req.body;
   const connection = await db.getConnection();
 
   try {
     await connection.beginTransaction();
 
-    // Step 1: create schedule
-    const [result] = await connection.query(
-      "INSERT INTO customer_schedules (booking_id, variant_code) VALUES (?, ?)",
-      [booking_id, variant_code]
+    // Step 1: Create customer schedule
+    const [scheduleRes] = await connection.query(
+      "INSERT INTO customer_schedules (booking_id, variant_code, status) VALUES (?, ?, 'draft')",
+      [booking_id, package_code]
     );
-    const schedule_id = result.insertId;
 
-    // Step 2: clone events into schedule_tasks
+    const schedule_id = scheduleRes.insertId;
+
+    // Step 2: Clone package events
     const [events] = await connection.query(
       "SELECT * FROM package_events WHERE package_code = ? ORDER BY sequence ASC",
-      [variant_code]
+      [package_code]
     );
 
     for (const e of events) {
       await connection.query(
-        `INSERT INTO schedule_tasks (schedule_id, template_event_id, action_item, vendor_type)
-         VALUES (?, ?, ?, ?)`,
+        `INSERT INTO schedule_tasks (schedule_id, template_event_id, action_item, vendor_type, status)
+         VALUES (?, ?, ?, ?, 'pending')`,
         [schedule_id, e.id, e.event_name, e.vendor_type]
       );
     }
 
+    // Step 3: Mark service_booking as schedule_created
+    await connection.query(
+      "UPDATE service_bookings SET schedule_created = 1 WHERE id = ?",
+      [booking_id]
+    );
+
     await connection.commit();
-    res.status(201).json({ success: true, schedule_id });
+
+    res.status(201).json({
+      success: true,
+      schedule_id,
+      message: "Schedule created successfully"
+    });
   } catch (error) {
     await connection.rollback();
     console.error("Error generating schedule:", error);
@@ -10109,6 +10121,7 @@ app.post("/api/schedule/generate", async (req, res) => {
     connection.release();
   }
 });
+
 
 // Fetch Schedule API , Consultant to add timings
 
@@ -10166,6 +10179,30 @@ app.patch("/api/schedule/submit/:schedule_id", async (req, res) => {
   }
 });
 
+// Get Un Assigned booking for schedule generation
+
+app.get("/api/bookings/unassigned", async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT sb.id AS booking_id,
+             sb.order_id,
+             sb.package_code,
+             sb.service_date,
+             sb.address,
+             o.customer_name,
+             o.customer_phone
+      FROM service_bookings sb
+      JOIN orders o ON o.id = sb.order_id
+      WHERE sb.schedule_created = 0
+      ORDER BY sb.service_date DESC
+    `);
+
+    res.json({ success: true, bookings: rows });
+  } catch (error) {
+    console.error("Error fetching unassigned bookings:", error);
+    res.status(500).json({ success: false, message: "Failed to load unassigned bookings" });
+  }
+});
 
 
 
