@@ -10069,6 +10069,106 @@ app.post("/api/tfc/vendor-payments", (req, res) => {
 
 
 
+// Schedule generation api
+
+app.post("/api/schedule/generate", async (req, res) => {
+  const { booking_id, variant_code } = req.body;
+  const connection = await db.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    // Step 1: create schedule
+    const [result] = await connection.query(
+      "INSERT INTO customer_schedules (booking_id, variant_code) VALUES (?, ?)",
+      [booking_id, variant_code]
+    );
+    const schedule_id = result.insertId;
+
+    // Step 2: clone events into schedule_tasks
+    const [events] = await connection.query(
+      "SELECT * FROM package_events WHERE package_code = ? ORDER BY sequence ASC",
+      [variant_code]
+    );
+
+    for (const e of events) {
+      await connection.query(
+        `INSERT INTO schedule_tasks (schedule_id, template_event_id, action_item, vendor_type)
+         VALUES (?, ?, ?, ?)`,
+        [schedule_id, e.id, e.event_name, e.vendor_type]
+      );
+    }
+
+    await connection.commit();
+    res.status(201).json({ success: true, schedule_id });
+  } catch (error) {
+    await connection.rollback();
+    console.error("Error generating schedule:", error);
+    res.status(500).json({ success: false, message: "Schedule generation failed" });
+  } finally {
+    connection.release();
+  }
+});
+
+// Fetch Schedule API , Consultant to add timings
+
+app.get("/api/schedule/:schedule_id", async (req, res) => {
+  const { schedule_id } = req.params;
+  try {
+    const [tasks] = await db.query(
+      `SELECT id, action_item, vendor_type, vendor_id, scheduled_date, scheduled_time, status 
+       FROM schedule_tasks WHERE schedule_id = ? ORDER BY id ASC`,
+      [schedule_id]
+    );
+    res.json({ success: true, tasks });
+  } catch (error) {
+    console.error("Error fetching schedule:", error);
+    res.status(500).json({ success: false, message: "Failed to fetch schedule" });
+  }
+});
+
+
+// update schedule api - assign vendors
+
+app.patch("/api/schedule/update-task/:task_id", async (req, res) => {
+  const { task_id } = req.params;
+  const { vendor_id, scheduled_date, scheduled_time } = req.body;
+
+  try {
+    await db.query(
+      `UPDATE schedule_tasks 
+       SET vendor_id = ?, scheduled_date = ?, scheduled_time = ?, status = 'scheduled' 
+       WHERE id = ?`,
+      [vendor_id, scheduled_date, scheduled_time, task_id]
+    );
+
+    res.json({ success: true, message: "Task updated successfully" });
+  } catch (error) {
+    console.error("Error updating task:", error);
+    res.status(500).json({ success: false, message: "Failed to update task" });
+  }
+});
+
+
+// Schedule submission for customer approval
+
+app.patch("/api/schedule/submit/:schedule_id", async (req, res) => {
+  const { schedule_id } = req.params;
+  try {
+    await db.query(
+      `UPDATE customer_schedules SET status = 'pending_approval' WHERE id = ?`,
+      [schedule_id]
+    );
+    res.json({ success: true, message: "Schedule submitted for approval" });
+  } catch (error) {
+    console.error("Error submitting schedule:", error);
+    res.status(500).json({ success: false, message: "Failed to submit schedule" });
+  }
+});
+
+
+
+
 // -------------------- The Funeral Company API End -----------------------
 
 
