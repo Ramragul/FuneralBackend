@@ -8232,7 +8232,7 @@ function rollback(con, res, msg, err) {
 
 // POST /api/services/book
 app.post('/api/services/book', (req, res) => {
-  const { customer, packageCode, services = [], serviceDate, pickupLocation, dropLocation, notes, address } = req.body;
+  const { customer, packageCode, services = [], serviceDate, pickupLocation, dropLocation, notes, address, city, pincode } = req.body;
 
   // basic validation
   if ((!packageCode && (!Array.isArray(services) || services.length === 0)) || !serviceDate || !customer?.phone) {
@@ -8405,9 +8405,9 @@ app.post('/api/services/book', (req, res) => {
                   if (err) return rollback(con, res, 'Order items insert failed', err);
 
                   con.query(
-                    `INSERT INTO service_bookings (order_id, package_code, service_date, address, pickup_location, drop_location, notes)
-                     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                    [orderId, packageCodeForBooking || null, serviceDate, address || null, pickupLocation || null, dropLocation || null, notes || null],
+                    `INSERT INTO service_bookings (order_id, package_code, service_date, address, city, pincode, pickup_location, drop_location, notes)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [orderId, packageCodeForBooking || null, serviceDate, address || null, city || null, pincode || null, pickupLocation || null, dropLocation || null, notes || null],
                     (err) => {
                       if (err) return rollback(con, res, 'Service booking insert failed', err);
 
@@ -10220,41 +10220,41 @@ app.get("/api/schedule/:schedule_id", (req, res) => {
 
 // update schedule api - assign vendors
 
-app.patch("/api/schedule/update-task/:task_id", (req, res) => {
-  const { task_id } = req.params;
-  const { vendor_id, scheduled_date, scheduled_time } = req.body;
-  const con = dbConnection();
+// app.patch("/api/schedule/update-task/:task_id", (req, res) => {
+//   const { task_id } = req.params;
+//   const { vendor_id, scheduled_date, scheduled_time } = req.body;
+//   const con = dbConnection();
 
-  const sql = `
-    UPDATE schedule_tasks 
-    SET vendor_id = ?, scheduled_date = ?, scheduled_time = ?, status = 'scheduled'
-    WHERE id = ?
-  `;
+//   const sql = `
+//     UPDATE schedule_tasks 
+//     SET vendor_id = ?, scheduled_date = ?, scheduled_time = ?, status = 'scheduled'
+//     WHERE id = ?
+//   `;
 
-  con.query(sql, [vendor_id, scheduled_date, scheduled_time, task_id], (err, result) => {
-    if (err) {
-      console.error("Error updating task:", err);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to update task",
-        error: err.message,
-      });
-    }
+//   con.query(sql, [vendor_id, scheduled_date, scheduled_time, task_id], (err, result) => {
+//     if (err) {
+//       console.error("Error updating task:", err);
+//       return res.status(500).json({
+//         success: false,
+//         message: "Failed to update task",
+//         error: err.message,
+//       });
+//     }
 
-    // Optional: check if any rows actually updated
-    if (result.affectedRows === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "No matching task found to update",
-      });
-    }
+//     // Optional: check if any rows actually updated
+//     if (result.affectedRows === 0) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "No matching task found to update",
+//       });
+//     }
 
-    res.json({
-      success: true,
-      message: "Task updated successfully",
-    });
-  });
-});
+//     res.json({
+//       success: true,
+//       message: "Task updated successfully",
+//     });
+//   });
+// });
 
 
 
@@ -10345,6 +10345,127 @@ app.get('/api/bookings/unassigned', (req, res) => {
     }
 
     res.json({ success: true, bookings: results });
+  });
+});
+
+
+//Backend: return schedule tasks and booking city (one call)
+// GET /api/schedule/:schedule_id/details
+app.get("/api/schedule/:schedule_id/details", (req, res) => {
+  const { schedule_id } = req.params;
+  const con = dbConnection();
+
+  const sql = `
+    SELECT 
+      st.id, st.action_item, st.vendor_type, st.vendor_id, st.scheduled_date, st.scheduled_time, st.status,
+      sb.city AS booking_city
+    FROM schedule_tasks st
+    JOIN customer_schedules cs ON cs.id = st.schedule_id
+    JOIN service_bookings sb ON sb.id = cs.booking_id
+    WHERE st.schedule_id = ?
+    ORDER BY st.id ASC
+  `;
+
+  con.query(sql, [schedule_id], (err, rows) => {
+    if (err) {
+      console.error("Error fetching schedule details:", err);
+      return res.status(500).json({ success: false, message: "Failed to fetch schedule details" });
+    }
+    const booking_city = rows.length ? rows[0].booking_city : null;
+    const tasks = rows.map(r => ({
+      id: r.id,
+      action_item: r.action_item,
+      vendor_type: r.vendor_type,
+      vendor_id: r.vendor_id,
+      scheduled_date: r.scheduled_date,
+      scheduled_time: r.scheduled_time,
+      status: r.status
+    }));
+    res.json({ success: true, booking_city, tasks });
+  });
+});
+
+
+// Backend: eligible vendors API (type + city aware)
+
+// GET /api/vendors/eligible?schedule_id=123&vendor_type=florist
+app.get("/api/vendors/eligible", (req, res) => {
+  const { schedule_id, vendor_type } = req.query;
+  if (!schedule_id || !vendor_type) {
+    return res.status(400).json({ success: false, message: "schedule_id and vendor_type are required" });
+  }
+  const con = dbConnection();
+
+  const sql = `
+    SELECT v.*
+    FROM vendors v
+    JOIN customer_schedules cs ON cs.id = ?
+    JOIN service_bookings sb ON sb.id = cs.booking_id
+    WHERE v.status = 'active'
+      AND LOWER(sb.city) = LOWER(COALESCE(v.city, ''))  -- strict city match
+      AND CONCAT(',', LOWER(REPLACE(v.type,' ','')), ',') LIKE CONCAT('%,', LOWER(REPLACE(?, ' ', '')), ',%')
+    ORDER BY v.rating DESC, v.name ASC
+  `;
+
+  con.query(sql, [schedule_id, vendor_type], (err, rows) => {
+    if (err) {
+      console.error("Error fetching eligible vendors:", err);
+      return res.status(500).json({ success: false, message: "Failed to fetch vendors" });
+    }
+    res.json({ success: true, vendors: rows });
+  });
+});
+
+
+// Backend: update task — support assign and unassign
+
+app.patch("/api/schedule/update-task/:task_id", (req, res) => {
+  const { task_id } = req.params;
+  let { vendor_id, scheduled_date, scheduled_time } = req.body;
+  const con = dbConnection();
+
+  const isUnassign = vendor_id === null || vendor_id === undefined || vendor_id === "" || vendor_id === "null";
+
+  const sql = isUnassign ? `
+    UPDATE schedule_tasks 
+    SET vendor_id = NULL, status = 'pending',
+        scheduled_date = ?, scheduled_time = ?
+    WHERE id = ?
+  ` : `
+    UPDATE schedule_tasks 
+    SET vendor_id = ?, scheduled_date = ?, scheduled_time = ?, status = 'scheduled'
+    WHERE id = ?
+  `;
+
+  const params = isUnassign
+    ? [scheduled_date || null, scheduled_time || null, task_id]
+    : [vendor_id, scheduled_date || null, scheduled_time || null, task_id];
+
+  con.query(sql, params, (err, result) => {
+    if (err) {
+      console.error("Error updating task:", err);
+      return res.status(500).json({ success: false, message: "Failed to update task", error: err.message });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: "No matching task found to update" });
+    }
+    res.json({ success: true, message: isUnassign ? "Vendor unassigned" : "Task updated successfully" });
+  });
+});
+
+
+// Frontend: filter vendors per row by type + city (2 ways)
+
+// GET /api/vendors/by-city/:city
+app.get("/api/vendors/by-city/:city", (req, res) => {
+  const con = dbConnection();
+  con.query(`
+    SELECT * FROM vendors 
+    WHERE status='active' AND LOWER(city)=LOWER(?)
+    ORDER BY rating DESC, name ASC
+  `, [req.params.city], (err, rows) => {
+    if (err) return res.status(500).json({ success:false, message:"Failed to fetch vendors" });
+    res.json({ success:true, vendors: rows });
   });
 });
 
