@@ -10473,8 +10473,55 @@ app.get("/api/vendors/by-city/:city", (req, res) => {
 
 // Client Search — Find Schedules by Mobile or Email
 
+// app.post("/api/client/find-schedules", (req, res) => {
+//   const { contact } = req.body;
+//   if (!contact) {
+//     return res.status(400).json({
+//       success: false,
+//       message: "Contact (mobile/email) is required",
+//     });
+//   }
+
+//   const con = dbConnection();
+//   const sql = `
+//     SELECT 
+//       cs.id AS schedule_id,
+//       sb.city,
+//       sb.service_date,
+//       cs.status
+//     FROM customer_schedules cs
+//     JOIN service_bookings sb ON sb.id = cs.booking_id
+//     JOIN orders o ON o.id = sb.order_id
+//     WHERE o.customer_phone = ? OR o.customer_email = ?
+//     ORDER BY sb.service_date DESC
+//   `;
+
+//   con.query(sql, [contact, contact], (err, rows) => {
+//     if (err) {
+//       console.error("❌ Error fetching client schedules:", err);
+//       return res.status(500).json({
+//         success: false,
+//         message: "Database error while fetching schedules",
+//       });
+//     }
+
+//     if (!rows.length) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "No schedules found for the provided contact",
+//       });
+//     }
+
+//     res.json({ success: true, schedules: rows });
+//   });
+// });
+
+
+// Version 2 
+
 app.post("/api/client/find-schedules", (req, res) => {
   const { contact } = req.body;
+
   if (!contact) {
     return res.status(400).json({
       success: false,
@@ -10483,6 +10530,7 @@ app.post("/api/client/find-schedules", (req, res) => {
   }
 
   const con = dbConnection();
+
   const sql = `
     SELECT 
       cs.id AS schedule_id,
@@ -10492,7 +10540,8 @@ app.post("/api/client/find-schedules", (req, res) => {
     FROM customer_schedules cs
     JOIN service_bookings sb ON sb.id = cs.booking_id
     JOIN orders o ON o.id = sb.order_id
-    WHERE o.customer_phone = ? OR o.customer_email = ?
+    JOIN customers c ON c.phone = o.customer_phone
+    WHERE c.phone = ? OR c.email = ?
     ORDER BY sb.service_date DESC
   `;
 
