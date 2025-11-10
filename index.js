@@ -10438,7 +10438,7 @@ app.patch("/api/schedule/update-task/:task_id", (req, res) => {
   `;
 
   const params = isUnassign
-    ? [scheduled_date || null, scheduled_time || null, task_id]
+    ? [null, null, task_id]
     : [vendor_id, scheduled_date || null, scheduled_time || null, task_id];
 
   con.query(sql, params, (err, result) => {
