@@ -8375,7 +8375,7 @@ app.post('/api/services/book', (req, res) => {
                 price: unitPrice,
                 quantity: qty,
                 subtotal,
-                type:pkg.name,
+                serviceName:pkg.name,
                 variant : variant.variant_code || variant.lable
               });
             }
@@ -8395,11 +8395,11 @@ app.post('/api/services/book', (req, res) => {
               const orderId = orderRes.insertId;
 
               const itemInserts = items.map(it => [
-                orderId, 'service', it.code, it.name, it.type, it.variant, it.price, it.quantity, it.subtotal
+                orderId, 'service', it.code, it.name, it.serviceName, it.variant, it.price, it.quantity, it.subtotal
               ]);
 
               con.query(
-                'INSERT INTO order_items (order_id, item_type, item_ref, name, type, variant, unit_price, quantity, subtotal) VALUES ?',
+                'INSERT INTO order_items (order_id, item_type, item_ref, name, serviceName, variant, unit_price, quantity, subtotal) VALUES ?',
                 [itemInserts],
                 (err) => {
                   if (err) return rollback(con, res, 'Order items insert failed', err);
