@@ -7838,8 +7838,8 @@ app.post('/api/coffins/purchase', (req, res) => {
 
         // Insert into orders
         con.query(
-          'INSERT INTO orders (customer_id, order_type, total_price, status, payment_status) VALUES (?, ?, ?, ?, ?)',
-          [customerId, 'product', totalPrice, 'pending', 'unpaid'],
+          'INSERT INTO orders (customer_id, order_type, total_price, status, payment_status, customer_name, customer_phone) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          [customerId, 'product', totalPrice, 'pending', 'unpaid' , customer.name, customer.phone],
           (err, orderRes) => {
             if (err) return rollback(con, res, 'Order insert failed', err);
             const orderId = orderRes.insertId;
@@ -8386,8 +8386,8 @@ app.post('/api/services/book', (req, res) => {
         // createOrder inserts into orders, order_items, service_bookings
         function createOrder(customerId, items, totalPrice, packageCodeForBooking = null) {
           con.query(
-            'INSERT INTO orders (customer_id, order_type, total_price, status, payment_status) VALUES (?, ?, ?, ?, ?)',
-            [customerId, 'service', totalPrice, 'pending', 'unpaid'],
+            'INSERT INTO orders (customer_id, order_type, total_price, status, payment_status , customer_name, customer_phone) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [customerId, 'service', totalPrice, 'pending', 'unpaid', customer.name, customer.phone],
             (err, orderRes) => {
               if (err) return rollback(con, res, 'Order insert failed', err);
               const orderId = orderRes.insertId;
