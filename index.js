@@ -10071,142 +10071,285 @@ app.post("/api/tfc/vendor-payments", (req, res) => {
 
 // Schedule generation api
 
-app.post("/api/schedule/generate", async (req, res) => {
+app.post("/api/schedule/generate", (req, res) => {
   const { booking_id, package_code } = req.body;
-  const connection = await db.getConnection();
+  const con = dbConnection();
 
-  try {
-    await connection.beginTransaction();
-
-    // Step 1: Create customer schedules
-    const [scheduleRes] = await connection.query(
-      "INSERT INTO customer_schedules (booking_id, variant_code, status) VALUES (?, ?, 'draft')",
-      [booking_id, package_code]
-    );
-
-    const schedule_id = scheduleRes.insertId;
-
-    // Step 2: Clone package events
-    const [events] = await connection.query(
-      "SELECT * FROM package_events WHERE package_code = ? ORDER BY sequence ASC",
-      [package_code]
-    );
-
-    for (const e of events) {
-      await connection.query(
-        `INSERT INTO schedule_tasks (schedule_id, template_event_id, action_item, vendor_type, status)
-         VALUES (?, ?, ?, ?, 'pending')`,
-        [schedule_id, e.id, e.event_name, e.vendor_type]
-      );
+  con.beginTransaction((err) => {
+    if (err) {
+      console.error("Transaction start error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to start transaction",
+      });
     }
 
-    // Step 3: Mark service_booking as schedule_created
-    await connection.query(
-      "UPDATE service_bookings SET schedule_created = 1 WHERE id = ?",
-      [booking_id]
-    );
+    // Step 1️⃣ - Insert into customer_schedules
+    const insertScheduleSql = `
+      INSERT INTO customer_schedules (booking_id, variant_code, status)
+      VALUES (?, ?, 'draft')
+    `;
 
-    await connection.commit();
+    con.query(insertScheduleSql, [booking_id, package_code], (err, scheduleResult) => {
+      if (err) {
+        return con.rollback(() => {
+          console.error("Error inserting schedule:", err);
+          res.status(500).json({
+            success: false,
+            message: "Failed to create schedule",
+            error: err.message,
+          });
+        });
+      }
 
-    res.status(201).json({
-      success: true,
-      schedule_id,
-      message: "Schedule created successfully"
+      const schedule_id = scheduleResult.insertId;
+
+      // Step 2️⃣ - Get package events
+      const selectEventsSql = `
+        SELECT * FROM package_events WHERE package_code = ? ORDER BY sequence ASC
+      `;
+
+      con.query(selectEventsSql, [package_code], (err, events) => {
+        if (err) {
+          return con.rollback(() => {
+            console.error("Error fetching package events:", err);
+            res.status(500).json({
+              success: false,
+              message: "Failed to fetch package events",
+              error: err.message,
+            });
+          });
+        }
+
+        if (!events || events.length === 0) {
+          return con.rollback(() => {
+            res.status(400).json({
+              success: false,
+              message: "No events found for the given package",
+            });
+          });
+        }
+
+        // Step 3️⃣ - Insert cloned events into schedule_tasks
+        const insertTaskSql = `
+          INSERT INTO schedule_tasks 
+          (schedule_id, template_event_id, action_item, vendor_type, status)
+          VALUES ?
+        `;
+
+        const taskValues = events.map((e) => [
+          schedule_id,
+          e.id,
+          e.event_name,
+          e.vendor_type,
+          "pending",
+        ]);
+
+        con.query(insertTaskSql, [taskValues], (err) => {
+          if (err) {
+            return con.rollback(() => {
+              console.error("Error inserting schedule tasks:", err);
+              res.status(500).json({
+                success: false,
+                message: "Failed to insert schedule tasks",
+                error: err.message,
+              });
+            });
+          }
+
+          // Step 4️⃣ - Mark service_booking as schedule_created
+          const updateBookingSql = `
+            UPDATE service_bookings SET schedule_created = 1 WHERE id = ?
+          `;
+
+          con.query(updateBookingSql, [booking_id], (err) => {
+            if (err) {
+              return con.rollback(() => {
+                console.error("Error updating booking:", err);
+                res.status(500).json({
+                  success: false,
+                  message: "Failed to update booking status",
+                  error: err.message,
+                });
+              });
+            }
+
+            // Step 5️⃣ - Commit Transaction
+            con.commit((err) => {
+              if (err) {
+                return con.rollback(() => {
+                  console.error("Commit error:", err);
+                  res.status(500).json({
+                    success: false,
+                    message: "Failed to commit transaction",
+                    error: err.message,
+                  });
+                });
+              }
+
+              res.status(201).json({
+                success: true,
+                schedule_id,
+                message: "Schedule created successfully",
+              });
+            });
+          });
+        });
+      });
     });
-  } catch (error) {
-    await connection.rollback();
-    console.error("Error generating schedule:", error);
-    res.status(500).json({ success: false, message: "Schedule generation failed" });
-  } finally {
-    connection.release();
-  }
+  });
 });
+
 
 
 // Fetch Schedule API , Consultant to add timings
 
-app.get("/api/schedule/:schedule_id", async (req, res) => {
+app.get("/api/schedule/:schedule_id", (req, res) => {
   const { schedule_id } = req.params;
   const con = dbConnection();
-  try {
-    const [tasks] = await con.query(
-      `SELECT id, action_item, vendor_type, vendor_id, scheduled_date, scheduled_time, status 
-       FROM schedule_tasks WHERE schedule_id = ? ORDER BY id ASC`,
-      [schedule_id]
-    );
-    res.json({ success: true, tasks });
-  } catch (error) {
-    console.error("Error fetching schedule:", error);
-    res.status(500).json({ success: false, message: "Failed to fetch schedule" });
-  }
+
+  const sql = `
+    SELECT 
+      id, 
+      action_item, 
+      vendor_type, 
+      vendor_id, 
+      scheduled_date, 
+      scheduled_time, 
+      status 
+    FROM schedule_tasks 
+    WHERE schedule_id = ? 
+    ORDER BY id ASC
+  `;
+
+  con.query(sql, [schedule_id], (err, results) => {
+    if (err) {
+      console.error("Error fetching schedule:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch schedule",
+        error: err.message,
+      });
+    }
+
+    res.json({ success: true, tasks: results });
+  });
 });
+
 
 
 // update schedule api - assign vendors
 
-app.patch("/api/schedule/update-task/:task_id", async (req, res) => {
+app.patch("/api/schedule/update-task/:task_id", (req, res) => {
   const { task_id } = req.params;
   const { vendor_id, scheduled_date, scheduled_time } = req.body;
   const con = dbConnection();
 
-  try {
-    await con.query(
-      `UPDATE schedule_tasks 
-       SET vendor_id = ?, scheduled_date = ?, scheduled_time = ?, status = 'scheduled' 
-       WHERE id = ?`,
-      [vendor_id, scheduled_date, scheduled_time, task_id]
-    );
+  const sql = `
+    UPDATE schedule_tasks 
+    SET vendor_id = ?, scheduled_date = ?, scheduled_time = ?, status = 'scheduled'
+    WHERE id = ?
+  `;
 
-    res.json({ success: true, message: "Task updated successfully" });
-  } catch (error) {
-    console.error("Error updating task:", error);
-    res.status(500).json({ success: false, message: "Failed to update task" });
-  }
+  con.query(sql, [vendor_id, scheduled_date, scheduled_time, task_id], (err, result) => {
+    if (err) {
+      console.error("Error updating task:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to update task",
+        error: err.message,
+      });
+    }
+
+    // Optional: check if any rows actually updated
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No matching task found to update",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Task updated successfully",
+    });
+  });
 });
+
 
 
 // Schedule submission for customer approval
 
-app.patch("/api/schedule/submit/:schedule_id", async (req, res) => {
+app.patch("/api/schedule/submit/:schedule_id", (req, res) => {
   const { schedule_id } = req.params;
   const con = dbConnection();
-  try {
-    await con.query(
-      `UPDATE customer_schedules SET status = 'pending_approval' WHERE id = ?`,
-      [schedule_id]
-    );
-    res.json({ success: true, message: "Schedule submitted for approval" });
-  } catch (error) {
-    console.error("Error submitting schedule:", error);
-    res.status(500).json({ success: false, message: "Failed to submit schedule" });
-  }
+
+  const sql = `
+    UPDATE customer_schedules 
+    SET status = 'pending_approval' 
+    WHERE id = ?
+  `;
+
+  con.query(sql, [schedule_id], (err, result) => {
+    if (err) {
+      console.error("Error submitting schedule:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to submit schedule",
+        error: err.message,
+      });
+    }
+
+    // Optional: check if any rows were affected
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No schedule found with that ID",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Schedule submitted for approval",
+    });
+  });
 });
+
 
 // Get Un Assigned booking for schedule generation
 
-app.get("/api/bookings/unassigned", async (req, res) => {
+app.get('/api/bookings/unassigned', (req, res) => {
   const con = dbConnection();
-  try {
-    const [rows] = await con.query(`
-      SELECT sb.id AS booking_id,
-             sb.order_id,
-             sb.package_code,
-             sb.service_date,
-             sb.address,
-             o.customer_name,
-             o.customer_phone
-      FROM service_bookings sb
-      JOIN orders o ON o.id = sb.order_id
-      WHERE sb.schedule_created = 0
-      ORDER BY sb.service_date DESC
-    `);
 
-    res.json({ success: true, bookings: rows });
-  } catch (error) {
-    console.error("Error fetching unassigned bookings:", error);
-    res.status(500).json({ success: false, message: "Failed to load unassigned bookings" });
-  }
+  const sql = `
+    SELECT 
+      sb.id AS booking_id,
+      sb.order_id,
+      sb.package_code,
+      sb.service_date,
+      sb.address,
+      o.customer_name,
+      o.customer_phone
+    FROM service_bookings sb
+    JOIN orders o ON o.id = sb.order_id
+    WHERE sb.schedule_created = 0
+    ORDER BY sb.service_date DESC
+  `;
+
+  con.query(sql, (err, results) => {
+    if (err) {
+      console.error('Error fetching unassigned bookings:', err);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to load unassigned bookings',
+        error: err.message,
+      });
+    }
+
+    res.json({ success: true, bookings: results });
+  });
 });
+
 
 
 
