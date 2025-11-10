@@ -10186,6 +10186,7 @@ app.post("/api/schedule/generate", (req, res) => {
 app.get("/api/schedule/:schedule_id", (req, res) => {
   const { schedule_id } = req.params;
   const con = dbConnection();
+  console.log("Schuedle ID from params" +schedule_id);
 
   const sql = `
     SELECT 
