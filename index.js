@@ -10300,20 +10300,38 @@ app.patch("/api/schedule/submit/:schedule_id", (req, res) => {
 app.get('/api/bookings/unassigned', (req, res) => {
   const con = dbConnection();
 
+  // const sql = `
+  //   SELECT 
+  //     sb.id AS booking_id,
+  //     sb.order_id,
+  //     sb.package_code,
+  //     sb.service_date,
+  //     sb.address,
+  //     o.customer_name,
+  //     o.customer_phone
+  //   FROM service_bookings sb
+  //   JOIN orders o ON o.id = sb.order_id
+  //   WHERE sb.schedule_created = 0
+  //   ORDER BY sb.service_date DESC
+  // `;
+
   const sql = `
-    SELECT 
-      sb.id AS booking_id,
-      sb.order_id,
-      sb.package_code,
-      sb.service_date,
-      sb.address,
-      o.customer_name,
-      o.customer_phone
-    FROM service_bookings sb
-    JOIN orders o ON o.id = sb.order_id
-    WHERE sb.schedule_created = 0
-    ORDER BY sb.service_date DESC
-  `;
+  SELECT 
+    sb.id AS booking_id,
+    sb.order_id,
+    sb.package_code,
+    sb.service_date,
+    sb.address,
+    o.customer_name,
+    o.customer_phone,
+    oi.package_variant
+  FROM service_bookings sb
+  JOIN orders o ON o.id = sb.order_id
+  JOIN order_items oi ON oi.order_id = o.id
+  WHERE sb.schedule_created = 0
+  ORDER BY sb.service_date DESC
+`;
+
 
   con.query(sql, (err, results) => {
     if (err) {
