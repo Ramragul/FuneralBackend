@@ -10127,8 +10127,9 @@ app.post("/api/schedule/generate", async (req, res) => {
 
 app.get("/api/schedule/:schedule_id", async (req, res) => {
   const { schedule_id } = req.params;
+  const con = dbConnection();
   try {
-    const [tasks] = await db.query(
+    const [tasks] = await con.query(
       `SELECT id, action_item, vendor_type, vendor_id, scheduled_date, scheduled_time, status 
        FROM schedule_tasks WHERE schedule_id = ? ORDER BY id ASC`,
       [schedule_id]
@@ -10146,9 +10147,10 @@ app.get("/api/schedule/:schedule_id", async (req, res) => {
 app.patch("/api/schedule/update-task/:task_id", async (req, res) => {
   const { task_id } = req.params;
   const { vendor_id, scheduled_date, scheduled_time } = req.body;
+  const con = dbConnection();
 
   try {
-    await db.query(
+    await con.query(
       `UPDATE schedule_tasks 
        SET vendor_id = ?, scheduled_date = ?, scheduled_time = ?, status = 'scheduled' 
        WHERE id = ?`,
@@ -10167,8 +10169,9 @@ app.patch("/api/schedule/update-task/:task_id", async (req, res) => {
 
 app.patch("/api/schedule/submit/:schedule_id", async (req, res) => {
   const { schedule_id } = req.params;
+  const con = dbConnection();
   try {
-    await db.query(
+    await con.query(
       `UPDATE customer_schedules SET status = 'pending_approval' WHERE id = ?`,
       [schedule_id]
     );
@@ -10182,8 +10185,9 @@ app.patch("/api/schedule/submit/:schedule_id", async (req, res) => {
 // Get Un Assigned booking for schedule generation
 
 app.get("/api/bookings/unassigned", async (req, res) => {
+  const con = dbConnection();
   try {
-    const [rows] = await db.query(`
+    const [rows] = await con.query(`
       SELECT sb.id AS booking_id,
              sb.order_id,
              sb.package_code,
