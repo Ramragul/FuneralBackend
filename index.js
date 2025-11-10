@@ -10471,6 +10471,97 @@ app.get("/api/vendors/by-city/:city", (req, res) => {
 
 
 
+// Client Search — Find Schedules by Mobile or Email
+
+app.post("/api/client/find-schedules", (req, res) => {
+  const { contact } = req.body;
+  if (!contact) {
+    return res.status(400).json({
+      success: false,
+      message: "Contact (mobile/email) is required",
+    });
+  }
+
+  const con = dbConnection();
+  const sql = `
+    SELECT 
+      cs.id AS schedule_id,
+      sb.city,
+      sb.service_date,
+      cs.status
+    FROM customer_schedules cs
+    JOIN service_bookings sb ON sb.id = cs.booking_id
+    JOIN orders o ON o.id = sb.order_id
+    WHERE o.customer_phone = ? OR o.customer_email = ?
+    ORDER BY sb.service_date DESC
+  `;
+
+  con.query(sql, [contact, contact], (err, rows) => {
+    if (err) {
+      console.error("❌ Error fetching client schedules:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Database error while fetching schedules",
+      });
+    }
+
+    if (!rows.length) {
+      return res.status(404).json({
+        success: false,
+        message: "No schedules found for the provided contact",
+      });
+    }
+
+    res.json({ success: true, schedules: rows });
+  });
+});
+
+
+
+// Client Schedule Detail View (Safe Fields Only)
+
+
+app.get("/api/client/schedule/:schedule_id", (req, res) => {
+  const { schedule_id } = req.params;
+  const con = dbConnection();
+
+  const sql = `
+    SELECT 
+      st.action_item AS event,
+      DATE_FORMAT(st.scheduled_date, '%Y-%m-%d') AS date,
+      TIME_FORMAT(st.scheduled_time, '%H:%i') AS time
+    FROM schedule_tasks st
+    WHERE st.schedule_id = ?
+    ORDER BY st.scheduled_date, st.scheduled_time
+  `;
+
+  con.query(sql, [schedule_id], (err, rows) => {
+    if (err) {
+      console.error("❌ Error fetching schedule details:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Database error while loading schedule details",
+      });
+    }
+
+    if (!rows.length) {
+      return res.status(404).json({
+        success: false,
+        message: "No schedule events found",
+      });
+    }
+
+    res.json({ success: true, schedule: rows });
+  });
+});
+
+
+app.use("/api/client/*", (req, res, next) => {
+  console.log(`🔍 Client API Access: ${req.ip} - ${req.originalUrl}`);
+  next();
+});
+
+
 
 // -------------------- The Funeral Company API End -----------------------
 
