@@ -8399,7 +8399,7 @@ app.post('/api/services/book', (req, res) => {
               ]);
 
               con.query(
-                'INSERT INTO order_items (order_id, item_type, item_ref, name, serviceName, variant, unit_price, quantity, subtotal) VALUES ?',
+                'INSERT INTO order_items (order_id, item_type, item_ref, name, serviceName, package_variant, unit_price, quantity, subtotal) VALUES ?',
                 [itemInserts],
                 (err) => {
                   if (err) return rollback(con, res, 'Order items insert failed', err);
