@@ -10073,124 +10073,101 @@ app.post("/api/tfc/vendor-payments", (req, res) => {
 
 app.post("/api/schedule/generate", (req, res) => {
   const { booking_id, package_code } = req.body;
-  const con = dbConnection();
+  const pool = dbConnection();
 
-  con.beginTransaction((err) => {
+  pool.getConnection((err, con) => {
     if (err) {
-      console.error("Transaction start error:", err);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to start transaction",
-      });
+      console.error("Error getting DB connection:", err);
+      return res.status(500).json({ success: false, message: "Database connection failed" });
     }
 
-    // Step 1️⃣ - Insert into customer_schedules
-    const insertScheduleSql = `
-      INSERT INTO customer_schedules (booking_id, variant_code, status)
-      VALUES (?, ?, 'draft')
-    `;
-
-    con.query(insertScheduleSql, [booking_id, package_code], (err, scheduleResult) => {
+    con.beginTransaction((err) => {
       if (err) {
-        return con.rollback(() => {
-          console.error("Error inserting schedule:", err);
-          res.status(500).json({
-            success: false,
-            message: "Failed to create schedule",
-            error: err.message,
-          });
-        });
+        con.release();
+        console.error("Transaction start error:", err);
+        return res.status(500).json({ success: false, message: "Failed to start transaction" });
       }
 
-      const schedule_id = scheduleResult.insertId;
-
-      // Step 2️⃣ - Get package events
-      const selectEventsSql = `
-        SELECT * FROM package_events WHERE package_code = ? ORDER BY sequence ASC
+      const insertScheduleSql = `
+        INSERT INTO customer_schedules (booking_id, variant_code, status)
+        VALUES (?, ?, 'draft')
       `;
-
-      con.query(selectEventsSql, [package_code], (err, events) => {
+      con.query(insertScheduleSql, [booking_id, package_code], (err, scheduleResult) => {
         if (err) {
           return con.rollback(() => {
-            console.error("Error fetching package events:", err);
-            res.status(500).json({
-              success: false,
-              message: "Failed to fetch package events",
-              error: err.message,
-            });
+            con.release();
+            console.error("Error inserting schedule:", err);
+            res.status(500).json({ success: false, message: "Failed to create schedule" });
           });
         }
 
-        if (!events || events.length === 0) {
-          return con.rollback(() => {
-            res.status(400).json({
-              success: false,
-              message: "No events found for the given package",
-            });
-          });
-        }
-
-        // Step 3️⃣ - Insert cloned events into schedule_tasks
-        const insertTaskSql = `
-          INSERT INTO schedule_tasks 
-          (schedule_id, template_event_id, action_item, vendor_type, status)
-          VALUES ?
+        const schedule_id = scheduleResult.insertId;
+        const selectEventsSql = `
+          SELECT * FROM package_events WHERE package_code = ? ORDER BY sequence ASC
         `;
-
-        const taskValues = events.map((e) => [
-          schedule_id,
-          e.id,
-          e.event_name,
-          e.vendor_type,
-          "pending",
-        ]);
-
-        con.query(insertTaskSql, [taskValues], (err) => {
+        con.query(selectEventsSql, [package_code], (err, events) => {
           if (err) {
             return con.rollback(() => {
-              console.error("Error inserting schedule tasks:", err);
-              res.status(500).json({
-                success: false,
-                message: "Failed to insert schedule tasks",
-                error: err.message,
-              });
+              con.release();
+              console.error("Error fetching package events:", err);
+              res.status(500).json({ success: false, message: "Failed to fetch package events" });
             });
           }
 
-          // Step 4️⃣ - Mark service_booking as schedule_created
-          const updateBookingSql = `
-            UPDATE service_bookings SET schedule_created = 1 WHERE id = ?
-          `;
+          if (!events.length) {
+            return con.rollback(() => {
+              con.release();
+              res.status(400).json({ success: false, message: "No events found for package" });
+            });
+          }
 
-          con.query(updateBookingSql, [booking_id], (err) => {
+          const taskValues = events.map(e => [
+            schedule_id,
+            e.id,
+            e.event_name,
+            e.vendor_type,
+            'pending'
+          ]);
+          const insertTaskSql = `
+            INSERT INTO schedule_tasks (schedule_id, template_event_id, action_item, vendor_type, status)
+            VALUES ?
+          `;
+          con.query(insertTaskSql, [taskValues], (err) => {
             if (err) {
               return con.rollback(() => {
-                console.error("Error updating booking:", err);
-                res.status(500).json({
-                  success: false,
-                  message: "Failed to update booking status",
-                  error: err.message,
-                });
+                con.release();
+                console.error("Error inserting tasks:", err);
+                res.status(500).json({ success: false, message: "Failed to insert tasks" });
               });
             }
 
-            // Step 5️⃣ - Commit Transaction
-            con.commit((err) => {
+            const updateBookingSql = `
+              UPDATE service_bookings SET schedule_created = 1 WHERE id = ?
+            `;
+            con.query(updateBookingSql, [booking_id], (err) => {
               if (err) {
                 return con.rollback(() => {
-                  console.error("Commit error:", err);
-                  res.status(500).json({
-                    success: false,
-                    message: "Failed to commit transaction",
-                    error: err.message,
-                  });
+                  con.release();
+                  console.error("Error updating booking:", err);
+                  res.status(500).json({ success: false, message: "Failed to update booking" });
                 });
               }
 
-              res.status(201).json({
-                success: true,
-                schedule_id,
-                message: "Schedule created successfully",
+              con.commit((err) => {
+                if (err) {
+                  return con.rollback(() => {
+                    con.release();
+                    console.error("Commit error:", err);
+                    res.status(500).json({ success: false, message: "Failed to commit transaction" });
+                  });
+                }
+
+                con.release();
+                res.status(201).json({
+                  success: true,
+                  schedule_id,
+                  message: "Schedule created successfully"
+                });
               });
             });
           });
