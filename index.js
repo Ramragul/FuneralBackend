@@ -9478,7 +9478,7 @@ app.get('/api/tfc/grounds/:id', (req, res) => {
 
 // Get Unique Cities
 
-app.get('/api/tfc/grounds/cities', (req, res) => {
+app.get("/api/tfc/grounds/cities", (req, res) => {
   const con = dbConnection();
   con.query(
     "SELECT DISTINCT city FROM tfc_funeral_grounds WHERE city IS NOT NULL ORDER BY city ASC",
