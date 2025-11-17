@@ -9283,6 +9283,21 @@ app.post('/api/tfc/products/:id/images/delete', async (req, res) => {
 
 // ---- Funeral Ground Apis ----
 
+
+// Get Unique Cities
+
+app.get('/api/tfc/grounds/cities', (req, res) => {
+  const con = dbConnection();
+  con.query(
+    "SELECT DISTINCT city FROM tfc_funeral_grounds WHERE city IS NOT NULL ORDER BY city ASC",
+    (err, rows) => {
+      if (err) return res.status(500).json({ error: err.message });
+      const cities = rows.map(r => r.city);
+      res.json({ cities });
+    }
+  );
+});
+
 // --- Backend: tfc funeral grounds APIs ---
 // GET list with search/filter/pagination
 // Version 1
@@ -9476,19 +9491,7 @@ app.get('/api/tfc/grounds/:id', (req, res) => {
 });
 
 
-// Get Unique Cities
 
-app.get("/api/tfc/grounds/cities", (req, res) => {
-  const con = dbConnection();
-  con.query(
-    "SELECT DISTINCT city FROM tfc_funeral_grounds WHERE city IS NOT NULL ORDER BY city ASC",
-    (err, rows) => {
-      if (err) return res.status(500).json({ error: err.message });
-      const cities = rows.map(r => r.city);
-      res.json({ cities });
-    }
-  );
-});
 
 
 
