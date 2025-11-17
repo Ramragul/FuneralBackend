@@ -9298,11 +9298,18 @@ app.get('/api/tfc/grounds', (req, res) => {
   let where = [];
   let params = [];
 
+  // if (q) {
+  //   where.push('(name LIKE ? OR address LIKE ? OR city LIKE ?)');
+  //   const like = `%${q}%`;
+  //   params.push(like, like, like);
+  // }
+
   if (q) {
-    where.push('(name LIKE ? OR address LIKE ? OR city LIKE ?)');
+    where.push('(name LIKE ? OR address LIKE ? OR city LIKE ? OR pincode LIKE ?)');
     const like = `%${q}%`;
-    params.push(like, like, like);
+    params.push(like, like, like, like);
   }
+  
   if (city) {
     where.push('city = ?'); params.push(city);
   }
