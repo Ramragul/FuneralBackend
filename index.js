@@ -10376,17 +10376,84 @@ app.get('/api/bookings/unassigned', (req, res) => {
 
 //Backend: return schedule tasks and booking city (one call)
 // GET /api/schedule/:schedule_id/details
+
+// Version 1 : working fine
+// app.get("/api/schedule/:schedule_id/details", (req, res) => {
+//   const { schedule_id } = req.params;
+//   const con = dbConnection();
+
+//   const sql = `
+//     SELECT 
+//       st.id, st.action_item, st.vendor_type, st.vendor_id, st.scheduled_date, st.scheduled_time, st.status,
+//       sb.city AS booking_city
+//     FROM schedule_tasks st
+//     JOIN customer_schedules cs ON cs.id = st.schedule_id
+//     JOIN service_bookings sb ON sb.id = cs.booking_id
+//     WHERE st.schedule_id = ?
+//     ORDER BY st.id ASC
+//   `;
+
+//   con.query(sql, [schedule_id], (err, rows) => {
+//     if (err) {
+//       console.error("Error fetching schedule details:", err);
+//       return res.status(500).json({ success: false, message: "Failed to fetch schedule details" });
+//     }
+//     const booking_city = rows.length ? rows[0].booking_city : null;
+//     const tasks = rows.map(r => ({
+//       id: r.id,
+//       action_item: r.action_item,
+//       vendor_type: r.vendor_type,
+//       vendor_id: r.vendor_id,
+//       scheduled_date: r.scheduled_date,
+//       scheduled_time: r.scheduled_time,
+//       status: r.status
+//     }));
+//     res.json({ success: true, booking_city, tasks });
+//   });
+// });
+
+
+// Version 2 : 
+
 app.get("/api/schedule/:schedule_id/details", (req, res) => {
   const { schedule_id } = req.params;
   const con = dbConnection();
 
   const sql = `
     SELECT 
-      st.id, st.action_item, st.vendor_type, st.vendor_id, st.scheduled_date, st.scheduled_time, st.status,
-      sb.city AS booking_city
+      -- schedule tasks
+      st.id AS task_id, 
+      st.action_item, 
+      st.vendor_type, 
+      st.vendor_id, 
+      st.scheduled_date, 
+      st.scheduled_time, 
+      st.status,
+
+      -- service_bookings
+      sb.service_date,
+      sb.address AS booking_address,
+      sb.city AS booking_city,
+      sb.pincode AS booking_pincode,
+
+      -- orders
+      o.customer_name,
+      o.customer_phone,
+      o.total_price,
+      o.payment_status,
+      o.status AS order_status,
+      o.created_at AS order_created_at,
+
+      -- order_items (service details)
+      oi.serviceName,
+      oi.package_variant
+
     FROM schedule_tasks st
     JOIN customer_schedules cs ON cs.id = st.schedule_id
     JOIN service_bookings sb ON sb.id = cs.booking_id
+    JOIN orders o ON o.id = sb.order_id
+    LEFT JOIN order_items oi ON oi.order_id = o.id AND oi.item_type = 'service'
+
     WHERE st.schedule_id = ?
     ORDER BY st.id ASC
   `;
@@ -10396,9 +10463,30 @@ app.get("/api/schedule/:schedule_id/details", (req, res) => {
       console.error("Error fetching schedule details:", err);
       return res.status(500).json({ success: false, message: "Failed to fetch schedule details" });
     }
-    const booking_city = rows.length ? rows[0].booking_city : null;
+
+    if (!rows.length) {
+      return res.json({ success: true, message: "No schedule tasks found", tasks: [] });
+    }
+
+    const header = {
+      customer_name: rows[0].customer_name,
+      customer_phone: rows[0].customer_phone,
+      total_price: rows[0].total_price,
+      payment_status: rows[0].payment_status,
+      order_status: rows[0].order_status,
+      order_created_at: rows[0].order_created_at,
+
+      service_date: rows[0].service_date,
+      address: rows[0].booking_address,
+      city: rows[0].booking_city,
+      pincode: rows[0].booking_pincode,
+
+      serviceName: rows[0].serviceName,
+      package_variant: rows[0].package_variant
+    };
+
     const tasks = rows.map(r => ({
-      id: r.id,
+      id: r.task_id,
       action_item: r.action_item,
       vendor_type: r.vendor_type,
       vendor_id: r.vendor_id,
@@ -10406,9 +10494,11 @@ app.get("/api/schedule/:schedule_id/details", (req, res) => {
       scheduled_time: r.scheduled_time,
       status: r.status
     }));
-    res.json({ success: true, booking_city, tasks });
+
+    res.json({ success: true, header, tasks });
   });
 });
+
 
 
 // Backend: eligible vendors API (type + city aware)
