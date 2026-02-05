@@ -4805,6 +4805,113 @@ app.get('/api/cc/tailoring/orders', async (req, res) => {
 });
 
 
+// Tailoring Order Page (User perspective)
+
+app.get('/api/cc/tailoring/orders/active/:userId', async (req, res) => {
+  const { userId } = req.params;
+  let con;
+
+  try {
+    con = dbConnection();
+    con.connect();
+
+    const query = `
+      SELECT 
+        o.order_id,
+        o.order_date,
+        o.products_price,
+        o.security_deposit,
+        o.total_amount,
+        o.order_status,
+        o.payment_status,
+        tod.product_image_url,
+        tod.stitch_option,
+        tod.appointment_date,
+        tod.city,
+        tod.product_id
+      FROM CC_Tailoring_Orders o
+      INNER JOIN CC_Tailoring_Order_Details tod 
+        ON o.tailoring_details_id = tod.tailoring_id
+      WHERE o.user_id = ?
+      AND o.order_status NOT IN ('Completed','Cancelled')
+      ORDER BY o.order_date DESC
+    `;
+
+    const [orders] = await con.promise().query(query, [userId]);
+    res.status(200).json({ data: orders });
+
+  } catch (err) {
+    res.status(500).json({ error: 'Error fetching active orders' });
+  }
+});
+
+
+// Order History
+
+app.get('/api/cc/tailoring/orders/history/:userId', async (req, res) => {
+  let con;
+  const { userId } = req.params;
+
+  try {
+    // DB connection
+    con = dbConnection();
+    con.connect();
+  } catch (error) {
+    console.error('DB Connection Error', error);
+    return res.status(500).json({ error: 'DB Connection Error' });
+  }
+
+  try {
+    const query = `
+      SELECT 
+        o.order_id,
+        o.order_date,
+        o.products_price,
+        o.security_deposit,
+        o.total_amount,
+        o.order_status,
+        o.payment_status,
+        o.payment_type,
+        o.payment_date,
+        o.order_assignment,
+        o.partner,
+
+        tod.tailoring_id,
+        tod.name,
+        tod.phone,
+        tod.email,
+        tod.stitch_option,
+        tod.custom_design,
+        tod.product_image_url,
+        tod.address,
+        tod.city,
+        tod.pincode,
+        tod.order_notes,
+        tod.appointment_date,
+        tod.product_id
+
+      FROM CC_Tailoring_Orders o
+      INNER JOIN CC_Tailoring_Order_Details tod 
+        ON o.tailoring_details_id = tod.tailoring_id
+
+      WHERE o.user_id = ?
+      AND o.order_status IN ('Completed','Cancelled')
+
+      ORDER BY o.order_date DESC
+    `;
+
+    const [orders] = await con.promise().query(query, [userId]);
+
+    res.status(200).json({ data: orders });
+
+  } catch (error) {
+    console.error('Error fetching tailoring order history:', error);
+    res.status(500).json({ error: 'Error fetching tailoring order history' });
+  }
+});
+
+
+
 
 // Idea Park Application API's
 
