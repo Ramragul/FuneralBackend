@@ -16,6 +16,9 @@ const sharp = require('sharp');
 const nodemailer = require('nodemailer');
 const Razorpay = require("razorpay");
 
+const crypto = require("crypto");
+
+
 
 
 const xlsx = require('xlsx');
@@ -2037,6 +2040,47 @@ app.get('/api/cc/categories',(req,res) => {
 
     });
   });
+
+
+  // CC Password Reset API's
+  app.post('/api/cc/users/reset-password', async (req, res) => {
+    const { mobile, password } = req.body;
+  
+    if (!mobile || !password) {
+      return res.status(400).json({ error: 'Mobile and password required' });
+    }
+  
+    try {
+      var con = dbConnection();
+      con.connect();
+  
+      // Check if user exists
+      const checkUserQuery = 'SELECT id FROM CC_Users WHERE mobile = ?';
+      con.query(checkUserQuery, [mobile], async (err, results) => {
+        if (err) return res.status(500).json({ error: 'DB error' });
+        if (results.length === 0)
+          return res.status(404).json({ error: 'Mobile number not registered' });
+  
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(password, 10);
+  
+        const updateQuery = 'UPDATE CC_Users SET password = ? WHERE mobile = ?';
+        con.query(updateQuery, [hashedPassword, mobile], (err, result) => {
+          if (err) return res.status(500).json({ error: 'Failed to reset password' });
+  
+          res.status(200).json({ message: 'Password updated successfully' });
+        });
+      });
+    } catch (error) {
+      res.status(500).json({ error: 'Server error' });
+    }
+  });
+  
+
+
+
+
+
 
 //CC Registration API 
 
@@ -8560,7 +8604,7 @@ app.get('/api/services/list', (req, res) => {
   const params = [];
   if (category) {
     sql += ' WHERE c.code = ?';
-    params.push(category);
+    params.push(category);c
   }
 
   con.query(sql, params, (err, rows) => {
