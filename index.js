@@ -3205,6 +3205,11 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
     productImageURL,
     owningAuthority,
     productPrice,
+    totalAmount,
+    hasLining,
+    liningPrice,
+    stitchingSpeed,
+    speedPrice,
     paymentType,
   } = req.body;
 
@@ -3236,8 +3241,8 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
       // Insert tailoring details
       const tailoringQuery = `
         INSERT INTO CC_Tailoring_Order_Details 
-        (name, email, phone, stitch_option, custom_design, address, city, pincode, order_notes, appointment_date, product_id, product_image_url, partner)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (name, email, phone, stitch_option, custom_design, address, city, pincode, order_notes, appointment_date, product_id, product_image_url, partner, has_lining, lining_price, stitching_speed, speed_price)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       const tailoringValues = [
@@ -3253,7 +3258,11 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
         appointmentDate ? moment(appointmentDateIST).format("YYYY-MM-DD HH:mm:ss") : null,
         productId,
         productImageURL,
-        owningAuthority
+        owningAuthority,
+        hasLining,
+        liningPrice,
+        stitchingSpeed,
+        speedPrice
       ];
 
       con.query(tailoringQuery, tailoringValues, (err, tailoringResult) => {
@@ -3265,8 +3274,8 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
 
         // Insert order
         const orderQuery = `
-          INSERT INTO CC_Tailoring_Orders (tailoring_details_id, order_date, order_status, user_id, partner, products_price, payment_type)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO CC_Tailoring_Orders (tailoring_details_id, order_date, order_status, user_id, partner, products_price, total_amount, payment_type)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `;
         const orderValues = [
           tailoringId,
@@ -3275,6 +3284,7 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
           userId,
           owningAuthority,
           productPrice,
+          totalAmount,
           paymentType
         ];
 
