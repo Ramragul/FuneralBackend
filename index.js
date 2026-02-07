@@ -4832,13 +4832,18 @@ app.get('/api/cc/tailoring/orders/active/:userId', async (req, res) => {
         o.products_price,
         o.security_deposit,
         o.total_amount,
+        o.products_price,
         o.order_status,
         o.payment_status,
         tod.product_image_url,
         tod.stitch_option,
         tod.appointment_date,
         tod.city,
-        tod.product_id
+        tod.product_id,
+        tod.has_lining,
+        tod.lining_price,
+        tod.stitching_speed,
+        tod.speed_price
       FROM CC_Tailoring_Orders o
       INNER JOIN CC_Tailoring_Order_Details tod 
         ON o.tailoring_details_id = tod.tailoring_id
@@ -4879,6 +4884,7 @@ app.get('/api/cc/tailoring/orders/history/:userId', async (req, res) => {
         o.products_price,
         o.security_deposit,
         o.total_amount,
+        o.products_price,
         o.order_status,
         o.payment_status,
         o.payment_type,
@@ -4898,7 +4904,11 @@ app.get('/api/cc/tailoring/orders/history/:userId', async (req, res) => {
         tod.pincode,
         tod.order_notes,
         tod.appointment_date,
-        tod.product_id
+        tod.product_id,
+        tod.has_lining,
+        tod.lining_price,
+        tod.stitching_speed,
+        tod.speed_price
 
       FROM CC_Tailoring_Orders o
       INNER JOIN CC_Tailoring_Order_Details tod 
