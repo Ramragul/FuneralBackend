@@ -4931,6 +4931,92 @@ app.get('/api/cc/tailoring/orders/history/:userId', async (req, res) => {
 });
 
 
+// get Tailoring customization features
+
+app.get('/api/cc/tailoring/productDetails', (req, res) => {
+
+  var connection = dbConnection();
+  connection.connect();
+
+  const productId = req.query.productId;
+
+  if (!productId) {
+    return res.status(400).json({ error: "ProductID is required" });
+  }
+
+  console.log("Fetching Product Details for ProductID: " + productId);
+
+  // 1️⃣ Fetch product details
+  const productQuery = `
+    SELECT * FROM CC_ProductMaster
+    WHERE ProductID = ?
+    AND ProductStatus = 'Active'
+  `;
+
+  connection.query(productQuery, [productId], (err, productData) => {
+    if (err) throw err;
+
+    if (productData.length === 0) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    const product = productData[0];
+
+    // 2️⃣ Fetch customizations
+    const customizationQuery = `
+      SELECT 
+        c.CategoryID,
+        c.CategoryName,
+        pc.CustomizationID,
+        pc.CustomizationName,
+        pc.CustomizationImageURL,
+        pc.PriceAdjustment
+      FROM CC_ProductCustomization pc
+      JOIN CC_CustomizationCategory c 
+        ON pc.CategoryID = c.CategoryID
+      WHERE pc.ProductID = ?
+      AND pc.IsActive = 1
+      AND c.IsActive = 1
+      ORDER BY c.CategoryID
+    `;
+
+    connection.query(customizationQuery, [productId], (err, customizationData) => {
+      if (err) throw err;
+
+      // Group by category
+      const groupedCustomizations = {};
+
+      customizationData.forEach(item => {
+        if (!groupedCustomizations[item.CategoryID]) {
+          groupedCustomizations[item.CategoryID] = {
+            CategoryID: item.CategoryID,
+            CategoryName: item.CategoryName,
+            Options: []
+          };
+        }
+
+        groupedCustomizations[item.CategoryID].Options.push({
+          CustomizationID: item.CustomizationID,
+          CustomizationName: item.CustomizationName,
+          CustomizationImageURL: item.CustomizationImageURL,
+          PriceAdjustment: item.PriceAdjustment
+        });
+      });
+
+      res.json({
+        product,
+        customizations: Object.values(groupedCustomizations)
+      });
+
+      // connection.end(); (if you close elsewhere, leave it)
+    });
+
+  });
+
+});
+
+
+
 
 
 // Idea Park Application API's
