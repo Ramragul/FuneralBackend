@@ -3293,6 +3293,46 @@ app.post('/api/cc/tailoringOrder', async (req, res) => {
 
           orderId = orderResult.insertId;
 
+// New Changes for order customisation logic Begins
+
+        const selectedCustomizations = req.body.selectedCustomizations || [];
+
+        if (selectedCustomizations.length > 0) {
+
+          const customizationInsertQuery = `
+            INSERT INTO CC_OrderCustomization (OrderID, CustomizationID)
+            VALUES ?
+          `;
+
+          const values = selectedCustomizations.map(id => [orderId, id]);
+
+          con.query(customizationInsertQuery, [values], (err) => {
+            if (err) return rollback(con, res, "Customization insert failed", err);
+
+            finalizeOrder();
+          });
+
+        } else {
+          finalizeOrder();
+        }
+
+        function finalizeOrder() {
+          con.commit((commitErr) => {
+            if (commitErr) return rollback(con, res, "Commit failed", commitErr);
+
+            res.status(201).json({
+              message: "Tailoring order placed successfully",
+              order_id: orderId
+            });
+
+            con.release();
+          });
+        }
+
+
+// New Changes for order customisation logic Ends
+
+
           con.commit((commitErr) => {
             if (commitErr) return rollback(con, res, "Commit failed", commitErr);
 
