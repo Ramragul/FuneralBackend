@@ -3558,120 +3558,170 @@ app.get('/api/cc/mail', async (req, res) => {
  
 });
 
-app.patch('/api/orders/:orderId/update', async (req, res) => {
+// app.patch('/api/orders/:orderId/update', async (req, res) => {
 
-  const orderId = req.params.orderId;
+//   const orderId = req.params.orderId;
 
-  const {orderStatus,orderAssignment, updatedBy }= req.body;
+//   const {orderStatus,orderAssignment, updatedBy }= req.body;
 
 
-  try
-  {
-  var con = dbConnection();
-  con.connect();
-  } catch (error) {
-    console.error('DB Connection Error', error);
-    res.status(500).json({ error: 'DB Connection Error' });
-  }
+//   try
+//   {
+//   var con = dbConnection();
+//   con.connect();
+//   } catch (error) {
+//     console.error('DB Connection Error', error);
+//     res.status(500).json({ error: 'DB Connection Error' });
+//   }
 
-  //const currentDate = new Date()
+//   //const currentDate = new Date()
   
 
-  const currentDate = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+//   const currentDate = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
 
-// Convert the formatted date to YYYY-MM-DD HH:MM:SS format
-const [datePart, timePart] = currentDate.split(', ');
-const [month, day, year] = datePart.split('/');
+// // Convert the formatted date to YYYY-MM-DD HH:MM:SS format
+// const [datePart, timePart] = currentDate.split(', ');
+// const [month, day, year] = datePart.split('/');
 
-// Format the date as YYYY-MM-DD HH:MM:SS
-const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')} ${timePart}`;
+// // Format the date as YYYY-MM-DD HH:MM:SS
+// const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')} ${timePart}`;
 
-  const query = `
-  UPDATE CC_Orders 
-  SET 
-    order_assignment = ?, 
-    order_status = ?, 
-    updated_by = ?, 
-    last_updated_date = ? 
-  WHERE 
-    id = ?;
-`;
+//   const query = `
+//   UPDATE CC_Orders 
+//   SET 
+//     order_assignment = ?, 
+//     order_status = ?, 
+//     updated_by = ?, 
+//     last_updated_date = ? 
+//   WHERE 
+//     id = ?;
+// `;
 
-  con.query(query, [orderAssignment, orderStatus, updatedBy, formattedDate,orderId], (err, result) => {
-    if (err) {
-      console.error('Error updating order status:', err);
-      return res.status(205).json({ message: err });
-    }
-    // con.end();
-    res.status(201).json({ message: 'Order Status Updated Successfully' });
+//   con.query(query, [orderAssignment, orderStatus, updatedBy, formattedDate,orderId], (err, result) => {
+//     if (err) {
+//       console.error('Error updating order status:', err);
+//       return res.status(205).json({ message: err });
+//     }
+//     // con.end();
+//     res.status(201).json({ message: 'Order Status Updated Successfully' });
 
 
 
-  console.log("orderId :" +req.params.orderId)
-  console.log("orderStatus" +orderStatus + "Order Assignment" +orderAssignment)
+//   console.log("orderId :" +req.params.orderId)
+//   console.log("orderStatus" +orderStatus + "Order Assignment" +orderAssignment)
  
-});
+// });
 
-});
+// });
 
 
-// Tailoring Order Workflow updates
+// // Tailoring Order Workflow updates
+
+// app.patch('/api/tailoring/orders/:orderId/update', async (req, res) => {
+
+//   const orderId = req.params.orderId;
+
+//   const {orderStatus,orderAssignment, updatedBy }= req.body;
+
+
+//   try
+//   {
+//   var con = dbConnection();
+//   con.connect();
+//   } catch (error) {
+//     console.error('DB Connection Error', error);
+//     res.status(500).json({ error: 'DB Connection Error' });
+//   }
+
+//   //const currentDate = new Date()
+  
+
+//   const currentDate = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+
+// // Convert the formatted date to YYYY-MM-DD HH:MM:SS format
+// const [datePart, timePart] = currentDate.split(', ');
+// const [month, day, year] = datePart.split('/');
+
+// // Format the date as YYYY-MM-DD HH:MM:SS
+// const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')} ${timePart}`;
+
+//   const query = `
+//   UPDATE CC_Tailoring_Orders 
+//   SET 
+//     order_assignment = ?, 
+//     order_status = ?, 
+//     updated_by = ?, 
+//     last_updated_date = ? 
+//   WHERE 
+//     order_id = ?;
+// `;
+
+//   con.query(query, [orderAssignment, orderStatus, updatedBy, formattedDate,orderId], (err, result) => {
+//     if (err) {
+//       console.error('Error updating order status:', err);
+//       return res.status(205).json({ message: err });
+//     }
+//     // con.end();
+//     res.status(201).json({ message: 'Order Status Updated Successfully' });
+
+
+
+//   console.log("orderId :" +req.params.orderId)
+//   console.log("orderStatus" +orderStatus + "Order Assignment" +orderAssignment)
+ 
+// });
+
+// });
+
+
+const STATUS_FLOW = [
+  'Created',
+  'Processing',
+  'Stitching',
+  'Quality Check',
+  'Ready',
+  'Delivered',
+  'Completed'
+];
 
 app.patch('/api/tailoring/orders/:orderId/update', async (req, res) => {
-
+  const { orderStatus, orderAssignment, updatedBy } = req.body;
   const orderId = req.params.orderId;
 
-  const {orderStatus,orderAssignment, updatedBy }= req.body;
-
-
-  try
-  {
-  var con = dbConnection();
+  const con = dbConnection();
   con.connect();
-  } catch (error) {
-    console.error('DB Connection Error', error);
-    res.status(500).json({ error: 'DB Connection Error' });
-  }
 
-  //const currentDate = new Date()
-  
+  try {
+    const [rows] = await con.promise().query(
+      `SELECT order_status FROM CC_Tailoring_Orders WHERE order_id=?`,
+      [orderId]
+    );
 
-  const currentDate = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+    const currentStatus = rows[0].order_status;
 
-// Convert the formatted date to YYYY-MM-DD HH:MM:SS format
-const [datePart, timePart] = currentDate.split(', ');
-const [month, day, year] = datePart.split('/');
+    const currentIndex = STATUS_FLOW.indexOf(currentStatus);
+    const newIndex = STATUS_FLOW.indexOf(orderStatus);
 
-// Format the date as YYYY-MM-DD HH:MM:SS
-const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')} ${timePart}`;
-
-  const query = `
-  UPDATE CC_Tailoring_Orders 
-  SET 
-    order_assignment = ?, 
-    order_status = ?, 
-    updated_by = ?, 
-    last_updated_date = ? 
-  WHERE 
-    order_id = ?;
-`;
-
-  con.query(query, [orderAssignment, orderStatus, updatedBy, formattedDate,orderId], (err, result) => {
-    if (err) {
-      console.error('Error updating order status:', err);
-      return res.status(205).json({ message: err });
+    if (newIndex > currentIndex + 1) {
+      return res.status(400).json({
+        message: 'Cannot skip workflow stages'
+      });
     }
-    // con.end();
-    res.status(201).json({ message: 'Order Status Updated Successfully' });
 
+    await con.promise().query(
+      `UPDATE CC_Tailoring_Orders 
+       SET order_status=?, order_assignment=?, updated_by=?, last_updated_date=NOW()
+       WHERE order_id=?`,
+      [orderStatus, orderAssignment, updatedBy, orderId]
+    );
 
+    res.status(200).json({ message: 'Updated Successfully' });
 
-  console.log("orderId :" +req.params.orderId)
-  console.log("orderStatus" +orderStatus + "Order Assignment" +orderAssignment)
- 
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-});
 
 
 // app.post('/api/businessPartnerRegistration', async (req, res) => {
@@ -4865,73 +4915,42 @@ app.get('/api/cc/tailoring/orders', async (req, res) => {
 
   const { search = '', showAll = 'false' } = req.query;
 
-  const baseQuery = `
-    SELECT 
-      o.order_id,
-      o.order_date,
-      o.products_price,
-      o.security_deposit,
-      o.total_amount,
-      o.order_status,
-      o.user_id,
-      o.order_assignment,
-      o.payment_status,
-      o.payment_type,
-      tod.tailoring_id,
-      tod.name,
-      tod.email,
-      tod.phone,
-      tod.stitch_option,
-      tod.custom_design,
-      tod.product_image_url,
-      tod.address,
-      tod.city,
-      tod.pincode,
-      tod.order_notes,
-      tod.appointment_date,
-      tod.product_id,
-      tod.has_lining,
-      tod.lining_price,
-      tod.stitching_speed,
-      tod.speed_price
-    FROM CC_Tailoring_Orders o
-    INNER JOIN CC_Tailoring_Order_Details tod 
-    ON o.tailoring_details_id = tod.tailoring_id
-  `;
-
   let conditions = [];
   let values = [];
 
   if (showAll === 'false') {
-    conditions.push(`o.order_status NOT IN ('Completed', 'Cancelled')`);
+    conditions.push(`o.order_status NOT IN ('Completed','Cancelled')`);
   }
 
   if (search) {
     conditions.push(`
-      (o.order_id LIKE ? OR
-       tod.name LIKE ? OR
-       tod.phone LIKE ? OR
-       DATE(tod.appointment_date) LIKE ?)
+      (o.order_id LIKE ?
+      OR tod.name LIKE ?
+      OR tod.phone LIKE ?
+      OR DATE(tod.appointment_date) LIKE ?)
     `);
-
-    values.push(
-      `%${search}%`,
-      `%${search}%`,
-      `%${search}%`,
-      `%${search}%`
-    );
+    values.push(`%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`);
   }
 
-  const finalQuery = baseQuery + 
-    (conditions.length ? ` WHERE ${conditions.join(' AND ')}` : '');
+  const query = `
+    SELECT 
+      o.*,
+      tod.*
+    FROM CC_Tailoring_Orders o
+    INNER JOIN CC_Tailoring_Order_Details tod
+    ON o.tailoring_details_id = tod.tailoring_id
+    ${conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''}
+    ORDER BY tod.appointment_date ASC
+  `;
 
   try {
-    const [orders] = await con.promise().query(finalQuery, values);
+    const [orders] = await con.promise().query(query, values);
     res.status(200).json({ data: orders });
   } catch (error) {
     res.status(500).json({ error: 'Error fetching orders' });
   }
 });
+
 
 
 // Tailoring Order Page (User perspective)
