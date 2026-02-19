@@ -4796,61 +4796,140 @@ app.post('/api/cc/service/payment', async (req, res) => {
 });
 
 
+// app.get('/api/cc/tailoring/orders', async (req, res) => {
+//   let con;
+//   try {
+//     // Establishing a DB connection
+//     con = dbConnection();
+//     con.connect();
+//   } catch (error) {
+//     console.error('DB Connection Error', error);
+//     return res.status(500).json({ error: 'DB Connection Error' });
+//   }
+
+//   try {
+//     // Query to fetch details from CC_Tailoring_Orders and CC_Tailoring_Order_Details
+//     const query = `
+//       SELECT 
+//         o.order_id,
+//         o.order_date,
+//         o.products_price,
+//         o.security_deposit,
+//         o.total_amount,
+//         o.order_status,
+//         o.user_id,
+//         o.order_assignment,
+//         tod.tailoring_id,
+//         tod.name,
+//         tod.email,
+//         tod.phone,
+//         tod.stitch_option,
+//         tod.custom_design,
+//         tod.product_image_url,
+//         tod.address,
+//         tod.city,
+//         tod.pincode,
+//         tod.order_notes,
+//         tod.appointment_date,
+//         tod.product_id
+//       FROM 
+//         CC_Tailoring_Orders o
+//       INNER JOIN 
+//         CC_Tailoring_Order_Details tod ON o.tailoring_details_id = tod.tailoring_id;
+//     `;
+
+//     // Execute the query using the promise-based method
+//     const [orders] = await con.promise().query(query);
+
+//     // Release the connection back to the pool
+//     // con.end();
+
+//     // Send the result as a response
+//     res.status(200).json({ data: orders });
+
+//   } catch (error) {
+//     if (con) // con.end();
+//     console.error('Error fetching tailoring order details:', error);
+//     res.status(500).json({ error: 'Error fetching tailoring order details' });
+//   }
+// });
+
 app.get('/api/cc/tailoring/orders', async (req, res) => {
   let con;
   try {
-    // Establishing a DB connection
     con = dbConnection();
     con.connect();
   } catch (error) {
-    console.error('DB Connection Error', error);
     return res.status(500).json({ error: 'DB Connection Error' });
   }
 
+  const { search = '', showAll = 'false' } = req.query;
+
+  const baseQuery = `
+    SELECT 
+      o.order_id,
+      o.order_date,
+      o.products_price,
+      o.security_deposit,
+      o.total_amount,
+      o.order_status,
+      o.user_id,
+      o.order_assignment,
+      o.payment_status,
+      o.payment_type,
+      tod.tailoring_id,
+      tod.name,
+      tod.email,
+      tod.phone,
+      tod.stitch_option,
+      tod.custom_design,
+      tod.product_image_url,
+      tod.address,
+      tod.city,
+      tod.pincode,
+      tod.order_notes,
+      tod.appointment_date,
+      tod.product_id,
+      tod.has_lining,
+      tod.lining_price,
+      tod.stitching_speed,
+      tod.speed_price
+    FROM CC_Tailoring_Orders o
+    INNER JOIN CC_Tailoring_Order_Details tod 
+    ON o.tailoring_details_id = tod.tailoring_id
+  `;
+
+  let conditions = [];
+  let values = [];
+
+  if (showAll === 'false') {
+    conditions.push(`o.order_status NOT IN ('Completed', 'Cancelled')`);
+  }
+
+  if (search) {
+    conditions.push(`
+      (o.order_id LIKE ? OR
+       tod.name LIKE ? OR
+       tod.phone LIKE ? OR
+       DATE(tod.appointment_date) LIKE ?)
+    `);
+
+    values.push(
+      `%${search}%`,
+      `%${search}%`,
+      `%${search}%`,
+      `%${search}%`
+    );
+  }
+
+  const finalQuery = baseQuery + 
+    (conditions.length ? ` WHERE ${conditions.join(' AND ')}` : '');
+
   try {
-    // Query to fetch details from CC_Tailoring_Orders and CC_Tailoring_Order_Details
-    const query = `
-      SELECT 
-        o.order_id,
-        o.order_date,
-        o.products_price,
-        o.security_deposit,
-        o.total_amount,
-        o.order_status,
-        o.user_id,
-        o.order_assignment,
-        tod.tailoring_id,
-        tod.name,
-        tod.email,
-        tod.phone,
-        tod.stitch_option,
-        tod.custom_design,
-        tod.product_image_url,
-        tod.address,
-        tod.city,
-        tod.pincode,
-        tod.order_notes,
-        tod.appointment_date,
-        tod.product_id
-      FROM 
-        CC_Tailoring_Orders o
-      INNER JOIN 
-        CC_Tailoring_Order_Details tod ON o.tailoring_details_id = tod.tailoring_id;
-    `;
-
-    // Execute the query using the promise-based method
-    const [orders] = await con.promise().query(query);
-
-    // Release the connection back to the pool
-    // con.end();
-
-    // Send the result as a response
+    const [orders] = await con.promise().query(finalQuery, values);
     res.status(200).json({ data: orders });
-
   } catch (error) {
-    if (con) // con.end();
-    console.error('Error fetching tailoring order details:', error);
-    res.status(500).json({ error: 'Error fetching tailoring order details' });
+    res.status(500).json({ error: 'Error fetching orders' });
   }
 });
 
