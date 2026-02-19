@@ -4846,63 +4846,55 @@ app.post('/api/cc/service/payment', async (req, res) => {
 });
 
 
+
+
 // app.get('/api/cc/tailoring/orders', async (req, res) => {
 //   let con;
 //   try {
-//     // Establishing a DB connection
 //     con = dbConnection();
 //     con.connect();
 //   } catch (error) {
-//     console.error('DB Connection Error', error);
 //     return res.status(500).json({ error: 'DB Connection Error' });
 //   }
 
+//   const { search = '', showAll = 'false' } = req.query;
+
+//   let conditions = [];
+//   let values = [];
+
+//   if (showAll === 'false') {
+//     conditions.push(`o.order_status NOT IN ('Completed','Cancelled')`);
+//   }
+
+//   if (search) {
+//     conditions.push(`
+//       (o.order_id LIKE ?
+//       OR tod.name LIKE ?
+//       OR tod.phone LIKE ?
+//       OR DATE(tod.appointment_date) LIKE ?)
+//     `);
+//     values.push(`%${search}%`,`%${search}%`,`%${search}%`,`%${search}%`);
+//   }
+
+//   const query = `
+//     SELECT 
+//       o.*,
+//       tod.*
+//     FROM CC_Tailoring_Orders o
+//     INNER JOIN CC_Tailoring_Order_Details tod
+//     ON o.tailoring_details_id = tod.tailoring_id
+//     ${conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''}
+//     ORDER BY tod.appointment_date ASC
+//   `;
+
 //   try {
-//     // Query to fetch details from CC_Tailoring_Orders and CC_Tailoring_Order_Details
-//     const query = `
-//       SELECT 
-//         o.order_id,
-//         o.order_date,
-//         o.products_price,
-//         o.security_deposit,
-//         o.total_amount,
-//         o.order_status,
-//         o.user_id,
-//         o.order_assignment,
-//         tod.tailoring_id,
-//         tod.name,
-//         tod.email,
-//         tod.phone,
-//         tod.stitch_option,
-//         tod.custom_design,
-//         tod.product_image_url,
-//         tod.address,
-//         tod.city,
-//         tod.pincode,
-//         tod.order_notes,
-//         tod.appointment_date,
-//         tod.product_id
-//       FROM 
-//         CC_Tailoring_Orders o
-//       INNER JOIN 
-//         CC_Tailoring_Order_Details tod ON o.tailoring_details_id = tod.tailoring_id;
-//     `;
-
-//     // Execute the query using the promise-based method
-//     const [orders] = await con.promise().query(query);
-
-//     // Release the connection back to the pool
-//     // con.end();
-
-//     // Send the result as a response
+//     const [orders] = await con.promise().query(query, values);
 //     res.status(200).json({ data: orders });
-
 //   } catch (error) {
-//     if (con) // con.end();
-//     console.error('Error fetching tailoring order details:', error);
-//     res.status(500).json({ error: 'Error fetching tailoring order details' });
+//     res.status(500).json({ error: 'Error fetching orders' });
 //   }
 // });
+
 
 app.get('/api/cc/tailoring/orders', async (req, res) => {
   let con;
@@ -4935,21 +4927,59 @@ app.get('/api/cc/tailoring/orders', async (req, res) => {
   const query = `
     SELECT 
       o.*,
-      tod.*
+      tod.*,
+      oc.OrderCustomizationID,
+      pc.CustomizationID,
+      pc.CustomizationName,
+      pc.CustomizationImageURL,
+      pc.PriceAdjustment
     FROM CC_Tailoring_Orders o
     INNER JOIN CC_Tailoring_Order_Details tod
-    ON o.tailoring_details_id = tod.tailoring_id
+      ON o.tailoring_details_id = tod.tailoring_id
+    LEFT JOIN CC_OrderCustomization oc
+      ON o.order_id = oc.OrderID
+    LEFT JOIN CC_ProductCustomization pc
+      ON oc.CustomizationID = pc.CustomizationID
     ${conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''}
     ORDER BY tod.appointment_date ASC
   `;
 
   try {
-    const [orders] = await con.promise().query(query, values);
-    res.status(200).json({ data: orders });
+    const [rows] = await con.promise().query(query, values);
+
+    // 🔥 GROUP CUSTOMIZATIONS PER ORDER
+    const ordersMap = {};
+
+    rows.forEach(row => {
+      const orderId = row.order_id;
+
+      if (!ordersMap[orderId]) {
+        ordersMap[orderId] = {
+          ...row,
+          customizations: []
+        };
+      }
+
+      if (row.CustomizationID) {
+        ordersMap[orderId].customizations.push({
+          customizationId: row.CustomizationID,
+          name: row.CustomizationName,
+          image: row.CustomizationImageURL,
+          priceAdjustment: row.PriceAdjustment
+        });
+      }
+    });
+
+    const finalOrders = Object.values(ordersMap);
+
+    res.status(200).json({ data: finalOrders });
+
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: 'Error fetching orders' });
   }
 });
+
 
 
 
