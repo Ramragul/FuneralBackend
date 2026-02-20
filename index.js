@@ -3558,120 +3558,120 @@ app.get('/api/cc/mail', async (req, res) => {
  
 });
 
-// app.patch('/api/orders/:orderId/update', async (req, res) => {
+app.patch('/api/orders/:orderId/update', async (req, res) => {
 
-//   const orderId = req.params.orderId;
+  const orderId = req.params.orderId;
 
-//   const {orderStatus,orderAssignment, updatedBy }= req.body;
+  const {orderStatus,orderAssignment, updatedBy }= req.body;
 
 
-//   try
-//   {
-//   var con = dbConnection();
-//   con.connect();
-//   } catch (error) {
-//     console.error('DB Connection Error', error);
-//     res.status(500).json({ error: 'DB Connection Error' });
-//   }
+  try
+  {
+  var con = dbConnection();
+  con.connect();
+  } catch (error) {
+    console.error('DB Connection Error', error);
+    res.status(500).json({ error: 'DB Connection Error' });
+  }
 
-//   //const currentDate = new Date()
+  //const currentDate = new Date()
   
 
-//   const currentDate = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+  const currentDate = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
 
-// // Convert the formatted date to YYYY-MM-DD HH:MM:SS format
-// const [datePart, timePart] = currentDate.split(', ');
-// const [month, day, year] = datePart.split('/');
+// Convert the formatted date to YYYY-MM-DD HH:MM:SS format
+const [datePart, timePart] = currentDate.split(', ');
+const [month, day, year] = datePart.split('/');
 
-// // Format the date as YYYY-MM-DD HH:MM:SS
-// const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')} ${timePart}`;
+// Format the date as YYYY-MM-DD HH:MM:SS
+const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')} ${timePart}`;
 
-//   const query = `
-//   UPDATE CC_Orders 
-//   SET 
-//     order_assignment = ?, 
-//     order_status = ?, 
-//     updated_by = ?, 
-//     last_updated_date = ? 
-//   WHERE 
-//     id = ?;
-// `;
+  const query = `
+  UPDATE CC_Orders 
+  SET 
+    order_assignment = ?, 
+    order_status = ?, 
+    updated_by = ?, 
+    last_updated_date = ? 
+  WHERE 
+    id = ?;
+`;
 
-//   con.query(query, [orderAssignment, orderStatus, updatedBy, formattedDate,orderId], (err, result) => {
-//     if (err) {
-//       console.error('Error updating order status:', err);
-//       return res.status(205).json({ message: err });
-//     }
-//     // con.end();
-//     res.status(201).json({ message: 'Order Status Updated Successfully' });
+  con.query(query, [orderAssignment, orderStatus, updatedBy, formattedDate,orderId], (err, result) => {
+    if (err) {
+      console.error('Error updating order status:', err);
+      return res.status(205).json({ message: err });
+    }
+    // con.end();
+    res.status(201).json({ message: 'Order Status Updated Successfully' });
 
 
 
-//   console.log("orderId :" +req.params.orderId)
-//   console.log("orderStatus" +orderStatus + "Order Assignment" +orderAssignment)
+  console.log("orderId :" +req.params.orderId)
+  console.log("orderStatus" +orderStatus + "Order Assignment" +orderAssignment)
  
-// });
+});
 
-// });
-
-
-// // Tailoring Order Workflow updates
-
-// app.patch('/api/tailoring/orders/:orderId/update', async (req, res) => {
-
-//   const orderId = req.params.orderId;
-
-//   const {orderStatus,orderAssignment, updatedBy }= req.body;
+});
 
 
-//   try
-//   {
-//   var con = dbConnection();
-//   con.connect();
-//   } catch (error) {
-//     console.error('DB Connection Error', error);
-//     res.status(500).json({ error: 'DB Connection Error' });
-//   }
+// Tailoring Order Workflow updates
 
-//   //const currentDate = new Date()
+app.patch('/api/tailoring/orders/:orderId/update', async (req, res) => {
+
+  const orderId = req.params.orderId;
+
+  const {orderStatus,orderAssignment, updatedBy }= req.body;
+
+
+  try
+  {
+  var con = dbConnection();
+  con.connect();
+  } catch (error) {
+    console.error('DB Connection Error', error);
+    res.status(500).json({ error: 'DB Connection Error' });
+  }
+
+  //const currentDate = new Date()
   
 
-//   const currentDate = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+  const currentDate = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
 
-// // Convert the formatted date to YYYY-MM-DD HH:MM:SS format
-// const [datePart, timePart] = currentDate.split(', ');
-// const [month, day, year] = datePart.split('/');
+// Convert the formatted date to YYYY-MM-DD HH:MM:SS format
+const [datePart, timePart] = currentDate.split(', ');
+const [month, day, year] = datePart.split('/');
 
-// // Format the date as YYYY-MM-DD HH:MM:SS
-// const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')} ${timePart}`;
+// Format the date as YYYY-MM-DD HH:MM:SS
+const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')} ${timePart}`;
 
-//   const query = `
-//   UPDATE CC_Tailoring_Orders 
-//   SET 
-//     order_assignment = ?, 
-//     order_status = ?, 
-//     updated_by = ?, 
-//     last_updated_date = ? 
-//   WHERE 
-//     order_id = ?;
-// `;
+  const query = `
+  UPDATE CC_Tailoring_Orders 
+  SET 
+    order_assignment = ?, 
+    order_status = ?, 
+    updated_by = ?, 
+    last_updated_date = ? 
+  WHERE 
+    order_id = ?;
+`;
 
-//   con.query(query, [orderAssignment, orderStatus, updatedBy, formattedDate,orderId], (err, result) => {
-//     if (err) {
-//       console.error('Error updating order status:', err);
-//       return res.status(205).json({ message: err });
-//     }
-//     // con.end();
-//     res.status(201).json({ message: 'Order Status Updated Successfully' });
+  con.query(query, [orderAssignment, orderStatus, updatedBy, formattedDate,orderId], (err, result) => {
+    if (err) {
+      console.error('Error updating order status:', err);
+      return res.status(205).json({ message: err });
+    }
+    // con.end();
+    res.status(201).json({ message: 'Order Status Updated Successfully' });
 
 
 
-//   console.log("orderId :" +req.params.orderId)
-//   console.log("orderStatus" +orderStatus + "Order Assignment" +orderAssignment)
+  console.log("orderId :" +req.params.orderId)
+  console.log("orderStatus" +orderStatus + "Order Assignment" +orderAssignment)
  
-// });
+});
 
-// });
+});
 
 
 const STATUS_FLOW = [
