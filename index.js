@@ -8865,7 +8865,7 @@ app.post('/api/services/book', (req, res) => {
                 quantity: qty,
                 subtotal,
                 serviceName:pkg.name,
-                variant : variant.variant_code || variant.lable
+                variant : variant?.variant_code || variant?.lable
               });
             }
 
