@@ -9049,7 +9049,7 @@ app.get('/api/services/list', (req, res) => {
   const params = [];
   if (category) {
     sql += ' WHERE c.code = ?';
-    params.push(category);c
+    params.push(category);
   }
 
   con.query(sql, params, (err, rows) => {
