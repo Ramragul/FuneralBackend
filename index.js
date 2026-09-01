@@ -10280,19 +10280,61 @@ app.post("/api/tfc/vendors", (req, res) => {
 
   const con = dbConnection();
 
+  // const sql = `
+  //   INSERT INTO vendors
+  //   (
+  //     name, type, contact_name, contact_designation,
+  //     phone, alternate_phone, email, address, city, state, country,pincode,google_location_url
+  //     payment_mode, bank_name, account_no, ifsc_code, upi_id, payment_terms,
+  //     commission_percent, base_rate, advance_allowed,
+  //     operational_hours, available_days, conditions, remarks,
+  //     profile_image_url, id_proof_url,
+  //     created_at
+  //   )
+  //   VALUES (?,?,?,?, ?,?,?, ?,?,?, ?, ?,?,?, ?,?,?, ?,?,?, ?,?,?, ?,?,?,?,? NOW())
+  // `;
+
+
   const sql = `
-    INSERT INTO vendors
-    (
-      name, type, contact_name, contact_designation,
-      phone, alternate_phone, email, address, city, state, country,pincode,google_location_url
-      payment_mode, bank_name, account_no, ifsc_code, upi_id, payment_terms,
-      commission_percent, base_rate, advance_allowed,
-      operational_hours, available_days, conditions, remarks,
-      profile_image_url, id_proof_url,
-      created_at
-    )
-    VALUES (?,?,?,?, ?,?,?, ?,?,?, ?, ?,?,?, ?,?,?, ?,?,?, ?,?,?, ?,?,?,?,? NOW())
-  `;
+  INSERT INTO vendors
+  (
+    name,
+    type,
+    contact_name,
+    contact_designation,
+    phone,
+    alternate_phone,
+    email,
+    address,
+    city,
+    state,
+    country,
+    pincode,
+    google_location_url,
+    payment_mode,
+    bank_name,
+    account_no,
+    ifsc_code,
+    upi_id,
+    payment_terms,
+    commission_percent,
+    base_rate,
+    advance_allowed,
+    operational_hours,
+    available_days,
+    conditions,
+    remarks,
+    profile_image_url,
+    id_proof_url,
+    created_at
+  )
+  VALUES (
+    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+    ?, ?, ?, ?, ?, ?, ?, ?, NOW()
+  )
+`;
+
 
   const vals = [
     data.name,
