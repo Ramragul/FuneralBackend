@@ -8764,7 +8764,7 @@ app.post('/api/services/book', (req, res) => {
                 subtotal: Number(pkg.price || 0)
               }];
 
-              packageCode = items.code[0];
+              console.log ( "Package Code is : " +packageCode)
 
               createOrder(customerId, items, totalPrice, packageCode);
             });
