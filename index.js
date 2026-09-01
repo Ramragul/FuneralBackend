@@ -10296,8 +10296,7 @@ app.post("/api/tfc/vendors", (req, res) => {
 
 
   const sql = `
-  INSERT INTO vendors
-  (
+  INSERT INTO vendors (
     name,
     type,
     contact_name,
@@ -10325,15 +10324,57 @@ app.post("/api/tfc/vendors", (req, res) => {
     conditions,
     remarks,
     profile_image_url,
-    id_proof_url,
-    created_at
+    id_proof_url
   )
   VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-    ?, ?, ?, ?, ?, ?, ?, ?, NOW()
+    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+    ?, ?, ?, ?, ?, ?, ?, ?
   )
 `;
+
+const vals = [
+  data.name,
+  data.type,
+  data.contact_name || null,
+  data.contact_designation || null,
+  data.phone || null,
+  data.alternate_phone || null,
+  data.email || null,
+  data.address || null,
+  data.city || null,
+  data.state || null,
+  data.country || null,
+  data.pincode || null,
+  data.google_location_url || null,
+  data.payment_mode || "bank",
+  data.bank_name || null,
+  data.account_no || null,
+  data.ifsc_code || null,
+  data.upi_id || null,
+  data.payment_terms || null,
+  data.commission_percent ?? null,
+  data.base_rate ?? null,
+  data.advance_allowed ? 1 : 0,
+  data.operational_hours || null,
+  data.available_days || null,
+  data.conditions || null,
+  data.remarks || null,
+  data.profile_image_url || null,
+  data.id_proof_url || null,
+];
+
+con.query(sql, vals, (err, result) => {
+  if (err) {
+    console.error("Vendor insert error:", err);
+    return res.status(500).json({ error: err.message });
+  }
+
+  res.json({
+    message: "Vendor added successfully",
+    vendor_id: result.insertId,
+  });
+});
 
 
   const vals = [
