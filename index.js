@@ -10376,6 +10376,8 @@ con.query(sql, vals, (err, result) => {
   });
 });
 
+});
+
 
 //   const vals = [
 //     data.name,
