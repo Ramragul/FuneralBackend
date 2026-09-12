@@ -9330,6 +9330,207 @@ app.get("/api/admin/services", (req, res) => {
   );
 });
 
+
+// ============================================================
+// GET VENDOR VARIANTS
+// GET /api/tfc/vendors/:id/variants
+// ============================================================
+
+app.get("/api/tfc/vendors/:id/variants", (req, res) => {
+  const vendorId = req.params.id;
+
+  const con = dbConnection();
+
+  const sql = `
+    SELECT
+      id,
+      vendor_id,
+      service_code,
+      variant_name,
+      price,
+      availability,
+      status,
+      created_at,
+      updated_at
+    FROM vendor_variants
+    WHERE vendor_id = ?
+    ORDER BY service_code, price ASC, id ASC
+  `;
+
+  con.query(sql, [vendorId], (err, rows) => {
+    if (err) {
+      console.error("Get vendor variants error:", err);
+
+      return res.status(500).json({
+        error: err.message,
+      });
+    }
+
+    res.json(rows);
+  });
+});
+
+
+app.put("/api/tfc/vendors/:id/variants", (req, res) => {
+  const vendorId = req.params.id;
+  const variants = req.body.variants;
+
+  if (!Array.isArray(variants)) {
+    return res.status(400).json({
+      error: "variants array required",
+    });
+  }
+
+  const con = dbConnection();
+
+  // First verify vendor exists.
+  con.query(
+    "SELECT id FROM vendors WHERE id = ? LIMIT 1",
+    [vendorId],
+    (vendorErr, vendorRows) => {
+      if (vendorErr) {
+        console.error("Vendor lookup error:", vendorErr);
+
+        return res.status(500).json({
+          error: vendorErr.message,
+        });
+      }
+
+      if (!vendorRows || vendorRows.length === 0) {
+        return res.status(404).json({
+          error: "Vendor not found",
+        });
+      }
+
+      // Nothing to save = remove all variants.
+      if (variants.length === 0) {
+        return con.query(
+          "DELETE FROM vendor_variants WHERE vendor_id = ?",
+          [vendorId],
+          (deleteErr) => {
+            if (deleteErr) {
+              console.error("Delete vendor variants error:", deleteErr);
+
+              return res.status(500).json({
+                error: deleteErr.message,
+              });
+            }
+
+            return res.json({
+              message: "Vendor variants updated",
+              count: 0,
+            });
+          },
+        );
+      }
+
+      // Validate every variant before changing DB.
+      for (const variant of variants) {
+        if (
+          !variant.service_code ||
+          !variant.variant_name ||
+          variant.price === undefined ||
+          variant.price === null ||
+          variant.price === "" ||
+          Number.isNaN(Number(variant.price)) ||
+          Number(variant.price) < 0
+        ) {
+          return res.status(400).json({
+            error:
+              "Each variant requires service_code, variant_name and a valid non-negative price",
+          });
+        }
+      }
+
+      con.beginTransaction((transactionErr) => {
+        if (transactionErr) {
+          return res.status(500).json({
+            error: transactionErr.message,
+          });
+        }
+
+        // Replace complete variant list.
+        con.query(
+          "DELETE FROM vendor_variants WHERE vendor_id = ?",
+          [vendorId],
+          (deleteErr) => {
+            if (deleteErr) {
+              return con.rollback(() => {
+                console.error(
+                  "Delete existing variants error:",
+                  deleteErr,
+                );
+
+                res.status(500).json({
+                  error: deleteErr.message,
+                });
+              });
+            }
+
+            const values = variants.map((v) => [
+              vendorId,
+              v.service_code,
+              String(v.variant_name).trim(),
+              Number(v.price),
+              v.availability
+                ? JSON.stringify(v.availability)
+                : null,
+              v.status === "inactive" ? "inactive" : "active",
+            ]);
+
+            const insertSql = `
+              INSERT INTO vendor_variants (
+                vendor_id,
+                service_code,
+                variant_name,
+                price,
+                availability,
+                status
+              )
+              VALUES ?
+            `;
+
+            con.query(insertSql, [values], (insertErr, result) => {
+              if (insertErr) {
+                return con.rollback(() => {
+                  console.error(
+                    "Insert vendor variants error:",
+                    insertErr,
+                  );
+
+                  res.status(500).json({
+                    error: insertErr.message,
+                  });
+                });
+              }
+
+              con.commit((commitErr) => {
+                if (commitErr) {
+                  return con.rollback(() => {
+                    console.error(
+                      "Vendor variants commit error:",
+                      commitErr,
+                    );
+
+                    res.status(500).json({
+                      error: commitErr.message,
+                    });
+                  });
+                }
+
+                res.json({
+                  message: "Vendor variants updated",
+                  count: result.affectedRows,
+                });
+              });
+            });
+          },
+        );
+      });
+    },
+  );
+});
+
 // ================= VARIANT APIs =================
 app.post("/api/admin/services/:serviceCode/variants", (req, res) => {
   const { serviceCode } = req.params;
@@ -10235,200 +10436,208 @@ app.post("/api/tfc/grounds/update", (req, res) => {
 
 //   const con = dbConnection();
 
+
+
+
 //   const sql = `
-//     INSERT INTO vendors
-//     (name, type, contact_name, phone, email, address, city, state, country,
-//      payment_mode, bank_name, account_no, ifsc_code, upi_id, payment_terms,
-//      commission_percent, base_rate, advance_allowed, created_at)
-//     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())
-//   `;
+//   INSERT INTO vendors (
+//     name,
+//     type,
+//     contact_name,
+//     contact_designation,
+//     phone,
+//     alternate_phone,
+//     email,
+//     address,
+//     city,
+//     state,
+//     country,
+//     pincode,
+//     google_location_url,
+//     payment_mode,
+//     bank_name,
+//     account_no,
+//     ifsc_code,
+//     upi_id,
+//     payment_terms,
+//     commission_percent,
+//     base_rate,
+//     advance_allowed,
+//     operational_hours,
+//     available_days,
+//     conditions,
+//     remarks,
+//     profile_image_url,
+//     id_proof_url
+//   )
+//   VALUES (
+//     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+//     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+//     ?, ?, ?, ?, ?, ?, ?, ?
+//   )
+// `;
 
-//   const vals = [
-//     data.name,
-//     data.type,
-//     data.contact_name || null,
-//     data.phone || null,
-//     data.email || null,
-//     data.address || null,
-//     data.city || null,
-//     data.state || null,
-//     data.country || null,
-//     data.payment_mode || "bank",
-//     data.bank_name || null,
-//     data.account_no || null,
-//     data.ifsc_code || null,
-//     data.upi_id || null,
-//     data.payment_terms || null,
-//     data.commission_percent || null,
-//     data.base_rate || null,
-//     data.advance_allowed ? 1 : 0,
-//   ];
+// const vals = [
+//   data.name,
+//   data.type,
+//   data.contact_name || null,
+//   data.contact_designation || null,
+//   data.phone || null,
+//   data.alternate_phone || null,
+//   data.email || null,
+//   data.address || null,
+//   data.city || null,
+//   data.state || null,
+//   data.country || null,
+//   data.pincode || null,
+//   data.google_location_url || null,
+//   data.payment_mode || "bank",
+//   data.bank_name || null,
+//   data.account_no || null,
+//   data.ifsc_code || null,
+//   data.upi_id || null,
+//   data.payment_terms || null,
+//   data.commission_percent ?? null,
+//   data.base_rate ?? null,
+//   data.advance_allowed ? 1 : 0,
+//   data.operational_hours || null,
+//   data.available_days || null,
+//   data.conditions || null,
+//   data.remarks || null,
+//   data.profile_image_url || null,
+//   data.id_proof_url || null,
+// ];
 
-//   con.query(sql, vals, (err, result) => {
-//     if (err) return res.status(500).json({ error: err.message });
-//     res.json({ message: "Vendor added successfully", vendor_id: result.insertId });
+// con.query(sql, vals, (err, result) => {
+//   if (err) {
+//     console.error("Vendor insert error:", err);
+//     return res.status(500).json({ error: err.message });
+//   }
+
+//   res.json({
+//     message: "Vendor added successfully",
+//     vendor_id: result.insertId,
 //   });
 // });
 
-// Version 2 
+// });
+
+// Version 2 : Enhancements
 
 app.post("/api/tfc/vendors", (req, res) => {
   const data = req.body;
+
   if (!data.name || !data.type) {
-    return res.status(400).json({ error: "Vendor name and type are required" });
+    return res.status(400).json({
+      error: "Vendor name and type are required",
+    });
   }
 
   const con = dbConnection();
 
-  // const sql = `
-  //   INSERT INTO vendors
-  //   (
-  //     name, type, contact_name, contact_designation,
-  //     phone, alternate_phone, email, address, city, state, country,pincode,google_location_url
-  //     payment_mode, bank_name, account_no, ifsc_code, upi_id, payment_terms,
-  //     commission_percent, base_rate, advance_allowed,
-  //     operational_hours, available_days, conditions, remarks,
-  //     profile_image_url, id_proof_url,
-  //     created_at
-  //   )
-  //   VALUES (?,?,?,?, ?,?,?, ?,?,?, ?, ?,?,?, ?,?,?, ?,?,?, ?,?,?, ?,?,?,?,? NOW())
-  // `;
-
-
   const sql = `
-  INSERT INTO vendors (
-    name,
-    type,
-    contact_name,
-    contact_designation,
-    phone,
-    alternate_phone,
-    email,
-    address,
-    city,
-    state,
-    country,
-    pincode,
-    google_location_url,
-    payment_mode,
-    bank_name,
-    account_no,
-    ifsc_code,
-    upi_id,
-    payment_terms,
-    commission_percent,
-    base_rate,
-    advance_allowed,
-    operational_hours,
-    available_days,
-    conditions,
-    remarks,
-    profile_image_url,
-    id_proof_url
-  )
-  VALUES (
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-    ?, ?, ?, ?, ?, ?, ?, ?
-  )
-`;
+    INSERT INTO vendors (
+      name,
+      type,
+      contact_name,
+      contact_designation,
+      phone,
+      alternate_phone,
+      email,
+      address,
+      city,
+      locality,
+      state,
+      country,
+      pincode,
+      google_location_url,
+      payment_mode,
+      bank_name,
+      account_no,
+      ifsc_code,
+      upi_id,
+      payment_terms,
+      commission_percent,
+      base_rate,
+      advance_allowed,
+      operational_hours,
+      available_days,
+      conditions,
+      remarks,
+      profile_image_url,
+      id_proof_url
+    )
+    VALUES (
+      ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+      ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+      ?, ?, ?, ?, ?, ?, ?, ?, ?
+    )
+  `;
 
-const vals = [
-  data.name,
-  data.type,
-  data.contact_name || null,
-  data.contact_designation || null,
-  data.phone || null,
-  data.alternate_phone || null,
-  data.email || null,
-  data.address || null,
-  data.city || null,
-  data.state || null,
-  data.country || null,
-  data.pincode || null,
-  data.google_location_url || null,
-  data.payment_mode || "bank",
-  data.bank_name || null,
-  data.account_no || null,
-  data.ifsc_code || null,
-  data.upi_id || null,
-  data.payment_terms || null,
-  data.commission_percent ?? null,
-  data.base_rate ?? null,
-  data.advance_allowed ? 1 : 0,
-  data.operational_hours || null,
-  data.available_days || null,
-  data.conditions || null,
-  data.remarks || null,
-  data.profile_image_url || null,
-  data.id_proof_url || null,
-];
+  const vals = [
+    data.name,
+    data.type,
 
-con.query(sql, vals, (err, result) => {
-  if (err) {
-    console.error("Vendor insert error:", err);
-    return res.status(500).json({ error: err.message });
-  }
+    data.contact_name || null,
+    data.contact_designation || null,
+    data.phone || null,
+    data.alternate_phone || null,
+    data.email || null,
 
-  res.json({
-    message: "Vendor added successfully",
-    vendor_id: result.insertId,
+    data.address || null,
+    data.city || null,
+    data.locality || null,
+    data.state || null,
+    data.country || null,
+    data.pincode || null,
+    data.google_location_url || null,
+
+    data.payment_mode || "bank",
+
+    data.bank_name || null,
+    data.account_no || null,
+    data.ifsc_code || null,
+    data.upi_id || null,
+
+    data.payment_terms || null,
+    data.commission_percent ?? null,
+    data.base_rate ?? null,
+
+    data.advance_allowed ? 1 : 0,
+
+    data.operational_hours || null,
+    data.available_days || null,
+    data.conditions || null,
+    data.remarks || null,
+
+    data.profile_image_url || null,
+    data.id_proof_url || null,
+  ];
+
+  con.query(sql, vals, (err, result) => {
+    if (err) {
+      console.error("Vendor insert error:", err);
+
+      return res.status(500).json({
+        error: err.message,
+      });
+    }
+
+    res.json({
+      message: "Vendor added successfully",
+      vendor_id: result.insertId,
+    });
   });
 });
-
-});
-
-
-//   const vals = [
-//     data.name,
-//     data.type, // comma-separated: "van,freezer,floral"
-//     data.contact_name || null,
-//     data.contact_designation || null,
-
-//     data.phone || null,
-//     data.alternate_phone || null,
-//     data.email || null,
-//     data.address || null,
-//     data.city || null,
-//     data.state || null,
-//     data.country || null,
-//     data.pincode || null,
-//     data.google_location_url || null,
-
-//     data.payment_mode || "bank",
-//     data.bank_name || null,
-//     data.account_no || null,
-//     data.ifsc_code || null,
-//     data.upi_id || null,
-//     data.payment_terms || null,
-
-//     data.commission_percent ?? null,
-//     data.base_rate ?? null,
-//     data.advance_allowed ? 1 : 0,
-
-//     data.operational_hours || null,
-//     data.available_days || null,
-//     data.conditions || null,
-//     data.remarks || null,
-
-//     data.profile_image_url || null,
-//     data.id_proof_url || null,
-//   ];
-
-//   con.query(sql, vals, (err, result) => {
-//     if (err) return res.status(500).json({ error: err.message });
-//     res.json({ message: "Vendor added successfully", vendor_id: result.insertId });
-//   });
-// });
-
 
 //  Vendor Catalog Update( their price etc)
 
 // Version 1
 
+
 // app.post("/api/tfc/vendors/:id/catalog", (req, res) => {
 //   const vendorId = req.params.id;
-//   const services = req.body.services;
+//   const services = req.body.services; // [{ service_code, base_rate }]
 
 //   if (!Array.isArray(services) || services.length === 0) {
 //     return res.status(400).json({ error: "services array required" });
@@ -10436,35 +10645,55 @@ con.query(sql, vals, (err, result) => {
 
 //   const con = dbConnection();
 //   const values = services.map((s) => [vendorId, s.service_code, s.base_rate || 0]);
-
-//   const sql = `
-//     INSERT INTO vendor_catalog (vendor_id, service_code, base_rate)
-//     VALUES ?
-//   `;
-
+//   const sql = `INSERT INTO vendor_catalog (vendor_id, service_code, base_rate) VALUES ?`;
 //   con.query(sql, [values], (err, result) => {
 //     if (err) return res.status(500).json({ error: err.message });
 //     res.json({ message: "Vendor catalog added", count: result.affectedRows });
 //   });
 // });
 
-
-// Version 2 
+// Version 2
 
 app.post("/api/tfc/vendors/:id/catalog", (req, res) => {
   const vendorId = req.params.id;
-  const services = req.body.services; // [{ service_code, base_rate }]
+  const services = req.body.services;
 
   if (!Array.isArray(services) || services.length === 0) {
-    return res.status(400).json({ error: "services array required" });
+    return res.status(400).json({
+      error: "services array required",
+    });
   }
 
   const con = dbConnection();
-  const values = services.map((s) => [vendorId, s.service_code, s.base_rate || 0]);
-  const sql = `INSERT INTO vendor_catalog (vendor_id, service_code, base_rate) VALUES ?`;
+
+  const values = services.map((s) => [
+    vendorId,
+    s.service_code,
+    s.base_rate || 0,
+  ]);
+
+  const sql = `
+    INSERT INTO vendor_catalog (
+      vendor_id,
+      service_code,
+      base_rate
+    )
+    VALUES ?
+  `;
+
   con.query(sql, [values], (err, result) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ message: "Vendor catalog added", count: result.affectedRows });
+    if (err) {
+      console.error("Vendor catalog insert error:", err);
+
+      return res.status(500).json({
+        error: err.message,
+      });
+    }
+
+    res.json({
+      message: "Vendor catalog added",
+      count: result.affectedRows,
+    });
   });
 });
 
@@ -10513,17 +10742,69 @@ app.get("/api/tfc/vendors/:id", (req, res) => {
 
 //   const sql = `
 //     UPDATE vendors SET
-//       name = ?, type = ?, contact_name = ?, phone = ?, email = ?, address = ?, city = ?, 
-//       state = ?, country = ?, payment_mode = ?, bank_name = ?, account_no = ?, ifsc_code = ?, 
-//       upi_id = ?, payment_terms = ?, commission_percent = ?, base_rate = ?, advance_allowed = ?
+//       name = ?,
+//       type = ?,                      -- comma-separated services
+//       contact_name = ?,
+//       contact_designation = ?,
+//       phone = ?,
+//       alternate_phone = ?,
+//       email = ?,
+//       address = ?,
+//       city = ?,
+//       state = ?,
+//       country = ?,
+//       pincode= ?,
+//       google_location_url = ?,
+//       payment_mode = ?,
+//       bank_name = ?,
+//       account_no = ?,
+//       ifsc_code = ?,
+//       upi_id = ?,
+//       payment_terms = ?,
+//       commission_percent = ?,
+//       base_rate = ?,
+//       advance_allowed = ?,
+//       operational_hours = ?,
+//       available_days = ?,
+//       conditions = ?,
+//       remarks = ?,
+//       profile_image_url = ?,
+//       id_proof_url = ?,
+//       status = COALESCE(?, status)   -- optional: keep existing if not sent
 //     WHERE id = ?
 //   `;
 
 //   const vals = [
-//     data.name, data.type, data.contact_name, data.phone, data.email, data.address,
-//     data.city, data.state, data.country, data.payment_mode, data.bank_name, data.account_no,
-//     data.ifsc_code, data.upi_id, data.payment_terms, data.commission_percent,
-//     data.base_rate, data.advance_allowed ? 1 : 0, req.params.id,
+//     data.name,
+//     data.type || "", // "van,freezer"
+//     data.contact_name || null,
+//     data.contact_designation || null,
+//     data.phone || null,
+//     data.alternate_phone || null,
+//     data.email || null,
+//     data.address || null,
+//     data.city || null,
+//     data.state || null,
+//     data.country || null,
+//     data.pincode || null,
+//     data.google_location_url || null,
+//     data.payment_mode || "bank",
+//     data.bank_name || null,
+//     data.account_no || null,
+//     data.ifsc_code || null,
+//     data.upi_id || null,
+//     data.payment_terms || null,
+//     data.commission_percent ?? null,
+//     data.base_rate ?? null,
+//     data.advance_allowed ? 1 : 0,
+//     data.operational_hours || null,
+//     data.available_days || null,
+//     data.conditions || null,
+//     data.remarks || null,
+//     data.profile_image_url || null,
+//     data.id_proof_url || null,
+//     data.status || null, // pass "active"/"inactive" or omit
+//     req.params.id,
 //   ];
 
 //   con.query(sql, vals, (err, result) => {
@@ -10532,16 +10813,20 @@ app.get("/api/tfc/vendors/:id", (req, res) => {
 //   });
 // });
 
-// Version 2 
+
+// Verison 2
+
 
 app.put("/api/tfc/vendors/:id", (req, res) => {
   const data = req.body;
+  const vendorId = req.params.id;
+
   const con = dbConnection();
 
   const sql = `
     UPDATE vendors SET
       name = ?,
-      type = ?,                      -- comma-separated services
+      type = ?,
       contact_name = ?,
       contact_designation = ?,
       phone = ?,
@@ -10549,9 +10834,10 @@ app.put("/api/tfc/vendors/:id", (req, res) => {
       email = ?,
       address = ?,
       city = ?,
+      locality = ?,
       state = ?,
       country = ?,
-      pincode= ?,
+      pincode = ?,
       google_location_url = ?,
       payment_mode = ?,
       bank_name = ?,
@@ -10568,74 +10854,189 @@ app.put("/api/tfc/vendors/:id", (req, res) => {
       remarks = ?,
       profile_image_url = ?,
       id_proof_url = ?,
-      status = COALESCE(?, status)   -- optional: keep existing if not sent
+      status = COALESCE(?, status)
     WHERE id = ?
   `;
 
   const vals = [
     data.name,
-    data.type || "", // "van,freezer"
+    data.type || "",
+
     data.contact_name || null,
     data.contact_designation || null,
     data.phone || null,
     data.alternate_phone || null,
     data.email || null,
+
     data.address || null,
     data.city || null,
+    data.locality || null,
     data.state || null,
     data.country || null,
     data.pincode || null,
     data.google_location_url || null,
+
     data.payment_mode || "bank",
+
     data.bank_name || null,
     data.account_no || null,
     data.ifsc_code || null,
     data.upi_id || null,
+
     data.payment_terms || null,
     data.commission_percent ?? null,
     data.base_rate ?? null,
+
     data.advance_allowed ? 1 : 0,
+
     data.operational_hours || null,
     data.available_days || null,
     data.conditions || null,
     data.remarks || null,
+
     data.profile_image_url || null,
     data.id_proof_url || null,
-    data.status || null, // pass "active"/"inactive" or omit
-    req.params.id,
+
+    data.status || null,
+
+    vendorId,
   ];
 
   con.query(sql, vals, (err, result) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ message: "Vendor updated successfully" });
+    if (err) {
+      console.error("Vendor update error:", err);
+
+      return res.status(500).json({
+        error: err.message,
+      });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        error: "Vendor not found",
+      });
+    }
+
+    res.json({
+      message: "Vendor updated successfully",
+    });
   });
 });
 
 
 // Delete Vendor by ID ( From UI Page)
 
+
+// Version 1
+
+// app.delete("/api/tfc/vendors/:id", (req, res) => {
+//   const con = dbConnection();
+//   con.query("DELETE FROM vendors WHERE id = ?", [req.params.id], (err, result) => {
+//     if (err) return res.status(500).json({ error: err.message });
+//     res.json({ message: "Vendor deleted successfully" });
+//   });
+// });
+
+
+// Version 2
+
+
 app.delete("/api/tfc/vendors/:id", (req, res) => {
   const con = dbConnection();
-  con.query("DELETE FROM vendors WHERE id = ?", [req.params.id], (err, result) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ message: "Vendor deleted successfully" });
-  });
+
+  con.query(
+    "DELETE FROM vendors WHERE id = ?",
+    [req.params.id],
+    (err, result) => {
+      if (err) {
+        console.error("Vendor delete error:", err);
+
+        return res.status(500).json({
+          error: err.message,
+        });
+      }
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({
+          error: "Vendor not found",
+        });
+      }
+
+      res.json({
+        message: "Vendor deleted successfully",
+      });
+    },
+  );
 });
 
 
 
 // Update Vendor Status
 
+// Version 1
+
+// app.put("/api/tfc/vendors/:id/status", (req, res) => {
+//   const con = dbConnection();
+//   const { status } = req.body;
+//   if (!status) return res.status(400).json({ error: "Status required" });
+
+//   const sql = "UPDATE vendors SET status = ? WHERE id = ?";
+//   con.query(sql, [status, req.params.id], (err, result) => {
+//     if (err) return res.status(500).json({ error: err.message });
+//     res.json({ message: "Vendor status updated", affected: result.affectedRows });
+//   });
+// });
+
+
+// Version 2
+
 app.put("/api/tfc/vendors/:id/status", (req, res) => {
   const con = dbConnection();
-  const { status } = req.body;
-  if (!status) return res.status(400).json({ error: "Status required" });
 
-  const sql = "UPDATE vendors SET status = ? WHERE id = ?";
-  con.query(sql, [status, req.params.id], (err, result) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ message: "Vendor status updated", affected: result.affectedRows });
-  });
+  const { status } = req.body;
+
+  if (!status) {
+    return res.status(400).json({
+      error: "Status required",
+    });
+  }
+
+  if (!["active", "inactive"].includes(status)) {
+    return res.status(400).json({
+      error: "Invalid status. Use active or inactive.",
+    });
+  }
+
+  const sql = `
+    UPDATE vendors
+    SET status = ?
+    WHERE id = ?
+  `;
+
+  con.query(
+    sql,
+    [status, req.params.id],
+    (err, result) => {
+      if (err) {
+        console.error("Vendor status update error:", err);
+
+        return res.status(500).json({
+          error: err.message,
+        });
+      }
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({
+          error: "Vendor not found",
+        });
+      }
+
+      res.json({
+        message: "Vendor status updated",
+        affected: result.affectedRows,
+      });
+    },
+  );
 });
 
 
