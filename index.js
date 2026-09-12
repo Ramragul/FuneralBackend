@@ -9371,6 +9371,171 @@ app.get("/api/tfc/vendors/:id/variants", (req, res) => {
 });
 
 
+// Version 1
+
+// app.put("/api/tfc/vendors/:id/variants", (req, res) => {
+//   const vendorId = req.params.id;
+//   const variants = req.body.variants;
+
+//   if (!Array.isArray(variants)) {
+//     return res.status(400).json({
+//       error: "variants array required",
+//     });
+//   }
+
+//   const con = dbConnection();
+
+//   // First verify vendor exists.
+//   con.query(
+//     "SELECT id FROM vendors WHERE id = ? LIMIT 1",
+//     [vendorId],
+//     (vendorErr, vendorRows) => {
+//       if (vendorErr) {
+//         console.error("Vendor lookup error:", vendorErr);
+
+//         return res.status(500).json({
+//           error: vendorErr.message,
+//         });
+//       }
+
+//       if (!vendorRows || vendorRows.length === 0) {
+//         return res.status(404).json({
+//           error: "Vendor not found",
+//         });
+//       }
+
+//       // Nothing to save = remove all variants.
+//       if (variants.length === 0) {
+//         return con.query(
+//           "DELETE FROM vendor_variants WHERE vendor_id = ?",
+//           [vendorId],
+//           (deleteErr) => {
+//             if (deleteErr) {
+//               console.error("Delete vendor variants error:", deleteErr);
+
+//               return res.status(500).json({
+//                 error: deleteErr.message,
+//               });
+//             }
+
+//             return res.json({
+//               message: "Vendor variants updated",
+//               count: 0,
+//             });
+//           },
+//         );
+//       }
+
+//       // Validate every variant before changing DB.
+//       for (const variant of variants) {
+//         if (
+//           !variant.service_code ||
+//           !variant.variant_name ||
+//           variant.price === undefined ||
+//           variant.price === null ||
+//           variant.price === "" ||
+//           Number.isNaN(Number(variant.price)) ||
+//           Number(variant.price) < 0
+//         ) {
+//           return res.status(400).json({
+//             error:
+//               "Each variant requires service_code, variant_name and a valid non-negative price",
+//           });
+//         }
+//       }
+
+//       con.beginTransaction((transactionErr) => {
+//         if (transactionErr) {
+//           return res.status(500).json({
+//             error: transactionErr.message,
+//           });
+//         }
+
+//         // Replace complete variant list.
+//         con.query(
+//           "DELETE FROM vendor_variants WHERE vendor_id = ?",
+//           [vendorId],
+//           (deleteErr) => {
+//             if (deleteErr) {
+//               return con.rollback(() => {
+//                 console.error(
+//                   "Delete existing variants error:",
+//                   deleteErr,
+//                 );
+
+//                 res.status(500).json({
+//                   error: deleteErr.message,
+//                 });
+//               });
+//             }
+
+//             const values = variants.map((v) => [
+//               vendorId,
+//               v.service_code,
+//               String(v.variant_name).trim(),
+//               Number(v.price),
+//               v.availability
+//                 ? JSON.stringify(v.availability)
+//                 : null,
+//               v.status === "inactive" ? "inactive" : "active",
+//             ]);
+
+//             const insertSql = `
+//               INSERT INTO vendor_variants (
+//                 vendor_id,
+//                 service_code,
+//                 variant_name,
+//                 price,
+//                 availability,
+//                 status
+//               )
+//               VALUES ?
+//             `;
+
+//             con.query(insertSql, [values], (insertErr, result) => {
+//               if (insertErr) {
+//                 return con.rollback(() => {
+//                   console.error(
+//                     "Insert vendor variants error:",
+//                     insertErr,
+//                   );
+
+//                   res.status(500).json({
+//                     error: insertErr.message,
+//                   });
+//                 });
+//               }
+
+//               con.commit((commitErr) => {
+//                 if (commitErr) {
+//                   return con.rollback(() => {
+//                     console.error(
+//                       "Vendor variants commit error:",
+//                       commitErr,
+//                     );
+
+//                     res.status(500).json({
+//                       error: commitErr.message,
+//                     });
+//                   });
+//                 }
+
+//                 res.json({
+//                   message: "Vendor variants updated",
+//                   count: result.affectedRows,
+//                 });
+//               });
+//             });
+//           },
+//         );
+//       });
+//     },
+//   );
+// });
+
+
+// verison 2
+
 app.put("/api/tfc/vendors/:id/variants", (req, res) => {
   const vendorId = req.params.id;
   const variants = req.body.variants;
@@ -9402,28 +9567,6 @@ app.put("/api/tfc/vendors/:id/variants", (req, res) => {
         });
       }
 
-      // Nothing to save = remove all variants.
-      if (variants.length === 0) {
-        return con.query(
-          "DELETE FROM vendor_variants WHERE vendor_id = ?",
-          [vendorId],
-          (deleteErr) => {
-            if (deleteErr) {
-              console.error("Delete vendor variants error:", deleteErr);
-
-              return res.status(500).json({
-                error: deleteErr.message,
-              });
-            }
-
-            return res.json({
-              message: "Vendor variants updated",
-              count: 0,
-            });
-          },
-        );
-      }
-
       // Validate every variant before changing DB.
       for (const variant of variants) {
         if (
@@ -9442,92 +9585,77 @@ app.put("/api/tfc/vendors/:id/variants", (req, res) => {
         }
       }
 
-      con.beginTransaction((transactionErr) => {
-        if (transactionErr) {
-          return res.status(500).json({
-            error: transactionErr.message,
-          });
-        }
+      // Delete existing variants first.
+      con.query(
+        "DELETE FROM vendor_variants WHERE vendor_id = ?",
+        [vendorId],
+        (deleteErr) => {
+          if (deleteErr) {
+            console.error(
+              "Delete existing vendor variants error:",
+              deleteErr
+            );
 
-        // Replace complete variant list.
-        con.query(
-          "DELETE FROM vendor_variants WHERE vendor_id = ?",
-          [vendorId],
-          (deleteErr) => {
-            if (deleteErr) {
-              return con.rollback(() => {
+            return res.status(500).json({
+              error: deleteErr.message,
+            });
+          }
+
+          // If no variants were supplied, deletion itself is the update.
+          if (variants.length === 0) {
+            return res.json({
+              message: "Vendor variants updated",
+              count: 0,
+            });
+          }
+
+          const values = variants.map((v) => [
+            vendorId,
+            String(v.service_code).trim(),
+            String(v.variant_name).trim(),
+            Number(v.price),
+            v.availability
+              ? JSON.stringify(v.availability)
+              : null,
+            v.status === "inactive" ? "inactive" : "active",
+          ]);
+
+          const insertSql = `
+            INSERT INTO vendor_variants (
+              vendor_id,
+              service_code,
+              variant_name,
+              price,
+              availability,
+              status
+            )
+            VALUES ?
+          `;
+
+          con.query(
+            insertSql,
+            [values],
+            (insertErr, result) => {
+              if (insertErr) {
                 console.error(
-                  "Delete existing variants error:",
-                  deleteErr,
+                  "Insert vendor variants error:",
+                  insertErr
                 );
 
-                res.status(500).json({
-                  error: deleteErr.message,
-                });
-              });
-            }
-
-            const values = variants.map((v) => [
-              vendorId,
-              v.service_code,
-              String(v.variant_name).trim(),
-              Number(v.price),
-              v.availability
-                ? JSON.stringify(v.availability)
-                : null,
-              v.status === "inactive" ? "inactive" : "active",
-            ]);
-
-            const insertSql = `
-              INSERT INTO vendor_variants (
-                vendor_id,
-                service_code,
-                variant_name,
-                price,
-                availability,
-                status
-              )
-              VALUES ?
-            `;
-
-            con.query(insertSql, [values], (insertErr, result) => {
-              if (insertErr) {
-                return con.rollback(() => {
-                  console.error(
-                    "Insert vendor variants error:",
-                    insertErr,
-                  );
-
-                  res.status(500).json({
-                    error: insertErr.message,
-                  });
+                return res.status(500).json({
+                  error: insertErr.message,
                 });
               }
 
-              con.commit((commitErr) => {
-                if (commitErr) {
-                  return con.rollback(() => {
-                    console.error(
-                      "Vendor variants commit error:",
-                      commitErr,
-                    );
-
-                    res.status(500).json({
-                      error: commitErr.message,
-                    });
-                  });
-                }
-
-                res.json({
-                  message: "Vendor variants updated",
-                  count: result.affectedRows,
-                });
+              return res.json({
+                message: "Vendor variants updated",
+                count: result.affectedRows,
               });
-            });
-          },
-        );
-      });
-    },
+            }
+          );
+        }
+      );
+    }
   );
 });
 
